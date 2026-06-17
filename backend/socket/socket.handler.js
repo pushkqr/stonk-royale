@@ -11,16 +11,30 @@ export function setupSocketHandlers(io) {
 
     // Join Room
     socket.on("join_room", async ({ roomCode, userId }) => {
-      socket.join(roomCode);
-      console.log(`User ${userId} joined room ${roomCode}`);
-
-      // Announce to the rest of the room
-      socket.to(roomCode).emit("user_joined", { userId });
-
-      // If the room is already ACTIVE, send the historical data to this reconnecting user
       try {
-        const room = await prisma.room.findUnique({ where: { room_code: roomCode } });
-        if (room && room.status === "ACTIVE") {
+        const room = await prisma.room.findUnique({ 
+          where: { room_code: roomCode },
+          include: { players: true }
+        });
+
+        if (!room) {
+          return socket.emit("room_error", { message: "Room not found" });
+        }
+
+        const isPlayer = room.players.some(p => p.user_id === userId);
+        if (!isPlayer) {
+          return socket.emit("room_error", { message: "You have not joined this room" });
+        }
+
+        socket.join(roomCode);
+        socket.roomCode = roomCode; // Track roomCode for disconnect handler
+        console.log(`User ${userId} joined room ${roomCode}`);
+
+        // Announce to the rest of the room
+        socket.to(roomCode).emit("user_joined", { userId });
+
+        // If the room is already ACTIVE, send the historical data to this reconnecting user
+        if (room.status === "ACTIVE") {
           console.log(`Sending recovery game_started payload to reconnected user ${userId}`);
           const historicalData = await getHistoricalCharts(["BTC", "ETH", "SOL", "DOGE"]);
           socket.emit("game_started", { 
@@ -30,7 +44,7 @@ export function setupSocketHandlers(io) {
           });
         }
       } catch (error) {
-        console.error("Error sending recovery payload:", error);
+        console.error("Error joining room or sending recovery payload:", error);
       }
     });
 
@@ -97,8 +111,27 @@ export function setupSocketHandlers(io) {
     });
 
     // Disconnect
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log(`Client disconnected: ${socket.id}`);
+      if (socket.roomCode) {
+        const roomSockets = io.sockets.adapter.rooms.get(socket.roomCode);
+        const count = roomSockets ? roomSockets.size : 0;
+        
+        if (count === 0) {
+          try {
+            const room = await prisma.room.findUnique({ where: { room_code: socket.roomCode } });
+            if (room && room.status === "ACTIVE") {
+              console.log(`All players disconnected from room ${socket.roomCode}. Stopping room.`);
+              await prisma.room.update({
+                where: { id: room.id },
+                data: { status: "COMPLETED", end_time: new Date() }
+              });
+            }
+          } catch (error) {
+            console.error("Error stopping empty room:", error);
+          }
+        }
+      }
     });
   });
 }

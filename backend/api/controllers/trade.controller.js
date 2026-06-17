@@ -19,6 +19,8 @@ export const executeTrade = async (req, res) => {
   }
 
   try {
+    let transactionRecord = null;
+    
     // 1. Fetch RoomPlayer
     // We search by the User's id or oauth_id to be robust
     const user = await prisma.user.findFirst({
@@ -88,7 +90,7 @@ export const executeTrade = async (req, res) => {
         }
 
         // Log transaction
-        await tx.transaction.create({
+        transactionRecord = await tx.transaction.create({
           data: {
             room_player_id: roomPlayer.id,
             ticker,
@@ -125,7 +127,7 @@ export const executeTrade = async (req, res) => {
         }
 
         // Log transaction
-        await tx.transaction.create({
+        transactionRecord = await tx.transaction.create({
           data: {
             room_player_id: roomPlayer.id,
             ticker,
@@ -161,11 +163,44 @@ export const executeTrade = async (req, res) => {
     return res.json({
       success: true,
       message: `Successfully executed ${type} for ${qty} ${ticker} at $${currentPrice}`,
+      trade: transactionRecord
     });
   } catch (error) {
     console.error("Trade Error:", error);
     return res
       .status(500)
       .json({ error: "Internal server error during trade" });
+  }
+};
+
+export const getTradeHistory = async (req, res) => {
+  const { roomCode, userId } = req.params;
+  
+  try {
+    const user = await prisma.user.findFirst({
+      where: { OR: [{ id: userId }, { oauth_id: userId }] },
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const roomPlayer = await prisma.roomPlayer.findFirst({
+      where: {
+        user_id: user.id,
+        room: { room_code: roomCode }
+      }
+    });
+
+    if (!roomPlayer) {
+      return res.json({ success: true, transactions: [] });
+    }
+
+    const transactions = await prisma.transaction.findMany({
+      where: { room_player_id: roomPlayer.id },
+      orderBy: { timestamp: "asc" }
+    });
+
+    return res.json({ success: true, transactions });
+  } catch (error) {
+    console.error("History Error:", error);
+    return res.status(500).json({ error: "Server error fetching history" });
   }
 };

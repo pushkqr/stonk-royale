@@ -42,6 +42,7 @@ export function startLeaderboardService(io) {
             pnl: pnl,
             availableCash: player.available_cash,
             cryptoValue: cryptoValue,
+            holdings: player.holdings.map(h => ({ ticker: h.ticker, quantity: h.quantity })),
           };
         });
 
