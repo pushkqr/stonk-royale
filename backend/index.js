@@ -5,6 +5,8 @@ import cors from "cors";
 import "dotenv/config";
 
 import tradeRoutes from "./api/routes/trade.routes.js";
+import userRoutes from "./api/routes/user.routes.js";
+import roomRoutes from "./api/routes/room.routes.js";
 import { connectBinance } from "./services/binance.service.js";
 import { setupSocketHandlers } from "./socket/socket.handler.js";
 
@@ -27,6 +29,8 @@ app.use(cors());
 
 // --- REST API Routes --- //
 app.use("/api/trade", tradeRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/rooms", roomRoutes);
 
 // --- WebSocket Services --- //
 // Start watching Binance Streams & passing io for broadcasts

@@ -24,6 +24,8 @@ model Room {
   start_time       DateTime?
   end_time         DateTime?
   starting_balance Float        @default(100000.0) // 100k starting cash
+  max_players      Int          @default(20)
+  duration_minutes Int          @default(60)
   players          RoomPlayer[]
 }
 

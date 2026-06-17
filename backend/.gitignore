@@ -1,3 +1,5 @@
 *.env
+*.json
 /generated/prisma
 /node_modules
+/temp

@@ -20,9 +20,20 @@ export const executeTrade = async (req, res) => {
 
   try {
     // 1. Fetch RoomPlayer
+    // We search by the User's id or oauth_id to be robust
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ id: userId }, { oauth_id: userId }],
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
     const roomPlayer = await prisma.roomPlayer.findFirst({
       where: {
-        user_id: userId,
+        user_id: user.id,
         room: { room_code: roomCode, status: "ACTIVE" }, // Must be active to trade
       },
       include: { room: true },
@@ -31,7 +42,7 @@ export const executeTrade = async (req, res) => {
     if (!roomPlayer) {
       return res
         .status(400)
-        .json({ error: "Player not found or room not active" });
+        .json({ error: "Player not found in room or room not active" });
     }
 
     const totalValue = currentPrice * qty;
