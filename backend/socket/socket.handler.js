@@ -1,5 +1,6 @@
 import prisma from "../config/db.js";
 import { cryptoPrices } from "../state/index.js";
+import { getHistoricalCharts } from "../services/market.service.js";
 
 export function setupSocketHandlers(io) {
   io.on("connection", (socket) => {
@@ -15,6 +16,22 @@ export function setupSocketHandlers(io) {
 
       // Announce to the rest of the room
       socket.to(roomCode).emit("user_joined", { userId });
+
+      // If the room is already ACTIVE, send the historical data to this reconnecting user
+      try {
+        const room = await prisma.room.findUnique({ where: { room_code: roomCode } });
+        if (room && room.status === "ACTIVE") {
+          console.log(`Sending recovery game_started payload to reconnected user ${userId}`);
+          const historicalData = await getHistoricalCharts(["BTC", "ETH", "SOL", "DOGE"]);
+          socket.emit("game_started", { 
+            startTime: room.start_time, 
+            endTime: room.end_time, 
+            historicalData 
+          });
+        }
+      } catch (error) {
+        console.error("Error sending recovery payload:", error);
+      }
     });
 
     // Example Event: Global Chat
@@ -57,15 +74,20 @@ export function setupSocketHandlers(io) {
               // Require at least 1 player to start
               // Transition to ACTIVE state
               const now = new Date();
-              const endTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour tournament
+              const durationMs = (room.duration_minutes || 60) * 60 * 1000;
+              const endTime = new Date(now.getTime() + durationMs); // dynamic tournament duration
 
               await prisma.room.update({
                 where: { id: room.id },
                 data: { status: "ACTIVE", start_time: now, end_time: endTime },
               });
 
-              console.log(`Room ${roomCode} has started!`);
-              io.to(roomCode).emit("game_started", { startTime: now, endTime });
+              console.log(`Room ${roomCode} has started! Fetching historical charts...`);
+              
+              // Fetch the 60-minute historical sliding window for all coins
+              const historicalData = await getHistoricalCharts(["BTC", "ETH", "SOL", "DOGE"]);
+
+              io.to(roomCode).emit("game_started", { startTime: now, endTime, historicalData });
             }
           }
         }

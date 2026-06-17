@@ -142,6 +142,20 @@ export const executeTrade = async (req, res) => {
     // Broadcast updated player state/leaderboard update to room via socket
     if (io) {
       io.to(roomCode).emit("player_updated", { userId });
+      
+      const emoji = type === "BUY" ? "🚀" : "🩸";
+      const actionText = type === "BUY" ? "bought" : "dumped";
+      const message = `${emoji} ${user.username} just ${actionText} ${qty} ${ticker}!`;
+
+      io.to(roomCode).emit("activity_feed", {
+        type: "TRADE",
+        message,
+        username: user.username,
+        action: type,
+        qty,
+        ticker,
+        timestamp: Date.now(),
+      });
     }
 
     return res.json({

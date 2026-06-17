@@ -21,13 +21,14 @@ const io = new Server(server, {
   },
 });
 
-// Inject io into express app so controllers/routes have access
+// --- Middlewares --- //
+app.use(cors());
+app.use(express.json());
+
+// Pass socket.io instance to Express so controllers can use it
 app.set("io", io);
 
-app.use(express.json());
-app.use(cors());
-
-// --- REST API Routes --- //
+// --- Routes --- //
 app.use("/api/trade", tradeRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
@@ -35,6 +36,14 @@ app.use("/api/rooms", roomRoutes);
 // --- WebSocket Services --- //
 // Start watching Binance Streams & passing io for broadcasts
 connectBinance(io);
+
+// Start Leaderboard Service (broadcasts PnL every 2s)
+import { startLeaderboardService } from "./services/leaderboard.service.js";
+startLeaderboardService(io);
+
+// Start End-Game Timer Service (liquidates assets when time is up)
+import { startEndGameService } from "./services/endgame.service.js";
+startEndGameService(io);
 
 // --- Socket.io Handlers --- //
 setupSocketHandlers(io);

@@ -65,16 +65,17 @@ export const joinRoom = async (req, res) => {
       return res.status(404).json({ error: "Room not found" });
     }
 
-    if (room.status !== "WAITING") {
-      return res.status(400).json({ error: "Room has already started or is completed" });
-    }
-
     // Check if player is already in the room
     let roomPlayer = room.players.find((p) => p.user_id === user.id);
 
     if (roomPlayer) {
-      // Already joined
+      // Already joined - let them back in even if the room is ACTIVE
       return res.json({ success: true, roomPlayer, message: "Already joined" });
+    }
+
+    // If they are a NEW player, they can only join if it's WAITING
+    if (room.status !== "WAITING") {
+      return res.status(400).json({ error: "Room has already started or is completed" });
     }
 
     if (room.players.length >= room.max_players) {
