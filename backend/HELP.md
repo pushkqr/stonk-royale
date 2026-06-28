@@ -35,7 +35,7 @@ This directory contains the Spring Boot backend powering **Stonk Royale**, a rea
 
 ## Configuration & Setup
 
-To run this backend locally, you must provide your own configuration files (which are intentionally git-ignored).
+To run this backend locally, you must provide your own configuration files.
 
 ### 1. `application.properties`
 Create `src/main/resources/application.properties` with your database and environment settings:
@@ -51,7 +51,40 @@ spring.output.ansi.enabled=ALWAYS
 ```
 
 ### 2. Firebase Service Account
-Create `src/main/resources/stonk-royale-firebase-adminsdk.json` and paste in your Firebase Service Account JSON key. This is required for `FirebaseConfig.java` to initialize the Admin SDK and verify JWT tokens sent by the frontend.
+Create `src/main/resources/serviceAccount.json` and paste in your Firebase Service Account JSON key. This is required for `FirebaseConfig.java` to initialize the Admin SDK and verify JWT tokens sent by the frontend.
+
+---
+
+## API Reference & Endpoints
+
+All HTTP endpoints are prefixed with the context path `/api`. Every request requires a valid Firebase JWT token in the `Authorization: Bearer <token>` header.
+
+### REST Endpoints
+| Method | Endpoint | Description | Payload |
+|--------|----------|-------------|---------|
+| `POST` | `/api/users/auth` | Authenticates or registers a user. | `User` object |
+| `POST` | `/api/room/create` | Creates a new game lobby. | `Room` settings |
+| `POST` | `/api/room/join/{roomCode}`| Joins an existing lobby. | None |
+| `GET`  | `/api/room/{roomCode}` | Retrieves current room state & players.| None |
+| `POST` | `/api/trade/` | Executes a BUY/SELL order. | `TradeRequest` |
+| `GET`  | `/api/trade/history/{roomCode}`| Retrieves user's trade history. | None |
+
+### WebSocket Endpoints (STOMP)
+- **Connection URL:** `ws://localhost:8080/api/ws`
+- **Application Destination Prefix:** `/app`
+- **Broker Topic Prefix:** `/topic`
+
+#### Client-to-Server (Send to `/app`)
+- `/ping` - Keepalive ping.
+- `/chat/{roomCode}` - Broadcasts a chat message. Payload: `ChatMessage`.
+- `/ready/{roomCode}` - Toggles player's ready state.
+
+#### Server-to-Client (Subscribe to `/topic`)
+- `/topic/room/{roomCode}/chat` - Receives global chat messages.
+- `/topic/room/{roomCode}/readyStatus` - Receives updates when a player readies up.
+- `/topic/room/{roomCode}/start` - Receives the game start event.
+- `/topic/room/{roomCode}/trades` - Receives live transaction feed of players' trades.
+- `/topic/room/{roomCode}/gameOver` - Receives the final leaderboard and liquidation summary upon time expiration.
 
 ---
 
