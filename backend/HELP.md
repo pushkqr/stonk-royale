@@ -97,7 +97,6 @@ When interacting with the endpoints above, use the following JSON payload struct
 ### `User` (for `/api/users/auth`)
 ```json
 {
-  "oauthId": "string (required, unique Firebase UID)",
   "username": "string (required, player's display name)",
   "avatarUrl": "string (optional, URL to avatar image)"
 }
