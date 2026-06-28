@@ -57,7 +57,9 @@ Create `src/main/resources/serviceAccount.json` and paste in your Firebase Servi
 
 ## API Reference & Endpoints
 
-All HTTP endpoints are prefixed with the context path `/api`. Every request requires a valid Firebase JWT token in the `Authorization: Bearer <token>` header.
+> [!IMPORTANT]
+> **Authentication Required:** All HTTP endpoints are prefixed with the context path `/api` and require a valid Firebase ID token in the header:
+> `Authorization: Bearer <token>`
 
 ### REST Endpoints
 | Method | Endpoint | Description | Payload |
@@ -85,6 +87,48 @@ All HTTP endpoints are prefixed with the context path `/api`. Every request requ
 - `/topic/room/{roomCode}/start` - Receives the game start event.
 - `/topic/room/{roomCode}/trades` - Receives live transaction feed of players' trades.
 - `/topic/room/{roomCode}/gameOver` - Receives the final leaderboard and liquidation summary upon time expiration.
+
+---
+
+## Data Payloads (JSON)
+
+When interacting with the endpoints above, use the following JSON payload structures:
+
+### `User` (for `/api/users/auth`)
+```json
+{
+  "oauthId": "string (required, unique Firebase UID)",
+  "username": "string (required, player's display name)",
+  "avatarUrl": "string (optional, URL to avatar image)"
+}
+```
+
+### `Room` (for `/api/room/create`)
+```json
+{
+  "startingBalance": "number (e.g., 100000.0)",
+  "durationMinutes": "number (integer, e.g., 10)",
+  "maxPlayers": "number (integer, e.g., 5)"
+}
+```
+
+### `TradeRequest` (for `/api/trade/`)
+```json
+{
+  "roomCode": "string (required)",
+  "ticker": "string (required, e.g., 'BTC')",
+  "quantity": "number (required, must be >= 0.0001)",
+  "type": "string (required, 'BUY' or 'SELL')"
+}
+```
+
+### `ChatMessage` (for `/app/chat/{roomCode}`)
+```json
+{
+  "username": "string (required)",
+  "text": "string (required, the message content)"
+}
+```
 
 ---
 

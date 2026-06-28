@@ -30,7 +30,9 @@ public class TradeService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public TradeService(RoomPlayerRepository roomPlayerRepository, GameStateService gameStateService, UserRepository userRepository, TransactionRepository transactionRepository, HoldingRepository holdingRepository, SimpMessagingTemplate messagingTemplate) {
+    public TradeService(RoomPlayerRepository roomPlayerRepository, GameStateService gameStateService,
+            UserRepository userRepository, TransactionRepository transactionRepository,
+            HoldingRepository holdingRepository, SimpMessagingTemplate messagingTemplate) {
         this.roomPlayerRepository = roomPlayerRepository;
         this.gameStateService = gameStateService;
         this.userRepository = userRepository;
@@ -57,8 +59,8 @@ public class TradeService {
             throw new EntityNotFoundException("User Not Found");
         }
 
-        // Use the PESSIMISTIC_WRITE locked query to prevent race conditions when checking and deducting cash!
-        Optional<RoomPlayer> roomPlayerOptional = roomPlayerRepository.findByUserOauthIdAndRoomRoomCodeAndRoomStatusForUpdate(uid, request.roomCode, "ACTIVE");
+        Optional<RoomPlayer> roomPlayerOptional = roomPlayerRepository
+                .findByUserOauthIdAndRoomRoomCodeAndRoomStatusForUpdate(uid, request.roomCode, "ACTIVE");
         if (roomPlayerOptional.isEmpty()) {
             throw new EntityNotFoundException("Player not found in room or room not active");
         }
@@ -72,7 +74,8 @@ public class TradeService {
             }
 
             roomPlayer.setAvailableCash(roomPlayer.getAvailableCash() - totalValue);
-            Optional<Holding> holdingOptional = holdingRepository.findByRoomPlayerIdAndTicker(roomPlayer.getId(), request.ticker);
+            Optional<Holding> holdingOptional = holdingRepository.findByRoomPlayerIdAndTicker(roomPlayer.getId(),
+                    request.ticker);
 
             if (holdingOptional.isPresent()) {
                 Holding existingHolding = holdingOptional.get();
@@ -92,7 +95,8 @@ public class TradeService {
             }
 
         } else if (request.type.equals("SELL")) {
-            Optional<Holding> holdingOptional = holdingRepository.findByRoomPlayerIdAndTicker(roomPlayer.getId(), request.ticker);
+            Optional<Holding> holdingOptional = holdingRepository.findByRoomPlayerIdAndTicker(roomPlayer.getId(),
+                    request.ticker);
 
             if (holdingOptional.isEmpty() || holdingOptional.get().getQuantity() < qty) {
                 throw new GameStateException("Insufficient holding quantity");
