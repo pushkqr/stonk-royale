@@ -28,7 +28,9 @@ public class RoomService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public RoomService(RoomRepository roomRepository, UserRepository userRepository, RoomPlayerRepository roomPlayerRepository, MarketService marketService, SimpMessagingTemplate messagingTemplate) {
+    public RoomService(RoomRepository roomRepository, UserRepository userRepository,
+            RoomPlayerRepository roomPlayerRepository, MarketService marketService,
+            SimpMessagingTemplate messagingTemplate) {
         this.roomRepository = roomRepository;
         this.userRepository = userRepository;
         this.roomPlayerRepository = roomPlayerRepository;
@@ -74,7 +76,7 @@ public class RoomService {
         Boolean isAlreadyJoined = roomRepository.existsByRoomCodeAndUsersUserOauthId(roomCode.toUpperCase(), uid);
 
         if (isAlreadyJoined) {
-            return room; // Controller will wrap this
+            return room;
         }
 
         if (!room.getStatus().equals("WAITING")) {
@@ -103,16 +105,16 @@ public class RoomService {
     }
 
     @Transactional
-    public void readyUpPlayer(String uid, String roomCode){
+    public void readyUpPlayer(String uid, String roomCode) {
         Optional<Room> lockedRoomOpt = roomRepository.findByRoomCodeForUpdate(roomCode);
-        
+
         if (lockedRoomOpt.isEmpty() || !lockedRoomOpt.get().getStatus().equals("WAITING")) {
             return;
         }
 
         Optional<RoomPlayer> roomPlayerOptional = roomPlayerRepository.findByUserOauthIdAndRoomRoomCode(uid, roomCode);
 
-        if(roomPlayerOptional.isEmpty()){
+        if (roomPlayerOptional.isEmpty()) {
             throw new EntityNotFoundException("No active player found.");
         }
 
@@ -121,14 +123,14 @@ public class RoomService {
 
         Optional<List<RoomPlayer>> allReadyOptional = roomPlayerRepository.findAllByRoomRoomCode(roomCode);
 
-        if(allReadyOptional.isEmpty()){
+        if (allReadyOptional.isEmpty()) {
             throw new GameStateException("Room does not exist.");
         }
 
         List<RoomPlayer> allReady = allReadyOptional.get();
 
-        for(RoomPlayer rp: allReady){
-            if(!rp.getIsReady())
+        for (RoomPlayer rp : allReady) {
+            if (!rp.getIsReady())
                 return;
         }
 
@@ -139,12 +141,12 @@ public class RoomService {
         roomRepository.save(room);
 
         HistoricalData historicalData = marketService.getHistoricalCharts();
-        
+
         java.util.Map<String, Object> startPayload = new java.util.HashMap<>();
         startPayload.put("startTime", room.getStartTime());
         startPayload.put("endTime", room.getEndTime());
         startPayload.put("historicalData", historicalData);
-        
+
         messagingTemplate.convertAndSend("/topic/room/" + roomCode + "/start", (Object) startPayload);
     }
 
