@@ -1,9 +1,20 @@
 package com.pushkqr.springBackend.dto;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class TradeRequest {
+    @NotBlank(message = "Room code is required")
     public String roomCode;
+
+    @NotBlank(message = "Ticker is required")
     public String ticker;
+
+    @DecimalMin(value = "0.0001", message = "Quantity must be greater than 0")
     public double quantity;
+
+    @NotBlank(message = "Trade type is required")
     public String type;
 
     public TradeRequest(String roomCode, String type, double quantity, String ticker) {

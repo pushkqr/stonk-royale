@@ -1,11 +1,15 @@
 package com.pushkqr.springBackend.services;
 
 import com.pushkqr.springBackend.state.GameStateService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.client.WebSocketConnectionManager;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,6 +19,7 @@ import javax.annotation.PostConstruct;
 
 @Service
 public class BinanceService extends TextWebSocketHandler {
+    private static final Logger logger = LoggerFactory.getLogger(BinanceService.class);
     private final GameStateService gameStateService;
     private final ObjectMapper objectMapper;
     private final SimpMessagingTemplate messagingTemplate;
@@ -29,12 +34,13 @@ public class BinanceService extends TextWebSocketHandler {
 
     @PostConstruct
     public void connectToBinance(){
-        StandardWebSocketClient socketClient = new StandardWebSocketClient();
-        try{
-            socketClient.execute(this, BINANCE_WS_URL);
-            System.out.println("Connceting to Binance WS...");
-        }catch (Exception e){
-            System.err.println("Failed to connect to Binance WS: " + e.getMessage());
+        try {
+            StandardWebSocketClient client = new StandardWebSocketClient();
+            WebSocketConnectionManager manager = new WebSocketConnectionManager(client, this, BINANCE_WS_URL);
+            logger.info("Connecting to Binance WS...");
+            manager.start();
+        } catch (Exception e){
+            logger.error("Failed to connect to Binance WS: {}", e.getMessage());
         }
     }
 
@@ -54,13 +60,13 @@ public class BinanceService extends TextWebSocketHandler {
 
             }
         }catch (Exception e){
-            System.err.println("Error parsing Binance message: " + e.getMessage());
+            logger.error("Error parsing Binance message: {}", e.getMessage());
         }
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) throws Exception {
-        System.out.println("Binance WS disconnected. Reconnecting in 5s...");
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        logger.warn("Binance WS disconnected. Reconnecting in 5s...");
         Thread.sleep(5000);
         connectToBinance();
     }

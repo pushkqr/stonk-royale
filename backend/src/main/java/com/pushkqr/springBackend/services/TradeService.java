@@ -57,7 +57,8 @@ public class TradeService {
             throw new EntityNotFoundException("User Not Found");
         }
 
-        Optional<RoomPlayer> roomPlayerOptional = roomPlayerRepository.findByUserOauthIdAndRoomRoomCodeAndRoomStatus(uid, request.roomCode, "ACTIVE");
+        // Use the PESSIMISTIC_WRITE locked query to prevent race conditions when checking and deducting cash!
+        Optional<RoomPlayer> roomPlayerOptional = roomPlayerRepository.findByUserOauthIdAndRoomRoomCodeAndRoomStatusForUpdate(uid, request.roomCode, "ACTIVE");
         if (roomPlayerOptional.isEmpty()) {
             throw new EntityNotFoundException("Player not found in room or room not active");
         }

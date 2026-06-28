@@ -7,9 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class MarketService {
+
+    private static final Logger logger = LoggerFactory.getLogger(MarketService.class);
 
     private final RestClient restClient;
 
@@ -31,7 +35,7 @@ public class MarketService {
             }
             return data;
         }catch (Exception e){
-            System.out.println("Error fetching historical charts: " + e.getMessage());
+            logger.error("Error fetching historical charts: {}", e.getMessage());
             for(String ticker: gameStateService.getTickers()){
                 if(!data.historicalTickerData.containsKey(ticker)){
                     data.historicalTickerData.put(ticker, new BinanceKline[]{});

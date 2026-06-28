@@ -1,5 +1,6 @@
-package com.pushkqr.springBackend.socket;
+package com.pushkqr.springBackend.config;
 
+import com.pushkqr.springBackend.socket.WebSocketAuthInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;

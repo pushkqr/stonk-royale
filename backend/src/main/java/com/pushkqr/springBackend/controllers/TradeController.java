@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class TradeController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<Transaction> handleTradeExecution(@AuthenticationPrincipal String uid, @RequestBody TradeRequest request){
+    public ResponseEntity<Transaction> handleTradeExecution(@AuthenticationPrincipal String uid, @Valid @RequestBody TradeRequest request){
         Transaction transaction = tradeService.executeTrade(uid, request);
         return ResponseEntity.status(HttpStatus.OK).body(transaction);
     }

@@ -1,5 +1,6 @@
-package com.pushkqr.springBackend.security;
+package com.pushkqr.springBackend.config;
 
+import com.pushkqr.springBackend.security.FirebaseTokenFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,7 +18,11 @@ public class SecurityConfig {
         httpSecurity.csrf(csrf -> csrf.disable());
         httpSecurity.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        httpSecurity.authorizeHttpRequests(auth -> auth.requestMatchers("/api/users/auth").authenticated().anyRequest().permitAll());
+        httpSecurity.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/ws/**").permitAll() // WebSocket handshake
+                .requestMatchers("/users/**", "/room/**", "/trade/**").authenticated() // REST endpoints
+                .anyRequest().permitAll()
+        );
 
         httpSecurity.addFilterBefore(new FirebaseTokenFilter(), UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();

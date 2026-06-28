@@ -49,6 +49,10 @@ public class RoomPlayer {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public OffsetDateTime getJoinedAt() {
         return joinedAt;
     }

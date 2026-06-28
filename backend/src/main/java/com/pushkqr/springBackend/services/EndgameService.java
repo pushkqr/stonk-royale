@@ -13,6 +13,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -20,6 +22,7 @@ import java.util.*;
 @Service
 public class EndgameService {
 
+    private static final Logger logger = LoggerFactory.getLogger(EndgameService.class);
     private final RoomRepository roomRepository;
     private final RoomPlayerRepository roomPlayerRepository;
     private final HoldingRepository holdingRepository;
@@ -45,7 +48,7 @@ public class EndgameService {
             if (expiredRoomsOpt.isEmpty()) return;
 
             for (Room room : expiredRoomsOpt.get()) {
-                System.out.println("Room " + room.getRoomCode() + " has ended! Liquidating assets...");
+                logger.info("Room {} has ended! Liquidating assets...", room.getRoomCode());
 
                 List<LeaderboardEntry> finalLeaderboard = new ArrayList<>();
 
