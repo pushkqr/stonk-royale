@@ -18,18 +18,24 @@ export const AuthProvider = ({ children }) => {
         // Exchange Firebase token for our internal DB user
         try {
           const idToken = await fbUser.getIdToken();
-          const response = await fetch("http://localhost:8000/api/users/auth", {
+          const response = await fetch("http://localhost:8080/api/users/auth", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}` 
+            },
             body: JSON.stringify({
-              idToken,
+              oauthId: fbUser.uid,
               username: fbUser.displayName,
-              avatar_url: fbUser.photoURL,
+              avatarUrl: fbUser.photoURL,
             }),
           });
-          const data = await response.json();
-          if (data.success) {
-            setUser(data.user); // Contains the internal DB UUID
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data); // The backend returns the User object directly
+          } else {
+            console.error("Auth failed with status:", response.status);
+            setUser(null);
           }
         } catch (error) {
           console.error("Failed to authenticate with backend:", error);

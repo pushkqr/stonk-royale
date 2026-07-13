@@ -6,61 +6,55 @@ import { CheckCircle, Users } from "lucide-react";
 
 export default function Lobby() {
   const { roomCode } = useParams();
-  const { user } = useAuth();
-  const socket = useSocket();
+  const { user, firebaseUser } = useAuth();
+  const stompClient = useSocket();
   const navigate = useNavigate();
   
   const [room, setRoom] = useState(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (!user || !socket) return;
+    if (!user || !firebaseUser || !stompClient) return;
 
     // Fetch initial room state
     const fetchRoom = async () => {
-      const res = await fetch(`http://localhost:8000/api/rooms/${roomCode}`);
-      const data = await res.json();
-      if (data.success) {
-        setRoom(data.room);
-        const me = data.room.players.find(p => p.user_id === user.id);
-        if (me) setIsReady(me.is_ready);
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`http://localhost:8080/api/room/${roomCode}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const roomData = await res.json();
+        setRoom(roomData);
+        const me = roomData.users.find(p => p.user.id === user.id);
+        if (me && me.isReady) setIsReady(true);
         
-        // If room is already active, redirect to game
-        if (data.room.status === "ACTIVE") {
-          navigate(`/game/${roomCode}`);
-        }
+        // Removed automatic redirect to prevent race condition with /start STOMP message
+        // The game will only start via the /start STOMP payload
       }
     };
     fetchRoom();
 
-    // Connect to socket room
-    socket.emit("join_room", { roomCode, userId: user.id });
-
-    // Socket Listeners
-    socket.on("user_joined", fetchRoom);
-    socket.on("player_ready_status", fetchRoom);
+    // STOMP Subscriptions
+    const readySub = stompClient.subscribe(`/topic/room/${roomCode}/readyStatus`, () => {
+      fetchRoom();
+    });
     
-    socket.on("game_started", (payload) => {
-      // payload will have { startTime, endTime, historicalData }
-      // Route to Game and pass the historical data to hydrate the charts instantly
+    const startSub = stompClient.subscribe(`/topic/room/${roomCode}/start`, (message) => {
+      const payload = JSON.parse(message.body);
       navigate(`/game/${roomCode}`, { state: { payload } });
     });
 
-    socket.on("room_error", (error) => {
-      alert(error.message);
-      navigate("/");
-    });
-
     return () => {
-      socket.off("user_joined");
-      socket.off("player_ready_status");
-      socket.off("game_started");
-      socket.off("room_error");
+      readySub.unsubscribe();
+      startSub.unsubscribe();
     };
-  }, [socket, user, roomCode, navigate]);
+  }, [stompClient, user, firebaseUser, roomCode, navigate]);
 
   const handleReady = () => {
-    socket.emit("player_ready", { roomCode, userId: user.id });
+    stompClient.publish({
+      destination: `/app/ready/${roomCode}`,
+      body: JSON.stringify({ uid: firebaseUser.uid })
+    });
     setIsReady(true);
   };
 
@@ -73,16 +67,16 @@ export default function Lobby() {
         <p className="text-secondary" style={{ marginTop: "0.5rem" }}>Waiting for players to ready up...</p>
         
         <div style={{ margin: "2rem 0", display: "grid", gap: "1rem" }}>
-          {room.players.map((p) => (
+          {room.users.map((p) => (
             <div key={p.id} className="flex-between" style={{ background: "rgba(0,0,0,0.4)", padding: "12px", borderRadius: "8px" }}>
               <div className="flex-center" style={{ gap: "10px" }}>
                 <Users size={18} className="text-secondary" />
-                <span style={{ fontWeight: p.user_id === user?.id ? "bold" : "normal" }}>
-                  {p.user.username} {p.user_id === user?.id && "(You)"}
+                <span style={{ fontWeight: p.user.id === user?.id ? "bold" : "normal" }}>
+                  {p.user.username} {p.user.id === user?.id && "(You)"}
                 </span>
               </div>
               <div>
-                {p.is_ready ? (
+                { (p.isReady || (p.user.id === user?.id && isReady)) ? (
                   <span className="text-green flex-center" style={{ gap: "5px" }}><CheckCircle size={16} /> Ready</span>
                 ) : (
                   <span className="text-secondary">Waiting...</span>

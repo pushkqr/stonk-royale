@@ -11,8 +11,8 @@ export default function Game() {
   const { roomCode } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const socket = useSocket();
+  const { user, firebaseUser } = useAuth();
+  const stompClient = useSocket();
 
   const [leaderboard, setLeaderboard] = useState([]);
   const [chatFeed, setChatFeed] = useState([]);
@@ -20,6 +20,7 @@ export default function Game() {
 
   const [activeCoin, setActiveCoin] = useState("BTC");
   const [prices, setPrices] = useState({ BTC: 0, ETH: 0, SOL: 0, DOGE: 0 });
+  const [liveHistData, setLiveHistData] = useState(null);
   const [myPortfolio, setMyPortfolio] = useState({
     availableCash: 0,
     netWorth: 0,
@@ -35,49 +36,41 @@ export default function Game() {
 
   // 1. WebSocket Listeners & Game State
   useEffect(() => {
-    if (!socket || !user) return;
+    if (!stompClient || !user) return;
 
-    // Join room logic (in case of refresh)
-    socket.emit("join_room", { roomCode, userId: user.id });
-
-    // If we received historicalData from Lobby transition, we'll initialize charts later
-
-    socket.on("leaderboard_update", (data) => {
+    const lbSub = stompClient.subscribe(`/topic/room/${roomCode}/leaderboard`, (msg) => {
+      const data = JSON.parse(msg.body);
       setLeaderboard(data);
-      const me = data.find((p) => p.userId === user.id);
+      const me = data.find((p) => p.user.id === user.id);
       if (me) setMyPortfolio(me);
     });
 
-    socket.on("chat_message", (msg) => {
-      setChatFeed((prev) => [...prev, { ...msg, type: "CHAT" }]);
+    const chatSub = stompClient.subscribe(`/topic/room/${roomCode}/chat`, (msg) => {
+      setChatFeed((prev) => [...prev, { ...JSON.parse(msg.body), type: "CHAT" }]);
     });
 
-    socket.on("activity_feed", (feed) => {
-      setChatFeed((prev) => [...prev, { ...feed, type: "TRADE" }]);
+    const tradeSub = stompClient.subscribe(`/topic/room/${roomCode}/trades`, (msg) => {
+      setChatFeed((prev) => [...prev, { ...JSON.parse(msg.body), type: "TRADE" }]);
     });
 
-    socket.on("game_over", (payload) => {
+    const gameOverSub = stompClient.subscribe(`/topic/room/${roomCode}/gameOver`, (msg) => {
+      const payload = JSON.parse(msg.body);
       navigate(`/results/${roomCode}`, { state: { payload } });
     });
 
-    socket.on("room_error", (error) => {
-      alert(error.message);
-      navigate("/");
-    });
-
-    socket.on("game_started", (payload) => {
+    const startSub = stompClient.subscribe(`/topic/room/${roomCode}/start`, (msg) => {
+      const payload = JSON.parse(msg.body);
       if (payload.endTime) setEndTime(payload.endTime);
     });
 
     return () => {
-      socket.off("leaderboard_update");
-      socket.off("chat_message");
-      socket.off("activity_feed");
-      socket.off("game_over");
-      socket.off("room_error");
-      socket.off("game_started");
+      lbSub.unsubscribe();
+      chatSub.unsubscribe();
+      tradeSub.unsubscribe();
+      gameOverSub.unsubscribe();
+      startSub.unsubscribe();
     };
-  }, [socket, user, roomCode, navigate]);
+  }, [stompClient, user, roomCode, navigate]);
 
   // Timer Countdown Effect
   useEffect(() => {
@@ -100,44 +93,84 @@ export default function Game() {
 
   // Fetch Trade History on Load
   useEffect(() => {
-    if (!user || !roomCode) return;
+    if (!user || !firebaseUser || !roomCode) return;
     const fetchHistory = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:8000/api/trade/history/${roomCode}/${user.id}`,
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch(`http://localhost:8080/api/room/${roomCode}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const roomData = await res.json();
+          if (!endTime && roomData.endTime) {
+            setEndTime(roomData.endTime);
+          }
+        }
+        
+        // Fetch historical data directly over HTTP to bypass WebSocket/Jackson issues!
+        const histRes = await fetch(`http://localhost:8080/api/room/historical/${roomCode}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (histRes.ok) {
+          const histData = await histRes.json();
+          setLiveHistData(histData);
+        }
+
+        const tradeRes = await fetch(
+          `http://localhost:8080/api/trade/history/${roomCode}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          }
         );
-        const data = await res.json();
-        if (data.success) setMyTrades(data.transactions);
+        const data = await tradeRes.json();
+        // Fallback for API response variations: if it's an array directly or {success, transactions}
+        if (Array.isArray(data)) setMyTrades(data);
+        else if (data.transactions) setMyTrades(data.transactions);
       } catch (err) {
         console.error("Failed to fetch trade history", err);
       }
     };
     fetchHistory();
-  }, [user, roomCode]);
+  }, [user, firebaseUser, roomCode]);
 
   // 2. Live Price Updates (Updating Ticker Only)
   useEffect(() => {
-    if (!socket) return;
+    if (!stompClient) return;
 
-    const handlePriceUpdate = (payload) => {
-      // payload is { symbol: "BTC", price: 60000 }
-      setPrices((prev) => ({ ...prev, [payload.symbol]: payload.price }));
-    };
+    const priceSub = stompClient.subscribe("/topic/prices", (msg) => {
+      const allPrices = JSON.parse(msg.body);
+      setPrices(allPrices);
+      
+      // Accumulate live prices so switching coins doesn't leave gaps
+      setLiveHistData((prevHist) => {
+        if (!prevHist) return prevHist;
+        const time = Date.now();
+        const newHist = { ...prevHist };
+        Object.keys(allPrices).forEach(coin => {
+          if (newHist[coin]) {
+            newHist[coin] = [...newHist[coin], { time, price: allPrices[coin] }];
+          }
+        });
+        return newHist;
+      });
+      
+    });
 
-    socket.on("price_update", handlePriceUpdate);
-    return () => socket.off("price_update", handlePriceUpdate);
-  }, [socket]);
+    return () => priceSub.unsubscribe();
+  }, [stompClient]);
 
   // 4. Actions
   const handleTrade = async (type, quantity) => {
     if (!quantity || quantity <= 0) return;
 
     try {
-      const res = await fetch("http://localhost:8000/api/trade", {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch("http://localhost:8080/api/trade/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
         body: JSON.stringify({
-          userId: user.id,
           roomCode,
           ticker: activeCoin,
           type,
@@ -145,11 +178,11 @@ export default function Game() {
         }),
       });
       const data = await res.json();
-      if (!data.success) {
-        alert(data.error);
+      if (!res.ok) {
+        alert(data.message || data.error || "Trade failed");
       } else {
         console.log(`Trade successful: ${type} ${quantity} ${activeCoin}`);
-        if (data.trade) setMyTrades((prev) => [...prev, data.trade]);
+        setMyTrades((prev) => [...prev, data]);
 
         if (type === "BUY") setBuyQuantity("");
         if (type === "SELL") setSellQuantity("");
@@ -162,10 +195,12 @@ export default function Game() {
   const sendChat = (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-    socket.emit("chat_message", {
-      roomCode,
-      username: user.username,
-      text: chatInput,
+    stompClient.publish({
+      destination: `/app/chat/${roomCode}`,
+      body: JSON.stringify({
+        username: user.username,
+        text: chatInput,
+      })
     });
     setChatInput("");
   };
@@ -185,6 +220,7 @@ export default function Game() {
 
       {/* CENTER PANE: TRADING DESK */}
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        
         {/* Top Info Bar */}
         <div className="glass-panel flex-between">
           <div className="flex-center" style={{ gap: "1rem" }}>
@@ -235,7 +271,7 @@ export default function Game() {
             activeCoin={activeCoin}
             livePrice={prices[activeCoin]}
             myTrades={myTrades}
-            historicalData={location.state?.payload?.historicalData}
+            historicalData={liveHistData}
           />
 
           {/* Action Buttons: Dual Pane Trading Desk */}

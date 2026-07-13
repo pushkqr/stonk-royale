@@ -32,7 +32,7 @@ export default function Results() {
           TOURNAMENT OVER
         </h1>
         <h2 className="text-green mono" style={{ fontSize: "2rem", marginTop: "1rem" }}>
-          WINNER: {winner?.username}
+          WINNER: {winner?.user?.username}
         </h2>
         <div className="text-secondary mono" style={{ fontSize: "1.2rem", marginTop: "0.5rem" }}>
           Final Net Worth: ${winner?.netWorth.toFixed(2)}
@@ -62,7 +62,7 @@ export default function Results() {
                   #{idx + 1}
                 </span>
                 <span className="mono" style={{ fontSize: "1.2rem", fontWeight: idx === 0 ? "bold" : "normal" }}>
-                  {player.username}
+                  {player.user?.username}
                 </span>
               </div>
 

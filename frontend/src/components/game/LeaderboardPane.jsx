@@ -20,20 +20,20 @@ export default function LeaderboardPane({ leaderboard, user }) {
       >
         {leaderboard.map((p, idx) => (
           <div
-            key={p.userId}
+            key={p.user.id}
             style={{
               background: "rgba(0,0,0,0.4)",
               padding: "12px",
               borderRadius: "8px",
               borderLeft:
-                p.userId === user?.id
+                p.user.id === user?.id
                   ? "4px solid var(--accent-blue)"
                   : "none",
             }}
           >
             <div className="flex-between">
               <strong className="mono">
-                #{idx + 1} {p.username}
+                #{idx + 1} {p.user.username}
               </strong>
               <span className={p.pnl >= 0 ? "text-green" : "text-red"}>
                 {p.pnl >= 0 ? "+" : ""}${p.pnl.toFixed(2)}

@@ -40,9 +40,25 @@ export default function ChartWidget({ activeCoin, livePrice, myTrades, historica
     if (historicalData) {
       const hist = historicalData[activeCoin];
       if (hist) {
-        lineSeries.setData(
-          hist.map((d) => ({ time: d.time / 1000, value: d.price })),
-        );
+        try {
+          const uniqueHist = [];
+          const seenTimes = new Set();
+          
+          hist.forEach((d) => {
+            const t = Math.floor(d.time / 1000);
+            if (!seenTimes.has(t)) {
+              seenTimes.add(t);
+              uniqueHist.push({ time: t, value: d.price });
+            } else {
+              uniqueHist[uniqueHist.length - 1].value = d.price;
+            }
+          });
+
+          uniqueHist.sort((a, b) => a.time - b.time);
+          lineSeries.setData(uniqueHist);
+        } catch (e) {
+          console.error("Chart setData error", e);
+        }
       }
     }
 

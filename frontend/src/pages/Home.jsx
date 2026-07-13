@@ -4,29 +4,35 @@ import { useAuth } from "../contexts/AuthContext";
 import { LogIn, Play, PlusCircle, Settings } from "lucide-react";
 
 export default function Home() {
-  const { user, login } = useAuth();
+  const { user, login, firebaseUser } = useAuth();
   const navigate = useNavigate();
   const [joinCode, setJoinCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [roomSettings, setRoomSettings] = useState({
-    starting_balance: 100000,
-    max_players: 20,
-    duration_minutes: 60
+    startingBalance: 100000,
+    maxPlayers: 20,
+    durationMinutes: 60
   });
 
   const handleCreateRoom = async () => {
-    if (!user) return;
+    if (!user || !firebaseUser) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/rooms/create", {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch("http://localhost:8080/api/room/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify(roomSettings)
       });
       const data = await res.json();
-      if (data.success) {
-        handleJoinRoom(data.room.room_code);
+      if (res.ok) {
+        handleJoinRoom(data.roomCode);
+      } else {
+        alert(data.message || "Failed to create room");
       }
     } catch (error) {
       console.error(error);
@@ -35,19 +41,22 @@ export default function Home() {
   };
 
   const handleJoinRoom = async (code = joinCode) => {
-    if (!user || !code) return;
+    if (!user || !firebaseUser || !code) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/rooms/join", {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`http://localhost:8080/api/room/join/${code}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, roomCode: code })
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.ok) {
         navigate(`/lobby/${code}`);
       } else {
-        alert(data.error);
+        const data = await res.json();
+        alert(data.message || "Failed to join room");
       }
     } catch (error) {
       console.error(error);
@@ -112,16 +121,16 @@ export default function Home() {
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem", background: "rgba(0,0,0,0.3)", padding: "1rem", borderRadius: "8px", border: "1px solid var(--panel-border)" }}>
             <div>
               <label className="text-secondary mono" style={{ fontSize: "0.8rem", display: "block", marginBottom: "0.4rem" }}>STARTING BALANCE ($)</label>
-              <input type="number" min="100" className="input-field mono" value={roomSettings.starting_balance} onChange={e => setRoomSettings({...roomSettings, starting_balance: Math.max(100, parseInt(e.target.value) || 100)})} />
+              <input type="number" min="100" className="input-field mono" value={roomSettings.startingBalance} onChange={e => setRoomSettings({...roomSettings, startingBalance: Math.max(100, parseInt(e.target.value) || 100)})} />
             </div>
             <div className="flex-between" style={{ gap: "1rem" }}>
               <div style={{ flex: 1 }}>
                 <label className="text-secondary mono" style={{ fontSize: "0.8rem", display: "block", marginBottom: "0.4rem" }}>MAX PLAYERS</label>
-                <input type="number" min="2" max="100" className="input-field mono" value={roomSettings.max_players} onChange={e => setRoomSettings({...roomSettings, max_players: Math.max(2, parseInt(e.target.value) || 2)})} />
+                <input type="number" min="2" max="100" className="input-field mono" value={roomSettings.maxPlayers} onChange={e => setRoomSettings({...roomSettings, maxPlayers: Math.max(2, parseInt(e.target.value) || 2)})} />
               </div>
               <div style={{ flex: 1 }}>
                 <label className="text-secondary mono" style={{ fontSize: "0.8rem", display: "block", marginBottom: "0.4rem" }}>DURATION (MIN)</label>
-                <input type="number" min="1" className="input-field mono" value={roomSettings.duration_minutes} onChange={e => setRoomSettings({...roomSettings, duration_minutes: Math.max(1, parseInt(e.target.value) || 1)})} />
+                <input type="number" min="1" className="input-field mono" value={roomSettings.durationMinutes} onChange={e => setRoomSettings({...roomSettings, durationMinutes: Math.max(1, parseInt(e.target.value) || 1)})} />
               </div>
             </div>
           </div>
