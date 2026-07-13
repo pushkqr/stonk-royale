@@ -6,10 +6,18 @@ import java.util.List;
 import java.util.Map;
 
 public class HistoricalData {
-    public Map<String, BinanceKline[]> historicalTickerData;
+    private Map<String, List<Map<String, Object>>> historicalTickerData;
 
     public HistoricalData() {
         historicalTickerData = new HashMap<>();
+    }
+
+    public Map<String, List<Map<String, Object>>> getHistoricalTickerData() {
+        return historicalTickerData;
+    }
+
+    public void setHistoricalTickerData(Map<String, List<Map<String, Object>>> historicalTickerData) {
+        this.historicalTickerData = historicalTickerData;
     }
 
 }

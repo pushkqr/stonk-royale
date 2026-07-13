@@ -16,7 +16,7 @@ public class RoomPlayer {
     @Column(name = "id")
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -61,6 +61,7 @@ public class RoomPlayer {
         this.joinedAt = joinedAt;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isReady")
     public boolean getIsReady() {
         return isReady;
     }

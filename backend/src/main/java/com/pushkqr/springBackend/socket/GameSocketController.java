@@ -42,8 +42,8 @@ public class GameSocketController {
     }
 
     @MessageMapping("/ready/{roomCode}")
-    public void handleReadyUp(@DestinationVariable String roomCode, Principal principal){
-        String uid = principal.getName();
+    public void handleReadyUp(@DestinationVariable String roomCode, @org.springframework.messaging.handler.annotation.Payload Map<String, String> payload){
+        String uid = payload.get("uid");
 
         roomService.readyUpPlayer(uid, roomCode);
 

@@ -62,7 +62,8 @@ public class LeaderboardService {
                             cryptoValue,
                             player.getAvailableCash(),
                             pnl,
-                            netWorth
+                            netWorth,
+                            holdings
                     );
                 }).sorted((a,b) -> Double.compare(b.netWorth, a.netWorth)).toList();
 

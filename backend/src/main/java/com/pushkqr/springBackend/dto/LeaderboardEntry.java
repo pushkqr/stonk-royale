@@ -12,16 +12,18 @@ public class LeaderboardEntry {
     public Double pnl;
     public Double availableCash;
     public Double cryptoValue;
+    public List<Holding> holdings;
 
     public LeaderboardEntry() {
     }
 
-    public LeaderboardEntry(User user, Double cryptoValue, Double availableCash, Double pnl, Double netWorth) {
+    public LeaderboardEntry(User user, Double cryptoValue, Double availableCash, Double pnl, Double netWorth, List<Holding> holdings) {
         this.user = user;
         this.cryptoValue = cryptoValue;
         this.availableCash = availableCash;
         this.pnl = pnl;
         this.netWorth = netWorth;
+        this.holdings = holdings;
     }
 
     public User getUser() {
@@ -62,5 +64,13 @@ public class LeaderboardEntry {
 
     public void setNetWorth(Double netWorth) {
         this.netWorth = netWorth;
+    }
+
+    public List<Holding> getHoldings() {
+        return holdings;
+    }
+
+    public void setHoldings(List<Holding> holdings) {
+        this.holdings = holdings;
     }
 }

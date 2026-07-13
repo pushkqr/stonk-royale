@@ -95,4 +95,13 @@ public class Transaction {
         this.roomPlayer = roomPlayer;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("message")
+    public String getMessage() {
+        if (roomPlayer != null && roomPlayer.getUser() != null) {
+            String action = "BUY".equalsIgnoreCase(type) ? "bought" : "sold";
+            return String.format("%s %s %.4f %s @ $%.2f", roomPlayer.getUser().getUsername(), action, quantity, ticker, price);
+        }
+        return "";
+    }
+
 }

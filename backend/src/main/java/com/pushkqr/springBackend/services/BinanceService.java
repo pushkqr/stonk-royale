@@ -15,20 +15,19 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class BinanceService extends TextWebSocketHandler {
     private static final Logger logger = LoggerFactory.getLogger(BinanceService.class);
     private final GameStateService gameStateService;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final SimpMessagingTemplate messagingTemplate;
     private static final String BINANCE_WS_URL = "wss://stream.binance.com:9443/ws/btcusdt@miniTicker/ethusdt@miniTicker/solusdt@miniTicker/dogeusdt@miniTicker";
 
     @Autowired
-    public BinanceService(GameStateService gameStateService, ObjectMapper objectMapper, SimpMessagingTemplate messagingTemplate) {
+    public BinanceService(GameStateService gameStateService, SimpMessagingTemplate messagingTemplate) {
         this.gameStateService = gameStateService;
-        this.objectMapper = objectMapper;
         this.messagingTemplate = messagingTemplate;
     }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonFormat(shape = JsonFormat.Shape.ARRAY)
+@com.fasterxml.jackson.annotation.JsonPropertyOrder({"openTime", "open", "high", "low", "close", "volume", "closeTime"})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BinanceKline {
     public long openTime;

@@ -14,7 +14,7 @@ public class Room {
     @Column(name = "id")
     private String id;
 
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<RoomPlayer> users = new HashSet<>();
 
     @Column(name = "room_code", unique = true)

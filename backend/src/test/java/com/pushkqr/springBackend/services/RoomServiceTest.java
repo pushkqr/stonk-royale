@@ -98,7 +98,7 @@ public class RoomServiceTest {
         player2.setIsReady(true);
         mockPlayer.setIsReady(true); // both ready
 
-        when(roomRepository.findByRoomCodeForUpdate("ROOM1")).thenReturn(Optional.of(mockRoom));
+        when(roomRepository.findByRoomCode("ROOM1")).thenReturn(Optional.of(mockRoom));
         when(roomPlayerRepository.findByUserOauthIdAndRoomRoomCode("test_uid", "ROOM1")).thenReturn(Optional.of(mockPlayer));
         when(roomPlayerRepository.findAllByRoomRoomCode("ROOM1")).thenReturn(Optional.of(List.of(mockPlayer, player2)));
 

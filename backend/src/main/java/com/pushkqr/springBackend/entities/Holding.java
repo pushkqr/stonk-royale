@@ -17,6 +17,7 @@ public class Holding {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_player_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private RoomPlayer roomPlayer;
 
     @Column(name = "ticker")

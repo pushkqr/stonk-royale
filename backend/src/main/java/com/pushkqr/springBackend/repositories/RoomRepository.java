@@ -14,9 +14,7 @@ import java.util.Optional;
 public interface RoomRepository extends JpaRepository<Room, String> {
     Optional<Room> findByRoomCode(String room_code);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT r FROM Room r WHERE r.roomCode = :roomCode")
-    Optional<Room> findByRoomCodeForUpdate(String roomCode);
+    // Removed findByRoomCodeForUpdate because pessimistic locking generates invalid FOR UPDATE OF syntax in MariaDB 5.5.5
 
     Boolean existsByRoomCode(String room_code);
     Boolean existsByRoomCodeAndUsersUserOauthId(String room_code, String uid);

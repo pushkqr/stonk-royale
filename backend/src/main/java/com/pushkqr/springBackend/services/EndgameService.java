@@ -75,7 +75,8 @@ public class EndgameService {
                             0.0,
                             finalNetWorth,
                             finalPnl,
-                            finalNetWorth
+                            finalNetWorth,
+                            holdings
                     ));
                 }
 

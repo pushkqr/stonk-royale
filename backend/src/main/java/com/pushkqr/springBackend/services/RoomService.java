@@ -91,7 +91,8 @@ public class RoomService {
         roomPlayer.setRoom(room);
         roomPlayer.setUser(userOptional.get());
         roomPlayer.setAvailableCash(room.getStartingBalance());
-        return roomPlayerRepository.save(roomPlayer);
+        RoomPlayer savedPlayer = roomPlayerRepository.save(roomPlayer);
+        return savedPlayer;
     }
 
     public Room getRoomInfo(String roomCode) {
@@ -106,7 +107,7 @@ public class RoomService {
 
     @Transactional
     public void readyUpPlayer(String uid, String roomCode) {
-        Optional<Room> lockedRoomOpt = roomRepository.findByRoomCodeForUpdate(roomCode);
+        Optional<Room> lockedRoomOpt = roomRepository.findByRoomCode(roomCode);
 
         if (lockedRoomOpt.isEmpty() || !lockedRoomOpt.get().getStatus().equals("WAITING")) {
             return;
@@ -120,6 +121,7 @@ public class RoomService {
 
         RoomPlayer roomPlayer = roomPlayerOptional.get();
         roomPlayer.setIsReady(true);
+        roomPlayerRepository.saveAndFlush(roomPlayer);
 
         Optional<List<RoomPlayer>> allReadyOptional = roomPlayerRepository.findAllByRoomRoomCode(roomCode);
 
@@ -140,7 +142,7 @@ public class RoomService {
         room.setEndTime(OffsetDateTime.now().plusMinutes(room.getDurationMinutes()));
         roomRepository.save(room);
 
-        HistoricalData historicalData = marketService.getHistoricalCharts();
+        java.util.Map<String, java.util.List<java.util.Map<String, Object>>> historicalData = marketService.getHistoricalCharts();
 
         java.util.Map<String, Object> startPayload = new java.util.HashMap<>();
         startPayload.put("startTime", room.getStartTime());

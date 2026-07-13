@@ -69,11 +69,12 @@ public class TradeService {
         double totalValue = currPrice * qty;
 
         if (request.type.equals("BUY")) {
-            if (roomPlayer.getAvailableCash() < totalValue) {
+            if (roomPlayer.getAvailableCash() < totalValue - 1e-6) {
                 throw new GameStateException("Insufficient funds");
             }
 
-            roomPlayer.setAvailableCash(roomPlayer.getAvailableCash() - totalValue);
+            double newCash = roomPlayer.getAvailableCash() - totalValue;
+            roomPlayer.setAvailableCash(newCash < 0 ? 0 : newCash);
             Optional<Holding> holdingOptional = holdingRepository.findByRoomPlayerIdAndTicker(roomPlayer.getId(),
                     request.ticker);
 
@@ -98,14 +99,14 @@ public class TradeService {
             Optional<Holding> holdingOptional = holdingRepository.findByRoomPlayerIdAndTicker(roomPlayer.getId(),
                     request.ticker);
 
-            if (holdingOptional.isEmpty() || holdingOptional.get().getQuantity() < qty) {
+            if (holdingOptional.isEmpty() || holdingOptional.get().getQuantity() < qty - 1e-6) {
                 throw new GameStateException("Insufficient holding quantity");
             }
 
             roomPlayer.setAvailableCash(roomPlayer.getAvailableCash() + totalValue);
             Holding holding = holdingOptional.get();
 
-            if (holding.getQuantity() == qty) {
+            if (holding.getQuantity() <= qty + 1e-6) {
                 holdingRepository.delete(holding);
             } else {
                 holding.setQuantity(holding.getQuantity() - qty);
@@ -119,6 +120,7 @@ public class TradeService {
         transaction.setPrice(currPrice);
         transaction.setQuantity(qty);
         transaction.setType(request.type);
+        transaction.setTicker(request.ticker);
         transaction.setRoomPlayer(roomPlayer);
         transaction.setTimestamp(OffsetDateTime.now());
         transactionRepository.save(transaction);
