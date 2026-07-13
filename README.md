@@ -1,56 +1,49 @@
-# Stonk Royale 📈🏆
+# Stonk Royale
 
-**Stonk Royale** is a high-octane, real-time multiplayer crypto paper-trading simulator. Players compete in timed lobbies to see who can generate the highest Profit and Loss (PnL) using live cryptocurrency market data.
+Stonk Royale is a real-time multiplayer cryptocurrency paper-trading simulator. Players compete in timed lobbies to generate the highest Profit and Loss (PnL) using live market data.
 
-Test your trading strategies against friends in a zero-risk environment, featuring live market charts, instant order execution, and a global chat feed. When the timer runs out, all assets are liquidated at the closing market price, and the player with the highest net worth is crowned the winner!
+## Project Structure
 
----
+This repository is divided into two primary modules:
 
-## 🏗️ Project Structure
+- **[`/frontend`](./frontend/)**: A React 18 (Vite) client application featuring a trading dashboard, TradingView charts, and real-time multiplayer synchronization.
+- **[`/backend`](./backend/)**: A Spring Boot 3.x server. It manages game logic, STOMP WebSocket broadcasts, transaction validation, and live data ingestion from the Binance API.
+- **[`/node-backend`](./node-backend/)**: A deprecated Node.js backend alternative. The Spring Boot backend is the supported server.
 
-This repository is split into independent frontend and backend modules:
+For detailed documentation on each stack, refer to their respective documentation files: [Frontend Docs](./frontend/HELP.md) | [Backend Docs](./backend/HELP.md).
 
-- **[`/frontend`](./frontend/)**: The React 18 (Vite) client. It features a modern, responsive trading dashboard with TradingView-powered live charts and real-time multiplayer synchronization.
-- **[`/backend`](./backend/)**: The Spring Boot 3.x server. It powers the game logic, manages secure STOMP WebSocket broadcasts, enforces strict transactional bounds on trades, and streams live data from the Binance API.
+## Features
 
-_For in-depth technical documentation on either stack, please refer to their respective `HELP.md` files: [Frontend Docs](./frontend/HELP.md) | [Backend Docs](./backend/HELP.md)._
+- **Real-Time Market Data**: Streams live WebSocket trades from Binance.
+- **Multiplayer Lobbies**: Supports custom rooms with configurable starting balances, maximum players, and game durations.
+- **Live Trading Engine**: Executes market orders with backend validation.
+- **Global Chat and Feed**: Broadcasts player messages and trade events via STOMP WebSockets.
+- **Dynamic Leaderboards**: Updates player rankings in real-time based on portfolio valuations.
+- **Automated Liquidations**: Liquidates holdings and calculates final scores when the room timer expires.
 
----
-
-## 🚀 Features
-
-- **Real-Time Market Data**: Ingests live WebSocket trades from Binance for true-to-life price action.
-- **Multiplayer Lobbies**: Create custom rooms with configurable starting balances, maximum players, and game durations.
-- **Live Trading Engine**: Execute BUY and SELL market orders instantly. Transactions are strictly validated on the backend to prevent race conditions.
-- **Global Chat & Feed**: A live STOMP-powered feed that broadcasts both player chats and trade events.
-- **Dynamic Leaderboards**: Watch the rankings shift in real-time as crypto prices fluctuate during the match.
-- **Automated Liquidations**: At the end of the match, an automated cron job liquidates all holdings and declares a winner.
-
----
-
-## 🛠️ Quick Start Guide
+## Quick Start
 
 ### Prerequisites
 
-- **Node.js** (v18+) for the frontend.
-- **Java 26** for the Spring Boot backend.
-- **MySQL** (or an equivalent SQL database) for the backend production environment.
-- **Firebase Account**: Required for authentication (JWT tokens).
+- Node.js (v18+)
+- Java 26
+- MySQL (or equivalent SQL database)
+- Firebase Account (for JWT authentication)
 
-### 1. Start the Backend (Spring Boot)
+### 1. Start the Backend
 
-Navigate to the backend directory, ensure your `application.properties` and Firebase `serviceAccount.json` are configured, and run the server:
+Navigate to the backend directory, configure `application.properties` and your Firebase `serviceAccount.json`, then run the server:
 
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
 
-_(The backend defaults to running on port 8080)_
+The backend defaults to port 8080.
 
-### 2. Start the Frontend (React + Vite)
+### 2. Start the Frontend
 
-In a new terminal window, navigate to the frontend directory, configure your `.env` with Firebase API keys, install dependencies, and spin up the development server:
+Navigate to the frontend directory, configure your `.env` with Firebase API keys, install dependencies, and start the development server:
 
 ```bash
 cd frontend
@@ -58,20 +51,14 @@ npm install
 npm run dev
 ```
 
-_(The frontend will start on port 3000 or the next available port)_
+The frontend defaults to port 3000.
 
----
+## Authentication
 
-## 🔐 Authentication & Security
+Authentication is handled via the Firebase Admin SDK.
+- The frontend manages sign-ins and passes a Bearer ID Token to the backend.
+- The Spring Boot backend verifies the token signatures for REST requests and WebSocket connections to ensure security.
 
-Stonk Royale relies on the **Firebase Admin SDK** for secure, stateless authentication.
+## License
 
-- The frontend handles user sign-ups and sign-ins via Google or Email.
-- The React app passes a Bearer ID Token to the Spring Boot backend on every REST request and STOMP connection.
-- The backend verifies the token signatures independently to ensure bad actors cannot spoof trades or chat messages.
-
----
-
-## 📄 License
-
-This project is open-source and available under standard MIT licensing terms. Enjoy paper trading!
+This project is available under standard MIT licensing terms.

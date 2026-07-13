@@ -1,53 +1,40 @@
 # Stonk Royale - Frontend Documentation
 
-This directory contains the React frontend for **Stonk Royale**, a real-time multiplayer crypto paper-trading game. It provides a sleek, modern UI for live trading, real-time leaderboards, and interactive charts.
+This directory contains the React frontend for Stonk Royale, a real-time multiplayer cryptocurrency paper-trading game.
 
 ## Tech Stack
 
 - **Framework:** React 18 (Vite)
-- **Language:** JavaScript (JSX)
 - **Routing:** React Router v6
-- **Styling:** Vanilla CSS (`index.css`) with modern UI patterns (glassmorphism, neon accents)
+- **Styling:** Vanilla CSS (`index.css`)
 - **Real-Time Data:** `@stomp/stompjs` (WebSockets)
 - **Authentication:** Firebase Auth
 - **Charting:** `lightweight-charts` (TradingView)
-- **Icons:** `lucide-react`
 
----
-
-## Core Architecture & Features
+## Core Architecture
 
 ### 1. Context Providers (`AuthContext` & `SocketContext`)
-
-- **`AuthContext`**: Manages Firebase Authentication state. Handles user sign-in and communicates with the backend to sync the user profile.
-- **`SocketContext`**: Maintains a stable STOMP WebSocket connection to the Spring Boot backend. It injects the Firebase JWT token into the connection headers and includes a reconnect mechanism that seamlessly unmounts and remounts React subscriptions to prevent background tabs from going "deaf".
+- **`AuthContext`**: Manages Firebase Authentication state and syncs user profiles with the backend.
+- **`SocketContext`**: Maintains a STOMP WebSocket connection to the Spring Boot backend. It injects the Firebase JWT token into connection headers and handles reconnection logic to prevent background tabs from disconnecting.
 
 ### 2. Live Trading Dashboard (`Game.jsx`)
+- **Trading Desk**: Interface for executing market orders.
+- **Chart Widget**: Uses `lightweight-charts` to display real-time price data via STOMP and historical data via REST.
+- **Global Feed**: Displays chat messages and trade execution events.
+- **Live Leaderboard**: Displays real-time player rankings based on portfolio valuations.
 
-- **Dual Pane Trading Desk**: Separate sections for executing precise BUY and SELL market orders.
-- **Chart Widget**: Integrates TradingView's `lightweight-charts` to plot real-time incoming STOMP price data against historical data fetched via REST.
-- **Global Feed**: A real-time chat pane that broadcasts both player chat messages and trade execution events across the lobby.
-- **Live Leaderboard**: Subscribes to the backend leaderboard stream to dynamically re-rank players based on live portfolio valuations.
+### 3. Lobby Management (`Home.jsx` & `Lobby.jsx`)
+- Supports room creation and joining via a 5-character alphanumeric room code.
+- Includes a "Ready Up" mechanism to synchronize game starts.
 
-### 3. Lobby & Room Management (`Home.jsx` & `Lobby.jsx`)
+### 4. Results (`Results.jsx`)
+- Renders the final tournament winner and PnL rankings based on the endgame STOMP event.
 
-- Players can create customized game rooms (duration, starting balance, max players) or join via a 5-letter alphanumeric room code.
-- Lobby features a real-time "Ready Up" mechanism. The game only starts once all players have successfully locked in.
-
-### 4. Endgame & Results (`Results.jsx`)
-
-- Listens for the backend's automated liquidation and `gameOver` STOMP event.
-- Safely parses the final nested user structures and renders the tournament winner and final PNL rankings.
-
----
-
-## Configuration & Setup
+## Setup and Configuration
 
 ### Firebase Configuration
 
-To run the frontend locally, you must provide your own Firebase project configuration credentials.
-
-Create a `.env` file in the root of the `frontend` directory with the following variables:
+Create a `.env` file in the root of the `frontend` directory with your Firebase project credentials:
 
 ```env
 VITE_FIREBASE_API_KEY=your_api_key
@@ -58,24 +45,18 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-These variables are consumed by `src/config/firebase.js` to initialize the Firebase SDK.
+### Running Locally
 
----
+Ensure Node.js is installed on your system.
 
-## Running Locally
-
-Make sure you have Node.js installed.
-
-1. Install dependencies:
-
+1. Install project dependencies:
    ```bash
    npm install
    ```
 
 2. Start the Vite development server:
-
    ```bash
    npm run dev
    ```
 
-3. The application will be accessible at `http://localhost:3000` (or whichever port Vite automatically assigns).
+3. Open the application in your browser at `http://localhost:3000`.
