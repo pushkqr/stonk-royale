@@ -1,12 +1,15 @@
 package com.pushkqr.springBackend.server;
 
+import com.pushkqr.springBackend.game.model.MatchConfig;
+
 public final class Requests {
 
     private Requests() {
     }
 
-    /** rounds and roundSeconds are optional; both exist mainly to make playtesting fast. */
-    public record Create(String nickname, Integer rounds, Integer roundSeconds) {
+    /** Every setting is optional; anything omitted falls back to {@link MatchConfig#standard()}. */
+    public record Create(String nickname, Integer rounds, Integer roundSeconds,
+            Integer maxPlayers, Double startingCash) {
     }
 
     public record Join(String nickname) {

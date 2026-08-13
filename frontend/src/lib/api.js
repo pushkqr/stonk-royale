@@ -19,8 +19,9 @@ async function post(path, body, token) {
   return data;
 }
 
-export const createMatch = (nickname, rounds, token) =>
-  post("/match", { nickname, rounds }, token);
+/** Any setting left out of `settings` keeps the server's default. */
+export const createMatch = (nickname, settings, token) =>
+  post("/match", { nickname, ...settings }, token);
 
 export const joinMatch = (code, nickname, token) =>
   post(`/match/${code}/join`, { nickname }, token);

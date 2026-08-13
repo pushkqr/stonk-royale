@@ -54,14 +54,26 @@ account to create, and no market data feed to depend on.
 
 ## How a match plays
 
-|               |                            |
-| ------------- | -------------------------- |
-| Rounds        | 5 (configurable)           |
-| Round length  | 90 seconds                 |
-| Intermission  | 15 seconds                 |
-| Starting cash | $10,000, reset every round |
-| Players       | 2–12                       |
-| Total         | ~9 minutes                 |
+|               | Default                    | Host can set |
+| ------------- | -------------------------- | ------------ |
+| Rounds        | 5                          | 1–8          |
+| Round length  | 90 seconds                 | 10–300s      |
+| Intermission  | 15 seconds                 | —            |
+| Starting cash | $10,000, reset every round | see below    |
+| Players       | 12 max                     | 2–12         |
+| Total         | ~9 minutes                 |              |
+
+The host picks these before starting, either with a preset — **Quick** (3×60s), **Standard**
+(5×90s) or **Long** (7×90s) — or from individual dials behind an _Advanced settings_
+toggle, which shows the estimated match length as you move them.
+
+Rounds cap at 8 because a match never repeats an asset. Starting cash is **cosmetic**:
+scoring is a percentage of it, so changing it alters the numbers on screen and nothing
+about the outcome. The UI says so plainly rather than letting hosts mistake it for a
+difficulty setting.
+
+Bounds are enforced server-side in `MatchConfig`, not just in the UI — the create endpoint
+is public, and without an upper bound a crafted request could ask for a 24-hour round.
 
 Each round cycles through three beats:
 

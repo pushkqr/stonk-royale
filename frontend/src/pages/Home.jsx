@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { createMatch, joinMatch } from "../lib/api";
 import { authAvailable, signIn } from "../lib/auth";
 import { saveSeat } from "../lib/session";
+import { DEFAULTS } from "../lib/matchSettings";
+import MatchSettings from "../components/MatchSettings";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -11,6 +13,8 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [token, setToken] = useState(null);
+  const [settings, setSettings] = useState(DEFAULTS);
+  const [showSettings, setShowSettings] = useState(false);
 
   const go = async (action) => {
     if (!nickname.trim()) {
@@ -30,7 +34,7 @@ export default function Home() {
     }
   };
 
-  const host = () => go(() => createMatch(nickname.trim(), null, token));
+  const host = () => go(() => createMatch(nickname.trim(), settings, token));
 
   const join = (event) => {
     event.preventDefault();
@@ -65,6 +69,13 @@ export default function Home() {
             autoFocus
           />
         </label>
+
+        <MatchSettings
+          settings={settings}
+          onChange={setSettings}
+          open={showSettings}
+          onToggle={() => setShowSettings((v) => !v)}
+        />
 
         <button className="btn btn-big btn-scream" onClick={host} disabled={busy}>
           Start a game

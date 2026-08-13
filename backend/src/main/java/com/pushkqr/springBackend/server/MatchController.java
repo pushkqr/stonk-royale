@@ -63,16 +63,21 @@ public class MatchController {
     }
 
     /**
-     * Shorter rounds make a full match testable in under a minute, which matters a lot
-     * more during playtesting than it does in a real game.
+     * Anything the host left alone keeps its default. Out-of-range values are rejected by
+     * {@link MatchConfig} itself and surface as a 400, so the UI's limits are a
+     * convenience rather than the actual guard.
      */
     private MatchConfig configFor(Requests.Create request) {
         MatchConfig standard = MatchConfig.standard();
         return new MatchConfig(
-                request.rounds() == null ? standard.rounds() : request.rounds(),
-                request.roundSeconds() == null ? standard.roundSeconds() : request.roundSeconds(),
+                orDefault(request.rounds(), standard.rounds()),
+                orDefault(request.roundSeconds(), standard.roundSeconds()),
                 standard.intermissionSeconds(),
-                standard.startingCash(),
-                standard.maxPlayers());
+                request.startingCash() == null ? standard.startingCash() : request.startingCash(),
+                orDefault(request.maxPlayers(), standard.maxPlayers()));
+    }
+
+    private static int orDefault(Integer value, int fallback) {
+        return value == null ? fallback : value;
     }
 }

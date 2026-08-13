@@ -1,0 +1,88 @@
+package com.pushkqr.springBackend.game.model;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * The create endpoint is public and unauthenticated, so these bounds are the only thing
+ * standing between a crafted request and a match the server has to carry for hours.
+ */
+class MatchConfigTest {
+
+    private MatchConfig with(int rounds, int roundSeconds, int intermission, double cash, int players) {
+        return new MatchConfig(rounds, roundSeconds, intermission, cash, players);
+    }
+
+    @Test
+    void standardIsTheDocumentedDefault() {
+        MatchConfig standard = MatchConfig.standard();
+
+        assertEquals(5, standard.rounds());
+        assertEquals(90, standard.roundSeconds());
+        assertEquals(15, standard.intermissionSeconds());
+        assertEquals(10_000, standard.startingCash());
+        assertEquals(12, standard.maxPlayers());
+    }
+
+    @Test
+    void estimatedLengthCountsIntermissions() {
+        // 5 rounds of 90s plus 5 intermissions of 15s.
+        assertEquals((90 + 15) * 5 * 1000L, MatchConfig.standard().estimatedMillis());
+    }
+
+    @Test
+    void roundsCannotExceedTheAssetCatalogue() {
+        // A match never repeats an asset, so it cannot outlast the catalogue.
+        assertDoesNotThrow(() -> with(AssetCatalog.size(), 90, 15, 10_000, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(AssetCatalog.size() + 1, 90, 15, 10_000, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(0, 90, 15, 10_000, 12));
+    }
+
+    @Test
+    void roundLengthIsBoundedAtBothEnds() {
+        assertDoesNotThrow(() -> with(5, MatchConfig.MIN_ROUND_SECONDS, 15, 10_000, 12));
+        assertDoesNotThrow(() -> with(5, MatchConfig.MAX_ROUND_SECONDS, 15, 10_000, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(5, MatchConfig.MIN_ROUND_SECONDS - 1, 15, 10_000, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(5, MatchConfig.MAX_ROUND_SECONDS + 1, 15, 10_000, 12));
+    }
+
+    @Test
+    void playerCountIsBoundedAtBothEnds() {
+        assertDoesNotThrow(() -> with(5, 90, 15, 10_000, MatchConfig.MIN_PLAYERS));
+        assertDoesNotThrow(() -> with(5, 90, 15, 10_000, MatchConfig.MAX_PLAYERS));
+        assertThrows(IllegalArgumentException.class, () -> with(5, 90, 15, 10_000, MatchConfig.MIN_PLAYERS - 1));
+        assertThrows(IllegalArgumentException.class, () -> with(5, 90, 15, 10_000, MatchConfig.MAX_PLAYERS + 1));
+    }
+
+    @Test
+    void startingCashIsBoundedAtBothEnds() {
+        assertDoesNotThrow(() -> with(5, 90, 15, MatchConfig.MIN_STARTING_CASH, 12));
+        assertDoesNotThrow(() -> with(5, 90, 15, MatchConfig.MAX_STARTING_CASH, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(5, 90, 15, 0, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(5, 90, 15, MatchConfig.MAX_STARTING_CASH + 1, 12));
+    }
+
+    @Test
+    void intermissionIsBoundedAtBothEnds() {
+        assertDoesNotThrow(() -> with(5, 90, MatchConfig.MIN_INTERMISSION_SECONDS, 10_000, 12));
+        assertDoesNotThrow(() -> with(5, 90, MatchConfig.MAX_INTERMISSION_SECONDS, 10_000, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(5, 90, 0, 10_000, 12));
+        assertThrows(IllegalArgumentException.class, () -> with(5, 90, MatchConfig.MAX_INTERMISSION_SECONDS + 1, 10_000, 12));
+    }
+
+    /**
+     * Starting cash is cosmetic: scoring is a percentage of it, so the same trades score
+     * identically whatever the host picks. Worth pinning so it stays that way.
+     */
+    @Test
+    void startingCashDoesNotAffectScoring() {
+        PlayerRound modest = new PlayerRound(1_000);
+        PlayerRound silly = new PlayerRound(1_000_000);
+
+        modest.open(Side.LONG, 0.5, 4, 100, 0);
+        silly.open(Side.LONG, 0.5, 4, 100, 0);
+
+        assertEquals(modest.scoreAt(110), silly.scoreAt(110), 1e-9);
+    }
+}
