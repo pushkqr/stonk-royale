@@ -15,18 +15,18 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Assembles a round from a match code and round number.
+ * Assembles a round from a match seed and round number.
  *
- * Everything derives from those two values, so the same match replays identically — which
- * makes "rematch on the same market" a fair comparison and makes bugs reproducible.
+ * Everything derives from those two values, so replaying a seed reproduces the market
+ * exactly. That is what makes "rematch on the same market" a fair comparison, and what
+ * makes any reported bug reproducible from its seed alone.
  */
 public final class RoundPlanner {
 
     private final MarketSimulator simulator = new MarketSimulator();
     private final InformationScripter scripter = new InformationScripter();
 
-    public RoundPlan plan(String matchCode, int roundIndex, Collection<String> playerIds, MatchConfig config) {
-        long matchSeed = matchCode.hashCode();
+    public RoundPlan plan(long matchSeed, int roundIndex, Collection<String> playerIds, MatchConfig config) {
         Random random = new Random(matchSeed * 1_000_003L + roundIndex);
 
         Asset asset = AssetCatalog.shuffled(matchSeed).get(roundIndex % AssetCatalog.size());

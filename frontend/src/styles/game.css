@@ -612,6 +612,61 @@
   font-size: 0.75rem;
 }
 
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.quick {
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--void);
+  color: var(--haze);
+  font-family: var(--data);
+  font-size: 0.66rem;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+.quick:hover:not(:disabled) {
+  color: var(--scream);
+  border-color: var(--scream);
+}
+
+.quick:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Read aloud to invite people, so it needs to be legible at a glance. */
+.room-code {
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  padding-left: 0.18em;
+}
+
+.mute {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.6rem;
+  z-index: 30;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--void-deep);
+  color: var(--haze);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.mute:hover {
+  color: var(--scream);
+  border-color: var(--scream);
+}
+
 .wire-form {
   display: flex;
   gap: 0.4rem;

@@ -31,6 +31,23 @@ public class MatchController {
         return seat(match, request.nickname(), authorization);
     }
 
+    /**
+     * A one-round solo match, started immediately.
+     *
+     * Without this, a first-time visitor with nobody else around cannot see the game at
+     * all — the lobby needs a second player — so every unaccompanied arrival bounces
+     * having learned nothing.
+     */
+    @PostMapping("/practice")
+    public Views.JoinResult practice(@RequestBody Requests.Join request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        Match match = matches.create(new MatchConfig(1, 60, 8, 10_000, MatchConfig.MAX_PLAYERS));
+        Views.JoinResult seat = seat(match, request.nickname(), authorization);
+        match.start(System.currentTimeMillis());
+        broadcaster.phase(match);
+        return seat;
+    }
+
     @PostMapping("/{code}/join")
     public Views.JoinResult join(@PathVariable String code, @RequestBody Requests.Join request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {

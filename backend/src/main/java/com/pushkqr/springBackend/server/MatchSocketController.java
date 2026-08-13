@@ -39,6 +39,23 @@ public class MatchSocketController {
     }
 
     /**
+     * Reopens a finished room for another match. Everyone keeps their seat and socket, so
+     * the group never gets scattered back to the home page between matches.
+     */
+    @MessageMapping("/match/{code}/rematch")
+    public void rematch(@DestinationVariable String code, @Payload Requests.Rematch request,
+            Principal principal) {
+        Match match = require(code, principal);
+        if (!match.player(session(principal).playerId()).isHost()) {
+            throw new IllegalStateException("Only the host can start a rematch");
+        }
+
+        match.rematch(request.sameMarket(), System.currentTimeMillis());
+        broadcaster.phase(match);
+        broadcaster.lobby(match);
+    }
+
+    /**
      * Re-sends current state on connect. Phase messages only fire on transitions, so
      * without this a player who reloads mid-round sees nothing until the next one.
      */

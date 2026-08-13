@@ -46,6 +46,12 @@ public final class MatchPlayer {
         round = null;
     }
 
+    /** Clears scores for a fresh match while keeping the seat, so nobody has to rejoin. */
+    void resetForRematch() {
+        roundScores.clear();
+        round = null;
+    }
+
     public List<Double> roundScores() {
         return List.copyOf(roundScores);
     }

@@ -2,16 +2,21 @@ import { useMatch } from "../state/MatchProvider";
 import { pct, toneOf } from "../lib/format";
 
 export default function Results() {
-  const { standings, session } = useMatch();
+  const { standings, session, rematch, lobby } = useMatch();
   const winner = standings[0];
   const iWon = winner?.playerId === session.playerId;
+  const solo = standings.length < 2;
 
   return (
     <main className="center-page">
       <header className="hero">
         <p className="eyebrow">That's the match</p>
         <h1 className="display hero-verdict">
-          {iWon ? "You took it." : `${winner?.nickname ?? "Nobody"} took it.`}
+          {solo
+            ? "That's practice done."
+            : iWon
+              ? "You took it."
+              : `${winner?.nickname ?? "Nobody"} took it.`}
         </h1>
       </header>
 
@@ -33,9 +38,34 @@ export default function Results() {
         ))}
       </ol>
 
-      <a className="btn btn-big btn-scream" href="/">
-        Play again
+      {/* The room stays open, so the group never has to regroup from the home page. */}
+      {session.host ? (
+        <div className="stack sheet" style={{ gap: "0.5rem" }}>
+          <button className="btn btn-big btn-scream" onClick={() => rematch(false)}>
+            {solo ? "Play with friends" : "Play again"}
+          </button>
+          {!solo && (
+            <button className="btn" onClick={() => rematch(true)}>
+              Rerun the same market
+            </button>
+          )}
+          <p className="footnote muted">
+            Everyone keeps their seat, and anyone new can join before you start.
+          </p>
+        </div>
+      ) : (
+        <p className="notice muted">Waiting for the host to start another one.</p>
+      )}
+
+      <a className="link-btn muted" href="/">
+        Leave
       </a>
+
+      {lobby?.code && (
+        <p className="footnote muted">
+          Room <b className="room-code mono scream">{lobby.code}</b> is still open.
+        </p>
+      )}
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import { getLobby, socketUrl } from "../lib/api";
+import { sound } from "../lib/sound";
 
 const MatchContext = createContext(null);
 
@@ -71,7 +72,11 @@ export function MatchProvider({ session, children }) {
           roundRef.current = next.roundIndex;
           setSeries([]);
           setTick(null);
+          sound.roundStart();
         }
+        if (next.phase === "FINISHED") sound.finish();
+        // A rematch reopens the room, so the next round counts as new again.
+        if (next.phase === "LOBBY") roundRef.current = null;
       });
 
       on(topic("price"), (next) => {
@@ -86,9 +91,11 @@ export function MatchProvider({ session, children }) {
       on(topic("feed"), (item) => {
         feedId.current += 1;
         setFeed((prev) => [...prev.slice(-FEED_LIMIT), { ...item, id: feedId.current }]);
+        if (item.kind === "LIQUIDATION") sound.liquidation();
       });
 
       on(topic("settled"), (next) => {
+        sound.settle();
         setSettled(next);
         const mine = next.results.find((r) => r.playerId === playerId);
         if (rumorRef.current) {
@@ -152,6 +159,7 @@ export function MatchProvider({ session, children }) {
       me: board.find((row) => row.playerId === playerId) ?? null,
       serverNow,
       start: () => publish("start"),
+      rematch: (sameMarket) => publish("rematch", { sameMarket }),
       open: (side, sizeFraction, leverage) => publish("open", { side, sizeFraction, leverage }),
       close: () => publish("close"),
       say: (text) => publish("chat", { text }),

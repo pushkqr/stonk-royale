@@ -23,7 +23,12 @@ import java.util.Map;
  */
 public final class Match {
 
-    public static final int MIN_PLAYERS = 2;
+    /**
+     * One, not two. A player alone in their own room is harmless, and practice mode needs
+     * it. The lobby UI still withholds Start until a second player arrives, which is where
+     * "don't start before your friends turn up" actually belongs.
+     */
+    public static final int MIN_PLAYERS = 1;
 
     private final String code;
     private final MatchConfig config;
@@ -36,6 +41,9 @@ public final class Match {
     private long roundStartedAtMillis;
     private RoundPlan round;
     private int newsFired;
+
+    /** Bumped by a rematch that wants a fresh market; held to replay the same one. */
+    private int generation;
 
     public Match(String code, MatchConfig config) {
         this.code = code;
@@ -81,6 +89,32 @@ public final class Match {
         planRound(0);
         enterIntermission(now, events);
         return events;
+    }
+
+    /**
+     * Reopens the finished room for another match, keeping every seat and setting.
+     *
+     * Returning to LOBBY rather than straight into a round is deliberate: it is the only
+     * window in which someone new can join, so it doubles as the way a latecomer gets in.
+     *
+     * @param sameMarket replay the identical market, making the rematch a fair rerun
+     */
+    public List<GameEvent> rematch(boolean sameMarket, long now) {
+        if (phase != MatchPhase.FINISHED) {
+            throw new IllegalStateException("The match is still running");
+        }
+        if (!sameMarket) {
+            generation++;
+        }
+
+        players.values().forEach(MatchPlayer::resetForRematch);
+        phase = MatchPhase.LOBBY;
+        roundIndex = -1;
+        round = null;
+        newsFired = 0;
+        phaseEndsAtMillis = now;
+
+        return List.of(new GameEvent.PhaseChanged(MatchPhase.LOBBY, roundIndex, now));
     }
 
     // --- the loop ------------------------------------------------------------
@@ -163,7 +197,12 @@ public final class Match {
 
     private void planRound(int index) {
         roundIndex = index;
-        round = planner.plan(code, index, players.keySet(), config);
+        round = planner.plan(matchSeed(), index, players.keySet(), config);
+    }
+
+    /** Same code and generation means the same market, which is what a replay rematch wants. */
+    private long matchSeed() {
+        return (code + ":" + generation).hashCode();
     }
 
     private void enterIntermission(long now, List<GameEvent> events) {

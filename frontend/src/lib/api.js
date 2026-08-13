@@ -26,6 +26,9 @@ export const createMatch = (nickname, settings, token) =>
 export const joinMatch = (code, nickname, token) =>
   post(`/match/${code}/join`, { nickname }, token);
 
+/** A one-round solo match, already started by the time this resolves. */
+export const practiceMatch = (nickname, token) => post("/match/practice", { nickname }, token);
+
 export async function getLobby(code) {
   const res = await fetch(`${BASE}/match/${code}`);
   if (!res.ok) {

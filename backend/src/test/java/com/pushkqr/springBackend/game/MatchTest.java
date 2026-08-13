@@ -68,11 +68,11 @@ class MatchTest {
     }
 
     @Test
-    void matchNeedsTwoPlayersToStart() {
-        Match match = new Match("ABCDE", CONFIG);
-        match.join("p1", "alice");
-
-        assertThrows(IllegalStateException.class, () -> match.start(0));
+    void anEmptyRoomCannotStart() {
+        // A lone player is allowed, because practice mode needs it and a player alone in
+        // their own room harms nobody. Holding Start until a second player arrives is a
+        // lobby-UI concern, not an engine invariant.
+        assertThrows(IllegalStateException.class, () -> new Match("ABCDE", CONFIG).start(0));
     }
 
     @Test
@@ -277,6 +277,90 @@ class MatchTest {
         assertEquals(1, standings.get(0).rank());
         assertEquals("alice", standings.get(0).nickname());
         assertTrue(standings.get(0).totalScore() > standings.get(1).totalScore());
+    }
+
+    // --- rematch -------------------------------------------------------------
+
+    private Match finishedMatch(String code) {
+        Match match = lobbyOfTwo(code);
+        match.start(0);
+        step(match, 0, 33_000);
+        return match;
+    }
+
+    @Test
+    void rematchReopensTheRoomKeepingEveryone() {
+        Match match = finishedMatch("ABCDE");
+        assertEquals(MatchPhase.FINISHED, match.phase());
+
+        match.rematch(false, 40_000);
+
+        assertEquals(MatchPhase.LOBBY, match.phase());
+        assertEquals(2, match.players().size(), "nobody should have to rejoin");
+        assertTrue(match.player("p1").isHost(), "the host stays the host");
+        assertTrue(match.player("p1").roundScores().isEmpty(), "scores start clean");
+        assertEquals(0, match.player("p1").totalScore());
+    }
+
+    @Test
+    void rematchGoesBackToLobbySoLatecomersCanJoin() {
+        Match match = finishedMatch("ABCDE");
+        match.rematch(false, 40_000);
+
+        assertDoesNotThrow(() -> match.join("p3", "carol"));
+        assertEquals(3, match.players().size());
+    }
+
+    @Test
+    void rematchCanReplayTheSameMarket() {
+        Match match = finishedMatch("ABCDE");
+        var firstRegime = new ArrayList<Regime>();
+        // Re-derive round 0 of the original by replaying a fresh match on the same code.
+        Match reference = lobbyOfTwo("ABCDE");
+        reference.start(0);
+        firstRegime.add(reference.round().regime());
+
+        match.rematch(true, 40_000);
+        match.start(41_000);
+
+        assertEquals(firstRegime.get(0), match.round().regime());
+        assertEquals(reference.round().asset(), match.round().asset());
+        assertArrayEquals(reference.round().path().toArray(), match.round().path().toArray());
+    }
+
+    @Test
+    void rematchOnANewMarketChangesThePath() {
+        Match match = finishedMatch("ABCDE");
+        Match reference = lobbyOfTwo("ABCDE");
+        reference.start(0);
+
+        match.rematch(false, 40_000);
+        match.start(41_000);
+
+        assertFalse(
+                java.util.Arrays.equals(reference.round().path().toArray(), match.round().path().toArray()),
+                "a fresh market must not replay the previous one");
+    }
+
+    @Test
+    void rematchIsRejectedWhileTheMatchIsStillRunning() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        assertThrows(IllegalStateException.class, () -> match.rematch(false, 1_000));
+    }
+
+    // --- solo ----------------------------------------------------------------
+
+    @Test
+    void aSinglePlayerCanStartAPracticeMatch() {
+        Match match = new Match("SOLO1", new MatchConfig(1, 10, 1, 10_000, 12));
+        match.join("p1", "alice");
+
+        assertDoesNotThrow(() -> match.start(0));
+        step(match, 0, 12_000);
+        assertEquals(MatchPhase.FINISHED, match.phase());
+        assertEquals(1, match.player("p1").roundScores().size());
     }
 
     @Test

@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { useMatch } from "../state/MatchProvider";
+import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, price as fmtPrice, toneOf } from "../lib/format";
 import PriceChart from "./PriceChart";
@@ -19,6 +21,17 @@ export default function Trading() {
   const live = tick?.price ?? startPrice;
   const move = startPrice ? ((live - startPrice) / startPrice) * 100 : 0;
   const urgent = left > 0 && left <= 10_000;
+
+  // One tick per second over the closing ten, not one per render.
+  const lastTick = useRef(null);
+  useEffect(() => {
+    if (!urgent) return;
+    const second = Math.ceil(left / 1000);
+    if (lastTick.current !== second) {
+      lastTick.current = second;
+      sound.tick();
+    }
+  }, [left, urgent]);
 
   return (
     <div className="table">

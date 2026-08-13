@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createMatch, joinMatch } from "../lib/api";
+import { createMatch, joinMatch, practiceMatch } from "../lib/api";
 import { authAvailable, signIn } from "../lib/auth";
 import { saveSeat } from "../lib/session";
 import { DEFAULTS } from "../lib/matchSettings";
@@ -100,6 +100,16 @@ export default function Home() {
         </form>
 
         {error && <p className="notice notice-bad">{error}</p>}
+
+        {/* Without this, arriving with nobody else around is a dead end — the lobby needs
+            a second player, so an unaccompanied visitor never sees the game at all. */}
+        <button
+          className="link-btn muted"
+          onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
+          disabled={busy}
+        >
+          Or try one round on your own
+        </button>
 
         {authAvailable && (
           <button

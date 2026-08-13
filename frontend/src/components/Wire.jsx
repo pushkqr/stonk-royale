@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
+/** The four speech acts that matter: claim a tip, state a position, accuse, reassure. */
+const QUICK_LINES = [
+  "my tip says PUMP",
+  "my tip says DUMP",
+  "it's a rug",
+  "i'm long",
+  "i'm short",
+  "liar",
+];
+
 /**
  * News, chat and carnage share one stream on purpose. A headline and a player's lie
  * arrive looking equally credible, which is exactly the position the game wants you in.
@@ -43,6 +53,22 @@ export default function Wire({ feed, onSay, disabled }) {
         ))}
         <li ref={endRef} />
       </ul>
+
+      {/* A round leaves no time to read a chart, size a position and type a convincing
+          lie. One tap keeps the talking going while the market moves. */}
+      <div className="quick-row">
+        {QUICK_LINES.map((line) => (
+          <button
+            key={line}
+            type="button"
+            className="quick"
+            onClick={() => onSay(line)}
+            disabled={disabled}
+          >
+            {line}
+          </button>
+        ))}
+      </div>
 
       <form className="wire-form" onSubmit={submit}>
         <input

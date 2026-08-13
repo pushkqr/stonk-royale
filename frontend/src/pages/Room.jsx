@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { MatchProvider, useMatch } from "../state/MatchProvider";
 import { loadSeat, saveSeat } from "../lib/session";
 import JoinGate from "../components/JoinGate";
+import MuteToggle from "../components/MuteToggle";
 import Lobby from "../components/Lobby";
 import Intermission from "../components/Intermission";
 import Trading from "../components/Trading";
@@ -44,6 +45,8 @@ function Screen() {
           {error} <span className="muted">— dismiss</span>
         </button>
       )}
+
+      <MuteToggle />
 
       {current === "LOBBY" && <Lobby />}
       {current === "INTERMISSION" && <Intermission />}

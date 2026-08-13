@@ -20,4 +20,8 @@ public final class Requests {
 
     public record Chat(String text) {
     }
+
+    /** sameMarket replays the identical market, making the rematch a fair rerun. */
+    public record Rematch(boolean sameMarket) {
+    }
 }
