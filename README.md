@@ -6,7 +6,8 @@
 
 Stonk Royale is a **nine-minute multiplayer trading game built around deception rather than
 finance**. Five rounds, one fictional asset per round, and every player is privately dealt a
-rumour about it — roughly 40% of which are true, and nobody is told which kind they got.
+rumour about it — roughly 40% of which are true. You are never told which kind you got. The
+room is told how many true ones are out there.
 
 Think skribbl.io, but instead of drawing you're going 10x long on `$BAGZ` while someone in
 chat swears their tip says it's about to rug.
@@ -46,6 +47,20 @@ account to create, and no market data feed to depend on.
   News, trades, chat and liquidations all share one feed, so a headline and a player's lie
   arrive looking equally credible.
 
+- **The room is told how many tips are true, but not whose.** A count of one against four
+  people all claiming a pump means three of them are lying where everyone can see it. Every
+  round holds **at least one** true tip — a round with none gives the table nothing to check
+  a claim against, and decays into a coin flip.
+
+- **Lying goes on the record.** Quick-chat lines carry a structured claim, and at the settle
+  each one is shown next to the tip that player was actually dealt. That mismatch is the only
+  dishonesty a server can prove; free text stays unparsed and unscored. Catching someone
+  **pays nothing** — this is a party game, and the payoff is social, not numerical.
+
+- **Sound with no assets.** Countdown ticks, a liquidation buzz, a settle chime and a finish
+  fanfare are synthesised through the Web Audio API rather than shipped as files, so nothing
+  is downloaded and nothing is licensed. Mute persists across sessions.
+
 - **Deterministic and replayable.** Everything derives from the match code and round number,
   so the same code replays the same market exactly — a rematch is a fair comparison and any
   bug is reproducible from its code alone.
@@ -77,16 +92,29 @@ is public, and without an upper bound a crafted request could ask for a 24-hour 
 
 Each round cycles through three beats:
 
-1. **Intermission.** The next asset is revealed with its blurb, and every player is dealt a
-   private rumour. The round just finished is scored, and your previous card comes back
-   stamped **TRUE** or **LIE**.
+1. **Intermission.** The next asset is revealed with its blurb, every player is dealt a
+   private rumour, and the room is told how many of those rumours are true. The round just
+   finished is scored, your previous card comes back stamped **TRUE** or **LIE**, and a
+   ledger shows what each player said their tip was against what they actually held. The
+   wire is open throughout — this is the negotiation phase, so it is the one beat where you
+   can talk without a moving market to watch.
 2. **Trading.** Long or short, 1x–10x leverage, adjustable size. One position at a time.
    Your liquidation price is drawn on the chart, because leverage should be a legible
    decision rather than a hidden trapdoor.
 3. **Settle.** Open positions force-close at the buzzer, scores are added to the running
    total, and the regime is revealed.
 
-Highest cumulative score across all rounds wins, ties broken on best single round.
+Highest cumulative score across all rounds wins, ties broken on best single round. The final
+round has no intermission behind it, so its ledger appears on the results screen instead.
+
+When it's over the room stays open. **Play again** keeps every seat, code and setting on a
+fresh market; **Rerun the same market** replays the identical price paths, which the seeded
+generator makes a genuinely fair comparison. Returning to the lobby rather than straight into
+a round is also the only window in which someone new can join.
+
+Arriving alone is not a dead end: **one round on your own** starts a solo practice match
+immediately, so an unaccompanied visitor still sees the game rather than a lobby that needs a
+second player.
 
 ---
 
@@ -106,8 +134,9 @@ sequenceDiagram
     M->>S: generate from seed hash of code and round
     S-->>M: 900-point price path
     M->>M: derive 2 headlines and 1 rumour per player
-    E-->>P: phase INTERMISSION and asset
+    E-->>P: phase INTERMISSION, asset, count of true tips
     E-->>P: private rumour, one per player
+    P->>M: chat and claims, the market still shut
 
     Note over P,M: Trading - 90 seconds
     loop every 100ms
@@ -121,6 +150,7 @@ sequenceDiagram
 
     Note over M: Buzzer
     M->>M: force-close, score, resolve rumour truth
+    M->>M: compare each claim against the tip dealt
     E-->>P: settled and standings
 ```
 
@@ -131,7 +161,7 @@ sequenceDiagram
 flowchart LR
     UI["React app<br/>one STOMP socket"]
     API["MatchController<br/>create, join, lobby"]
-    SC["MatchSocketController<br/>open, close, chat"]
+    SC["MatchSocketController<br/>open, close, chat, rematch"]
     AUTH["StompAuthInterceptor<br/>session token to Principal"]
     BC["MatchBroadcaster<br/>owns every wire shape"]
     ENG["MatchEngine<br/>scheduled every 100ms"]
@@ -240,8 +270,8 @@ java -jar target/backend-0.0.1-SNAPSHOT.jar     # everything on :8080
 ```
 
 The frontend calls `/api` relatively, so the same build serves both from one origin with no
-CORS to configure. `docker compose up` does these steps in a multi-stage build — see the
-caveat under [Known gaps](#known-gaps).
+CORS to configure. `docker compose up` does these steps in a multi-stage build, though that
+layer has never actually been run — the equivalent arrangement was verified by hand.
 
 ---
 
@@ -288,9 +318,10 @@ stonk-royale/
 │       └── config/                # security, websocket, optional Firebase, SPA fallback
 │
 ├── frontend/src/
-│   ├── components/       # Trading, Intermission, RumorCard, PriceChart, Wire, Standings
+│   ├── components/       # Trading, Intermission, Results, RumorCard, PriceChart,
+│   │                     #   Wire, Ledger, Standings, MatchSettings, MuteToggle
 │   ├── state/            # MatchProvider — owns the socket and all match state
-│   ├── lib/              # api, session, format, auth, useCountdown
+│   ├── lib/              # api, session, format, auth, sound, matchSettings, useCountdown
 │   └── styles/           # tokens in index.css, screens in game.css
 │
 ├── Dockerfile            # multi-stage: frontend build folded into the JAR
@@ -309,7 +340,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-74 tests, all passing. They assert **design targets rather than implementation details**:
+95 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
@@ -318,6 +349,11 @@ cd backend && ./mvnw test
 - A lie can land in the same time window as a shock warning, so timing can't leak it either
 - Cash really does reset between rounds, and a liquidated player can trade again
 - The same match code replays an identical market
+- Every round holds at least one true tip, across 500 seeds — and the count still varies,
+  because a number that never changes would stop being information
+- The announced count always matches the tips actually dealt
+- A claim made in the intermission survives into the round; one made in the lobby does not,
+  and none of them leak into the next round
 
 > **The socket layer has no automated tests.** `MatchEngine`, `MatchBroadcaster`,
 > `MatchSocketController` and `StompAuthInterceptor` were verified by driving a real headless

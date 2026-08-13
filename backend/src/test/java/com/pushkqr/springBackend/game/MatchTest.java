@@ -223,12 +223,25 @@ class MatchTest {
     }
 
     @Test
-    void claimsMadeOutsideTradingAreIgnored() {
+    void aClaimMadeDuringTheIntermissionSurvivesIntoTheRound() {
         Match match = lobbyOfTwo("ABCDE");
         match.start(0);
 
-        // Still the intermission — the market is shut and no round is running yet.
+        // The market is shut, but the tip has been dealt and this is where the talking
+        // happens — so going on record here has to count.
         match.recordTipClaim("p1", Regime.PUMP);
+
+        List<GameEvent> events = step(match, 0, 11_000);
+        assertEquals(Regime.PUMP, resultFor(events, "p1").claimedTipAs());
+    }
+
+    @Test
+    void claimsMadeBeforeTheMatchStartsAreIgnored() {
+        Match match = lobbyOfTwo("ABCDE");
+
+        // Still the lobby: no tip exists yet, so there is nothing to be claiming about.
+        match.recordTipClaim("p1", Regime.PUMP);
+        match.start(0);
 
         List<GameEvent> events = step(match, 0, 11_000);
         assertNull(resultFor(events, "p1").claimedTipAs());

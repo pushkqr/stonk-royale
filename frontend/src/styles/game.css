@@ -516,6 +516,18 @@
   overflow: hidden;
 }
 
+/* On the intermission the wire sits in a centred column instead of a grid rail, so it needs
+   its own width and a ceiling on the backlog — otherwise a busy round pushes the tip card
+   and the countdown off the screen. */
+.wire-talk {
+  width: min(30rem, 100%);
+  overflow: visible;
+}
+
+.wire-talk .wire-list {
+  max-height: 11rem;
+}
+
 .pane-title {
   font-size: 1.15rem;
   margin: 0;

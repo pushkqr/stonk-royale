@@ -218,6 +218,9 @@ public final class Match {
     }
 
     private void enterIntermission(long now, List<GameEvent> events) {
+        // Cleared here rather than at the open, because this is where the new tip is dealt
+        // and players can start going on record about it straight away.
+        tipClaims.clear();
         phase = MatchPhase.INTERMISSION;
         phaseEndsAtMillis = now + config.intermissionMillis();
         events.add(new GameEvent.PhaseChanged(MatchPhase.INTERMISSION, roundIndex, phaseEndsAtMillis));
@@ -225,7 +228,6 @@ public final class Match {
 
     private void beginTrading(long now, List<GameEvent> events) {
         players.values().forEach(player -> player.beginRound(config.startingCash()));
-        tipClaims.clear();
         phase = MatchPhase.TRADING;
         roundStartedAtMillis = now;
         phaseEndsAtMillis = now + config.roundMillis();
@@ -247,11 +249,13 @@ public final class Match {
      * Records what a player says their tip is. The last word counts: changing your story is
      * allowed, and being held to the version you finished on is the point.
      *
-     * A null claim leaves any earlier one standing, so typing free text after using a
-     * quick-chat line does not quietly retract it.
+     * Accepted from the intermission onwards, because that is when the tip is dealt and when
+     * the room does most of its talking. A null claim leaves any earlier one standing, so
+     * typing free text after using a quick-chat line does not quietly retract it.
      */
     public void recordTipClaim(String playerId, Regime claimed) {
-        if (claimed != null && phase == MatchPhase.TRADING && players.containsKey(playerId)) {
+        boolean roundIsLive = phase == MatchPhase.INTERMISSION || phase == MatchPhase.TRADING;
+        if (claimed != null && roundIsLive && players.containsKey(playerId)) {
             tipClaims.put(playerId, claimed);
         }
     }

@@ -22,7 +22,7 @@ const QUICK_LINES = [
  * News, chat and carnage share one stream on purpose. A headline and a player's lie
  * arrive looking equally credible, which is exactly the position the game wants you in.
  */
-export default function Wire({ feed, onSay, disabled }) {
+export default function Wire({ feed, onSay, disabled, className = "" }) {
   const [draft, setDraft] = useState("");
   const endRef = useRef(null);
 
@@ -39,7 +39,7 @@ export default function Wire({ feed, onSay, disabled }) {
   };
 
   return (
-    <section className="panel stack wire">
+    <section className={`panel stack wire ${className}`}>
       <header className="panel-head">
         <h2 className="display pane-title">The Wire</h2>
       </header>

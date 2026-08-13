@@ -4,6 +4,7 @@ import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, toneOf } from "../lib/format";
 import RumorCard from "./RumorCard";
 import Ledger from "./Ledger";
+import Wire from "./Wire";
 
 /** What the round actually turned out to be, in the game's own voice. */
 const REGIME_VERDICT = {
@@ -27,7 +28,8 @@ function tipCountLine(count) {
 }
 
 export default function Intermission() {
-  const { phase, rumor, lastRumor, settled, standings, session, serverNow } = useMatch();
+  const { phase, rumor, lastRumor, settled, standings, session, serverNow, feed, say } =
+    useMatch();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
   // Two beats: what just happened to you, then what's coming next. Without the pause the
@@ -104,6 +106,10 @@ export default function Intermission() {
           <p className="footnote muted">Talk it over. Nobody has to tell the truth.</p>
         </>
       )}
+
+      {/* Outside the beat switch on purpose: it stays mounted across the reveal, so nobody
+          loses a half-typed accusation the moment the ledger names them. */}
+      <Wire feed={feed} onSay={say} disabled={false} className="wire-talk" />
     </main>
   );
 }
