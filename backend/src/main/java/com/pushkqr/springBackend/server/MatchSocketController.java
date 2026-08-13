@@ -54,6 +54,31 @@ public class MatchSocketController {
         match.rematch(request.sameMarket(), System.currentTimeMillis());
         broadcaster.phase(match);
         broadcaster.lobby(match);
+        // Scores are back to zero, and without this the table carries the old match's
+        // totals into the new one until its first round settles.
+        broadcaster.standings(match);
+    }
+
+    /**
+     * Gives up a seat for good. Sent when someone actually clicks Leave — never on a
+     * dropped socket, which is usually just a phone locking its screen.
+     *
+     * Standings are deliberately not re-sent: the podium on screen is the record of the
+     * match that was played, and rewriting it out from under the people still reading it
+     * would erase a result that really happened.
+     */
+    @MessageMapping("/match/{code}/leave")
+    public void leave(@DestinationVariable String code, Principal principal) {
+        Match match = require(code, principal);
+        if (!match.leave(session(principal).playerId())) {
+            return;
+        }
+
+        if (match.isEmpty()) {
+            matches.remove(code);
+            return;
+        }
+        broadcaster.lobby(match);
     }
 
     /**

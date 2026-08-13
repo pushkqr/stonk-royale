@@ -753,29 +753,46 @@
   padding-left: 0.18em;
 }
 
-/* Clipped to the page's top-right corner rather than floating over it. As a free pill it
-   landed on the masthead's rounded corner and read as a browser artifact; as a tab with the
-   content cleared below, it belongs to the sheet. */
-.mute {
+/* Clipped to the page's top corners rather than floating over them. As free pills they
+   landed on the masthead's rounded corner and read as browser artifacts; as tabs with the
+   content cleared below, they belong to the sheet. */
+.corner-tab {
   position: fixed;
   top: 0;
-  right: 0;
   z-index: 30;
   padding: 0.25rem 0.6rem 0.3rem;
   border: 2px solid var(--edge);
   border-top: 0;
-  border-right: 0;
-  border-radius: 0 0 0 var(--radius);
   background: var(--void-deep);
   color: var(--haze);
   font-size: 0.6rem;
   letter-spacing: 0.12em;
   cursor: pointer;
+  transition: color 0.14s ease, border-color 0.14s ease;
 }
 
-.mute:hover {
+.corner-tab:hover {
   color: var(--scream);
   border-color: var(--scream);
+}
+
+.mute {
+  right: 0;
+  border-right: 0;
+  border-radius: 0 0 0 var(--radius);
+}
+
+.leave-tab {
+  left: 0;
+  border-left: 0;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+/* Armed and waiting for the second press. */
+.leave-tab.is-armed,
+.leave-tab.is-armed:hover {
+  color: var(--dump);
+  border-color: var(--dump);
 }
 
 .wire-form {
@@ -959,7 +976,7 @@
     font-size: 0.72rem;
   }
 
-  .mute {
+  .corner-tab {
     padding: 0.5rem 0.8rem 0.55rem;
     font-size: 0.66rem;
   }

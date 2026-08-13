@@ -15,7 +15,7 @@ export default function MuteToggle() {
 
   return (
     <button
-      className="mute mono"
+      className="corner-tab mute mono"
       onClick={toggle}
       aria-pressed={off}
       title={off ? "Turn sound on" : "Turn sound off"}

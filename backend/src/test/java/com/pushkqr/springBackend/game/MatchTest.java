@@ -116,6 +116,51 @@ class MatchTest {
     }
 
     @Test
+    void leavingTheLobbyFreesTheSeat() {
+        Match match = lobbyOfTwo("ABCDE");
+
+        assertTrue(match.leave("p2"));
+        assertEquals(1, match.players().size());
+        assertNull(match.player("p2"));
+    }
+
+    @Test
+    void aRematchDoesNotReseatSomebodyWhoLeft() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        step(match, 0, 60_000);
+        assertEquals(MatchPhase.FINISHED, match.phase());
+
+        assertTrue(match.leave("p2"));
+        match.rematch(false, 60_000);
+
+        assertEquals(1, match.players().size());
+        assertNull(match.player("p2"), "a rematch keeps seats, but not one that was given up");
+    }
+
+    @Test
+    void leavingMidRoundKeepsTheSeat() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        step(match, 0, 1_000);
+        assertEquals(MatchPhase.TRADING, match.phase());
+
+        assertFalse(match.leave("p2"));
+        assertNotNull(match.player("p2"),
+                "standings pointing at a player who vanished mid-match are worse than an idle seat");
+    }
+
+    @Test
+    void theHostBadgeMovesWhenTheHostLeaves() {
+        Match match = lobbyOfTwo("ABCDE");
+        assertTrue(match.player("p1").isHost());
+
+        assertTrue(match.leave("p1"));
+
+        assertTrue(match.player("p2").isHost(), "a room nobody can start is a dead room");
+    }
+
+    @Test
     void announcedTipCountMatchesTheTipsActuallyDealt() {
         // The count is public while the tips stay private, so the whole mechanic rests on
         // the number agreeing with the cards. Many seeds, because one proves nothing.

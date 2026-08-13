@@ -4,6 +4,7 @@ import { MatchProvider, useMatch } from "../state/MatchProvider";
 import { loadSeat, saveSeat } from "../lib/session";
 import JoinGate from "../components/JoinGate";
 import MuteToggle from "../components/MuteToggle";
+import LeaveTab from "../components/LeaveTab";
 import Lobby from "../components/Lobby";
 import Intermission from "../components/Intermission";
 import Trading from "../components/Trading";
@@ -46,6 +47,7 @@ function Screen() {
         </button>
       )}
 
+      <LeaveTab />
       <MuteToggle />
 
       {current === "LOBBY" && <Lobby />}

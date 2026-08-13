@@ -77,11 +77,36 @@ public final class Match {
         return player;
     }
 
-    public void leave(String playerId) {
-        if (phase == MatchPhase.LOBBY) {
-            players.remove(playerId);
+    /**
+     * Frees a seat. Only a deliberate departure reaches here — a dropped socket does not,
+     * because phones lock their screens constantly and the client reconnects and resyncs.
+     * Ejecting on disconnect would throw people out of rounds they are still playing.
+     *
+     * Between matches the seat goes, so a leaver stops holding a slot, stops being dealt a
+     * rumour, and stops appearing in the next lobby. Mid-match it stays: standings that
+     * reference a player who vanished halfway are worse than standings with an idle one.
+     *
+     * @return whether the roster changed and the room needs telling
+     */
+    public boolean leave(String playerId) {
+        if (phase != MatchPhase.LOBBY && phase != MatchPhase.FINISHED) {
+            return false;
         }
-        // Mid-match departures keep their seat so scores and standings stay stable.
+
+        MatchPlayer gone = players.remove(playerId);
+        if (gone == null) {
+            return false;
+        }
+
+        // Insertion order, so the badge lands on whoever has been here longest.
+        if (gone.isHost()) {
+            players.values().stream().findFirst().ifPresent(MatchPlayer::promoteToHost);
+        }
+        return true;
+    }
+
+    public boolean isEmpty() {
+        return players.isEmpty();
     }
 
     /**

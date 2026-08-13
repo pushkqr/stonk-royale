@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import { getLobby, socketUrl } from "../lib/api";
+import { clearSeat } from "../lib/session";
 import { sound } from "../lib/sound";
 
 const MatchContext = createContext(null);
@@ -81,8 +82,25 @@ export function MatchProvider({ session, children }) {
           const top = results.reduce((a, b) => (b.totalScore > a.totalScore ? b : a), results[0]);
           sound.finish(top?.playerId === playerId);
         }
-        // A rematch reopens the room, so the next round counts as new again.
-        if (next.phase === "LOBBY") roundRef.current = null;
+        /*
+          A rematch reopens the room, and everything below is scoped to the match that just
+          ended. Leaving it in place meant the next match opened by replaying the old one:
+          Intermission starts on its reveal beat whenever a lastRumor exists, so round one
+          of the rematch showed the previous match's final card, verdict and ledger before
+          dealing anything, over standings still holding the old totals.
+        */
+        if (next.phase === "LOBBY") {
+          roundRef.current = null;
+          rumorRef.current = null;
+          settleRef.current = null;
+          setSettled(null);
+          setLastRumor(null);
+          setRumor(null);
+          setSeries([]);
+          setTick(null);
+          setBoard([]);
+          setFeed([]);
+        }
       });
 
       on(topic("price"), (next) => {
@@ -138,6 +156,17 @@ export function MatchProvider({ session, children }) {
   const serverNow = useCallback(() => Date.now() + offsetRef.current, []);
   const dismissError = useCallback(() => setError(null), []);
 
+  /**
+   * Give the seat back, then go home. The short pause lets the frame reach the socket
+   * before navigation tears the connection down. Mid-match the server keeps the seat on
+   * purpose, so this is a way out of the room rather than a way to forfeit.
+   */
+  const quit = useCallback(() => {
+    clientRef.current?.publish({ destination: `/app/match/${code}/leave`, body: "{}" });
+    clearSeat(code);
+    setTimeout(() => window.location.assign("/"), 120);
+  }, [code]);
+
   const publish = useCallback(
     (action, body) => {
       clientRef.current?.publish({
@@ -181,9 +210,10 @@ export function MatchProvider({ session, children }) {
         publish("close");
       },
       say: (text, claim) => publish("chat", { text, claim }),
+      quit,
     }),
     [session, connected, phase, tick, board, feed, series, rumor, lastRumor, settled,
-      standings, lobby, error, me, publish, serverNow, dismissError],
+      standings, lobby, error, me, publish, serverNow, dismissError, quit],
   );
 
   return <MatchContext.Provider value={value}>{children}</MatchContext.Provider>;

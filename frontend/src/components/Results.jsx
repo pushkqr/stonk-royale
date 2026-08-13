@@ -3,7 +3,7 @@ import { pct, toneOf } from "../lib/format";
 import Ledger from "./Ledger";
 
 export default function Results() {
-  const { standings, session, rematch, lobby, settled } = useMatch();
+  const { standings, session, rematch, lobby, settled, quit } = useMatch();
   const winner = standings[0];
   const iWon = winner?.playerId === session.playerId;
   const solo = standings.length < 2;
@@ -61,9 +61,9 @@ export default function Results() {
         <p className="notice muted">Waiting for the host to start another one.</p>
       )}
 
-      <a className="link-btn muted" href="/">
+      <button className="link-btn muted" onClick={quit}>
         Leave
-      </a>
+      </button>
 
       {lobby?.code && (
         <p className="footnote muted">

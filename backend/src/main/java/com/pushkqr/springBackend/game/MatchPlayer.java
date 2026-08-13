@@ -9,8 +9,10 @@ public final class MatchPlayer {
 
     private final String id;
     private final String nickname;
-    private final boolean host;
     private final List<Double> roundScores = new ArrayList<>();
+
+    /** Not final: the badge moves if the host leaves, so the room stays startable. */
+    private boolean host;
 
     private PlayerRound round;
 
@@ -30,6 +32,10 @@ public final class MatchPlayer {
 
     public boolean isHost() {
         return host;
+    }
+
+    void promoteToHost() {
+        host = true;
     }
 
     /** Current round state, or null outside a round. */

@@ -15,3 +15,8 @@ export function loadSeat(code) {
     return null;
   }
 }
+
+/** After leaving for good, so returning to the link does not try a token the server dropped. */
+export function clearSeat(code) {
+  sessionStorage.removeItem(key(code));
+}
