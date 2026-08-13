@@ -298,6 +298,20 @@
   color: #7a6a55;
 }
 
+/* The public half of the round's information, and deliberately unlike the card above it:
+   that one is a whisper on paper, this is posted where everyone can see the same thing. */
+.tip-count {
+  margin: 0;
+  padding: 0.55rem 1.1rem;
+  border: 2px solid var(--scream);
+  border-radius: var(--radius);
+  color: var(--scream);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 .stamp {
   position: absolute;
   right: -0.4rem;
@@ -391,7 +405,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.5rem 1rem;
+  /* The mute pill is fixed to the top-right corner, so the strip leaves it a lane
+     rather than letting it land on the player's score. */
+  padding: 0.5rem 6rem 0.5rem 1rem;
   background: var(--scream);
   color: var(--void-deep);
   border-radius: var(--radius);
@@ -833,5 +849,23 @@
 
   .deck-open-pnl {
     text-align: left;
+  }
+}
+
+/* Touch, not hover. A finger needs a bigger target than a cursor does, and these
+   three are the controls a phone player actually reaches for mid-round. */
+@media (pointer: coarse) {
+  .quick {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  .mute {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.66rem;
+  }
+
+  input[type="range"] {
+    height: 2.25rem;
   }
 }

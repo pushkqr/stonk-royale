@@ -18,11 +18,13 @@ public final class Views {
     }
 
     /**
-     * @param serverTime lets the client run its countdown against the server clock rather
-     *                   than trusting its own, which can be minutes out.
+     * @param serverTime   lets the client run its countdown against the server clock rather
+     *                     than trusting its own, which can be minutes out.
+     * @param truthfulTips how many players hold a true tip this round, or null when there is
+     *                     no round or too few players for the count to keep a secret.
      */
     public record Phase(String phase, int roundIndex, int totalRounds, long endsAtMillis,
-            long serverTime, Asset asset) {
+            long serverTime, Asset asset, Integer truthfulTips) {
     }
 
     public record Price(double price, long elapsedMillis) {

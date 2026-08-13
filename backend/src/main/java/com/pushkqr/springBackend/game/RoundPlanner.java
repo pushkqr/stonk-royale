@@ -11,6 +11,7 @@ import com.pushkqr.springBackend.game.sim.Regime;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -46,8 +47,21 @@ public final class RoundPlanner {
 
     /** Sorted iteration keeps rumor assignment deterministic whatever order players arrive in. */
     private Map<String, Rumor> rumors(Regime regime, Asset asset, Collection<String> playerIds, Random random) {
+        List<String> ordered = playerIds.stream().sorted().toList();
+
         Map<String, Rumor> rumors = new LinkedHashMap<>();
-        playerIds.stream().sorted().forEach(id -> rumors.put(id, scripter.rumorFor(regime, asset.ticker(), random)));
+        for (String id : ordered) {
+            rumors.put(id, scripter.rumorFor(regime, asset.ticker(), random));
+        }
+
+        // Independent draws can leave a round with no true tip at all, and such a round has
+        // nothing for the table to converge on: no claim can be checked against anything, so
+        // talking stops paying and the round decays into a coin flip. One tip is always real.
+        if (!ordered.isEmpty() && rumors.values().stream().noneMatch(rumor -> rumor.truthful())) {
+            String holder = ordered.get(random.nextInt(ordered.size()));
+            rumors.put(holder, scripter.truthfulRumorFor(regime, asset.ticker(), random));
+        }
+
         return Map.copyOf(rumors);
     }
 }

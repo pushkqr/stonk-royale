@@ -95,10 +95,20 @@ public class MatchBroadcaster {
                         .toList());
     }
 
+    /**
+     * Below this the count stops being a shared clue and becomes a private answer: tell a
+     * lone player that one tip is true and they know it is theirs.
+     */
+    private static final int MIN_PLAYERS_FOR_TIP_COUNT = 2;
+
     private Views.Phase phaseView(Match match) {
         RoundPlan round = match.round();
         Views.Asset asset = round == null ? null : new Views.Asset(
                 round.asset().ticker(), round.asset().blurb(), round.path().startPrice());
+
+        Integer truthfulTips = round == null || match.players().size() < MIN_PLAYERS_FOR_TIP_COUNT
+                ? null
+                : round.truthfulTipCount();
 
         return new Views.Phase(
                 match.phase().name(),
@@ -106,7 +116,8 @@ public class MatchBroadcaster {
                 match.config().rounds(),
                 match.phaseEndsAtMillis(),
                 System.currentTimeMillis(),
-                asset);
+                asset,
+                truthfulTips);
     }
 
     private Views.BoardRow boardRow(MatchPlayer player, double price) {

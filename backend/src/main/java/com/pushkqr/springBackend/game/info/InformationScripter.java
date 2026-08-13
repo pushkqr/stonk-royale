@@ -28,9 +28,16 @@ public final class InformationScripter {
     private static final long WARNING_LEAD_SPREAD_MILLIS = 2_000;
 
     public Rumor rumorFor(Regime actual, String ticker, Random random) {
-        boolean truthful = random.nextDouble() < TRUE_RUMOR_PROBABILITY;
-        Regime claimed = truthful ? actual : otherThan(actual, random);
-        return new Rumor(NewsCopy.rumor(claimed, ticker, random), claimed, truthful);
+        if (random.nextDouble() < TRUE_RUMOR_PROBABILITY) {
+            return truthfulRumorFor(actual, ticker, random);
+        }
+        Regime claimed = otherThan(actual, random);
+        return new Rumor(NewsCopy.rumor(claimed, ticker, random), claimed, false);
+    }
+
+    /** Lets the planner guarantee a round holds at least one real tip. */
+    public Rumor truthfulRumorFor(Regime actual, String ticker, Random random) {
+        return new Rumor(NewsCopy.rumor(actual, ticker, random), actual, true);
     }
 
     /**

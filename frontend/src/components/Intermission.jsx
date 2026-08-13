@@ -15,6 +15,16 @@ const REGIME_VERDICT = {
 
 const HOLD_ON_REVEAL_MS = 5000;
 
+/**
+ * The one fact everybody shares. It makes the wire checkable: if four people claim a pump
+ * and only one tip is true, three of them are lying where you can see it. Never zero — the
+ * server guarantees a round holds at least one real tip.
+ */
+function tipCountLine(count) {
+  if (count === 1) return "One of you got the truth.";
+  return `${count} of you got the truth.`;
+}
+
 export default function Intermission() {
   const { phase, rumor, lastRumor, settled, standings, session, serverNow } = useMatch();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
@@ -63,6 +73,13 @@ export default function Intermission() {
           </header>
 
           <RumorCard text={rumor} />
+
+          {/* Withheld below two players, where the count would name its own holder. */}
+          {phase?.truthfulTips != null && (
+            <p className="tip-count mono" role="status">
+              {tipCountLine(phase.truthfulTips)}
+            </p>
+          )}
 
           {standings.length > 0 && (
             <ol className="mini-standings">

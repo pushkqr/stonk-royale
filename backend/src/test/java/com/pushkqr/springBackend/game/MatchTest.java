@@ -6,7 +6,9 @@ import com.pushkqr.springBackend.game.sim.Regime;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -111,6 +113,51 @@ class MatchTest {
         assertNotNull(match.rumorFor("p2"));
 
         assertEquals(MatchPhase.INTERMISSION, only(events, GameEvent.PhaseChanged.class).get(0).phase());
+    }
+
+    @Test
+    void announcedTipCountMatchesTheTipsActuallyDealt() {
+        // The count is public while the tips stay private, so the whole mechanic rests on
+        // the number agreeing with the cards. Many seeds, because one proves nothing.
+        for (int i = 0; i < 200; i++) {
+            Match match = lobbyOfTwo("TIPS" + i);
+            match.start(0);
+
+            int truthful = 0;
+            for (String id : List.of("p1", "p2")) {
+                if (match.rumorFor(id).truthful()) {
+                    truthful++;
+                }
+            }
+
+            assertEquals(truthful, match.round().truthfulTipCount());
+        }
+    }
+
+    @Test
+    void everyRoundHoldsAtLeastOneTrueTip() {
+        // A round with no true tip gives the table nothing to check a claim against, so the
+        // planner forces one. This is the assertion that keeps that promise honest.
+        for (int i = 0; i < 500; i++) {
+            Match match = lobbyOfTwo("TRUE" + i);
+            match.start(0);
+            assertTrue(match.round().truthfulTipCount() >= 1,
+                    "round planned from seed TRUE" + i + " dealt no true tip");
+        }
+    }
+
+    @Test
+    void tipCountStillVariesAboveTheGuaranteedOne() {
+        Set<Integer> seen = new HashSet<>();
+        for (int i = 0; i < 500 && seen.size() < 2; i++) {
+            Match match = lobbyOfTwo("VARY" + i);
+            match.start(0);
+            seen.add(match.round().truthfulTipCount());
+        }
+
+        // Forcing a floor must not flatten the count into a constant — if every round said
+        // "one of you", the number would stop being information.
+        assertEquals(Set.of(1, 2), seen);
     }
 
     @Test

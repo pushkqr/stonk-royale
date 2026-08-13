@@ -25,6 +25,15 @@ public record RoundPlan(
         return rumors.get(playerId);
     }
 
+    /**
+     * How many players hold a true tip. Public knowledge, unlike which players they are:
+     * it is what makes a claim on the wire checkable, since three people claiming PUMP
+     * against a count of one means two of them are lying right now.
+     */
+    public int truthfulTipCount() {
+        return (int) rumors.values().stream().filter(rumor -> rumor.truthful()).count();
+    }
+
     public double priceAt(long elapsedMillis) {
         return path.priceAt(elapsedMillis);
     }
