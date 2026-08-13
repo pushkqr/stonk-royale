@@ -264,10 +264,23 @@ To run exactly what the container would, without Docker:
 
 ```bash
 cd frontend && npm run build
+rm -rf ../backend/src/main/resources/static      # not optional — see below
 cp -r dist ../backend/src/main/resources/static
 cd ../backend && ./mvnw -DskipTests package
-java -jar target/backend-0.0.1-SNAPSHOT.jar     # everything on :8080
+java -jar target/backend-0.0.1-SNAPSHOT.jar      # everything on :8080
 ```
+
+The copy is the step that is easy to skip, and skipping it fails quietly: `mvnw package`
+knows nothing about `frontend/`, so the JAR builds happily with no `index.html` in it and
+every page returns 404 while the log looks perfectly healthy.
+
+Two things that bite on a second run:
+
+- `cp -r dist static` only creates `static/` the first time. Run it again without the `rm`
+  and you get `static/dist/`, which serves nothing. Hence the `rm -rf`.
+- **Stop any running instance before repackaging.** On Windows the running JVM locks the
+  JAR, `spring-boot:repackage` cannot rename it, and the build leaves a *plain* jar in
+  `target/` that `java -jar` will refuse to start.
 
 The frontend calls `/api` relatively, so the same build serves both from one origin with no
 CORS to configure. `docker compose up` does these steps in a multi-stage build, though that
