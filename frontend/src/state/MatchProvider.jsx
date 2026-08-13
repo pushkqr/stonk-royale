@@ -162,7 +162,7 @@ export function MatchProvider({ session, children }) {
       rematch: (sameMarket) => publish("rematch", { sameMarket }),
       open: (side, sizeFraction, leverage) => publish("open", { side, sizeFraction, leverage }),
       close: () => publish("close"),
-      say: (text) => publish("chat", { text }),
+      say: (text, claim) => publish("chat", { text, claim }),
     }),
     [session, connected, phase, tick, board, feed, series, rumor, lastRumor, settled,
       standings, lobby, error, playerId, publish, serverNow, dismissError],

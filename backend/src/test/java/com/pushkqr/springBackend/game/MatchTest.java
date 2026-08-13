@@ -186,6 +186,66 @@ class MatchTest {
     // --- the round -----------------------------------------------------------
 
     @Test
+    void aTipClaimIsCarriedIntoTheSettleAndCanBeCaughtOut() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        step(match, 0, 1_000);
+
+        // alice tells the room something; bob keeps quiet.
+        match.recordTipClaim("p1", Regime.SQUEEZE);
+
+        List<GameEvent> events = step(match, 1_100, 11_000);
+        RoundResult alice = resultFor(events, "p1");
+        RoundResult bob = resultFor(events, "p2");
+
+        assertEquals(Regime.SQUEEZE, alice.claimedTipAs());
+        assertNull(bob.claimedTipAs(), "a player who said nothing must not be put on record");
+
+        // Whether that was a lie is exactly the two fields disagreeing, which is the only
+        // dishonesty the server can actually prove.
+        assertEquals(alice.rumorClaimed() != Regime.SQUEEZE,
+                alice.claimedTipAs() != alice.rumorClaimed());
+    }
+
+    @Test
+    void tipClaimsDoNotSurviveIntoTheNextRound() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        step(match, 0, 1_000);
+        match.recordTipClaim("p1", Regime.RUG);
+
+        // Through the settle, the next intermission, and into round two.
+        List<GameEvent> events = step(match, 1_100, 23_000);
+
+        assertEquals(Regime.RUG, resultFor(events, "p1").claimedTipAs());
+        assertNull(lastResultFor(events, "p1").claimedTipAs(),
+                "round two must start with nobody on record");
+    }
+
+    @Test
+    void claimsMadeOutsideTradingAreIgnored() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        // Still the intermission — the market is shut and no round is running yet.
+        match.recordTipClaim("p1", Regime.PUMP);
+
+        List<GameEvent> events = step(match, 0, 11_000);
+        assertNull(resultFor(events, "p1").claimedTipAs());
+    }
+
+    private static RoundResult resultFor(List<GameEvent> events, String playerId) {
+        return only(events, GameEvent.RoundSettled.class).get(0).results().stream()
+                .filter(r -> r.playerId().equals(playerId)).findFirst().orElseThrow();
+    }
+
+    private static RoundResult lastResultFor(List<GameEvent> events, String playerId) {
+        List<GameEvent.RoundSettled> settled = only(events, GameEvent.RoundSettled.class);
+        return settled.get(settled.size() - 1).results().stream()
+                .filter(r -> r.playerId().equals(playerId)).findFirst().orElseThrow();
+    }
+
+    @Test
     void bothHeadlinesBreakDuringTheRound() {
         Match match = lobbyOfTwo("ABCDE");
         match.start(0);

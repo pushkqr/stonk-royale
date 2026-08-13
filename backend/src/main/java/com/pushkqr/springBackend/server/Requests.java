@@ -18,7 +18,11 @@ public final class Requests {
     public record Open(String side, double sizeFraction, int leverage) {
     }
 
-    public record Chat(String text) {
+    /**
+     * @param claim optional regime this line asserts the speaker's tip says. Quick-chat sends
+     *              it; free text asserts nothing a server can read, and is left unscored.
+     */
+    public record Chat(String text, String claim) {
     }
 
     /** sameMarket replays the identical market, making the rematch a fair rerun. */

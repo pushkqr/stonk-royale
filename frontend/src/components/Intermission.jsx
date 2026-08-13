@@ -3,6 +3,7 @@ import { useMatch } from "../state/MatchProvider";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, toneOf } from "../lib/format";
 import RumorCard from "./RumorCard";
+import Ledger from "./Ledger";
 
 /** What the round actually turned out to be, in the game's own voice. */
 const REGIME_VERDICT = {
@@ -39,9 +40,13 @@ export default function Intermission() {
       return;
     }
     setBeat("reveal");
-    const id = setTimeout(() => setBeat("deal"), HOLD_ON_REVEAL_MS);
+    // Never spend the whole intermission looking backwards: a host can set it as low as a
+    // second, and the next round's tip is the half that players still have to act on.
+    const remaining = (phase?.endsAtMillis ?? 0) - Date.now();
+    const hold = Math.max(1000, Math.min(HOLD_ON_REVEAL_MS, remaining * 0.4));
+    const id = setTimeout(() => setBeat("deal"), hold);
     return () => clearTimeout(id);
-  }, [lastRumor]);
+  }, [lastRumor, phase?.endsAtMillis]);
 
   const myResult = settled?.results.find((r) => r.playerId === session.playerId);
 
@@ -60,6 +65,9 @@ export default function Intermission() {
           </header>
 
           <RumorCard text={lastRumor.text} stamp={lastRumor.wasTrue ? "TRUE" : "LIE"} />
+
+          {/* The count told the room how many tips were real. This is where it gets settled. */}
+          <Ledger results={settled.results} meId={session.playerId} />
         </>
       ) : (
         <>

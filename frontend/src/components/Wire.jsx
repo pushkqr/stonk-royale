@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 
-/** The four speech acts that matter: claim a tip, state a position, accuse, reassure. */
+/**
+ * The speech acts that matter: claim a tip, state a position, accuse.
+ *
+ * Every regime gets a line, because a claim is checked against the tip you were dealt at
+ * settle — leaving one out would mean a player holding it could not tell the truth in one
+ * tap while the liars could.
+ */
 const QUICK_LINES = [
-  "my tip says PUMP",
-  "my tip says DUMP",
-  "it's a rug",
-  "i'm long",
-  "i'm short",
-  "liar",
+  { text: "my tip says PUMP", claim: "PUMP" },
+  { text: "my tip says DUMP", claim: "DUMP" },
+  { text: "my tip says CHOP", claim: "CHOP" },
+  { text: "it's a rug", claim: "RUG" },
+  { text: "it's a squeeze", claim: "SQUEEZE" },
+  { text: "i'm long" },
+  { text: "i'm short" },
+  { text: "liar" },
 ];
 
 /**
@@ -57,15 +65,15 @@ export default function Wire({ feed, onSay, disabled }) {
       {/* A round leaves no time to read a chart, size a position and type a convincing
           lie. One tap keeps the talking going while the market moves. */}
       <div className="quick-row">
-        {QUICK_LINES.map((line) => (
+        {QUICK_LINES.map(({ text, claim }) => (
           <button
-            key={line}
+            key={text}
             type="button"
             className="quick"
-            onClick={() => onSay(line)}
+            onClick={() => onSay(text, claim)}
             disabled={disabled}
           >
-            {line}
+            {text}
           </button>
         ))}
       </div>

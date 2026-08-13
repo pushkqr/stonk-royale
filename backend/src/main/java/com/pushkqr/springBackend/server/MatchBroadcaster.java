@@ -49,7 +49,8 @@ public class MatchBroadcaster {
         List<Views.RoundResult> results = event.results().stream()
                 .map(r -> new Views.RoundResult(
                         r.playerId(), r.nickname(), round2(r.roundScore()), round2(r.totalScore()),
-                        r.liquidations(), r.rumorClaimed().name(), r.rumorWasTrue()))
+                        r.liquidations(), r.rumorClaimed().name(), r.rumorWasTrue(),
+                        r.claimedTipAs() == null ? null : r.claimedTipAs().name()))
                 .toList();
         send(match, "settled", new Views.Settled(event.roundIndex(), event.regime().name(), results));
     }

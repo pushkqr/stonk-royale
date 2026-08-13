@@ -6,6 +6,7 @@ import com.pushkqr.springBackend.game.model.MatchConfig;
 import com.pushkqr.springBackend.game.model.PlayerRound;
 import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.model.Side;
+import com.pushkqr.springBackend.game.sim.Regime;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,6 +42,15 @@ public final class Match {
     private long roundStartedAtMillis;
     private RoundPlan round;
     private int newsFired;
+
+    /**
+     * What each player has told the room their tip says, this round only.
+     *
+     * Held here rather than on the player because it is evidence about a round, not money:
+     * it exists to be compared against the tip they were actually dealt, which is the only
+     * lie the server can prove.
+     */
+    private final Map<String, Regime> tipClaims = new LinkedHashMap<>();
 
     /** Bumped by a rematch that wants a fresh market; held to replay the same one. */
     private int generation;
@@ -108,6 +118,7 @@ public final class Match {
         }
 
         players.values().forEach(MatchPlayer::resetForRematch);
+        tipClaims.clear();
         phase = MatchPhase.LOBBY;
         roundIndex = -1;
         round = null;
@@ -179,7 +190,8 @@ public final class Match {
             player.recordRoundScore(score);
             results.add(new RoundResult(
                     player.id(), player.nickname(), score, player.totalScore(),
-                    liquidations, rumor.claimedRegime(), rumor.truthful()));
+                    liquidations, rumor.claimedRegime(), rumor.truthful(),
+                    tipClaims.get(player.id())));
         }
 
         results.sort(Comparator.comparingDouble(RoundResult::totalScore).reversed());
@@ -213,6 +225,7 @@ public final class Match {
 
     private void beginTrading(long now, List<GameEvent> events) {
         players.values().forEach(player -> player.beginRound(config.startingCash()));
+        tipClaims.clear();
         phase = MatchPhase.TRADING;
         roundStartedAtMillis = now;
         phaseEndsAtMillis = now + config.roundMillis();
@@ -228,6 +241,19 @@ public final class Match {
 
     public double closePosition(String playerId, long now) {
         return tradingRound(playerId).close(currentPrice(now));
+    }
+
+    /**
+     * Records what a player says their tip is. The last word counts: changing your story is
+     * allowed, and being held to the version you finished on is the point.
+     *
+     * A null claim leaves any earlier one standing, so typing free text after using a
+     * quick-chat line does not quietly retract it.
+     */
+    public void recordTipClaim(String playerId, Regime claimed) {
+        if (claimed != null && phase == MatchPhase.TRADING && players.containsKey(playerId)) {
+            tipClaims.put(playerId, claimed);
+        }
     }
 
     private PlayerRound tradingRound(String playerId) {

@@ -46,8 +46,12 @@ public final class Views {
     public record Rumor(String text) {
     }
 
+    /**
+     * @param rumorClaimed what their tip really said, safe to reveal now the round is over
+     * @param tipClaim     what they told the room it said, or null if they never said
+     */
     public record RoundResult(String playerId, String nickname, double roundScore, double totalScore,
-            int liquidations, String rumorClaimed, boolean rumorWasTrue) {
+            int liquidations, String rumorClaimed, boolean rumorWasTrue, String tipClaim) {
     }
 
     public record Settled(int roundIndex, String regime, List<RoundResult> results) {

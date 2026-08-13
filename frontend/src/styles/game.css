@@ -312,6 +312,49 @@
   text-align: center;
 }
 
+/* The receipt for the round's talking. Deliberately plain — the drama is in the words
+   "lied", not in the styling around them. */
+.ledger {
+  width: min(30rem, 100%);
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.ledger-caption {
+  padding: 0 0.6rem 0.5rem;
+  text-align: left;
+  color: var(--haze);
+}
+
+.ledger th {
+  text-align: left;
+  padding: 0 0.6rem 0.35rem;
+  border-bottom: 1px solid var(--edge);
+}
+
+.ledger td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--edge);
+}
+
+.ledger-name {
+  font-weight: 600;
+}
+
+.ledger tr.is-me .ledger-name {
+  color: var(--scream);
+}
+
+.ledger tr.is-lie .ledger-held {
+  color: var(--dump);
+}
+
+.ledger-verdict {
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .stamp {
   position: absolute;
   right: -0.4rem;

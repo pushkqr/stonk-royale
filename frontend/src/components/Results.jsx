@@ -1,8 +1,9 @@
 import { useMatch } from "../state/MatchProvider";
 import { pct, toneOf } from "../lib/format";
+import Ledger from "./Ledger";
 
 export default function Results() {
-  const { standings, session, rematch, lobby } = useMatch();
+  const { standings, session, rematch, lobby, settled } = useMatch();
   const winner = standings[0];
   const iWon = winner?.playerId === session.playerId;
   const solo = standings.length < 2;
@@ -37,6 +38,10 @@ export default function Results() {
           </li>
         ))}
       </ol>
+
+      {/* The last round has no intermission behind it, so this is the only place its lies
+          ever surface — and it is the round people lie hardest in. */}
+      <Ledger results={settled?.results} meId={session.playerId} />
 
       {/* The room stays open, so the group never has to regroup from the home page. */}
       {session.host ? (

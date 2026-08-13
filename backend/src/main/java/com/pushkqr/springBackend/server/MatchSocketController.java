@@ -4,6 +4,7 @@ import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.model.Side;
+import com.pushkqr.springBackend.game.sim.Regime;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -104,7 +105,20 @@ public class MatchSocketController {
 
         String text = Text.chat(request.text());
         if (!text.isEmpty()) {
+            match.recordTipClaim(session.playerId(), parseClaim(request.claim()));
             broadcaster.feed(match, "CHAT", text, session.playerId(), session.nickname());
+        }
+    }
+
+    /** An unreadable claim is not worth rejecting a message over — it just goes unscored. */
+    private Regime parseClaim(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return Regime.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 
