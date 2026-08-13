@@ -7,9 +7,9 @@ const PAD_Y = 14;
 const read = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 /**
- * A round is a fixed 90-second window, so there is nothing to pan or zoom. Drawing it
- * directly buys the two things a charting library would not give: the liquidation line
- * closing in on the price, and a look that matches the rest of the game.
+ * A round is one bounded window, so there is nothing to pan or zoom. Drawing it directly
+ * buys the two things a charting library would not give: the liquidation line closing in on
+ * the price, and a look that matches the rest of the game.
  */
 export default function PriceChart({ series, roundMillis, position, startPrice }) {
   const wrapRef = useRef(null);
@@ -64,7 +64,14 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
     min -= pad;
     max += pad;
 
-    const x = (t) => (t / roundMillis) * plotW;
+    // The window grows with the round rather than reserving the full width for time that
+    // has not happened yet. Reserving it left the line as a squiggle in the corner for most
+    // of a round; the clock in the strip is what tells you how long is left. The floor stops
+    // the first few ticks from being stretched across the whole panel.
+    const elapsed = series.at(-1)?.t ?? 0;
+    const span = Math.max(elapsed, roundMillis * 0.12);
+
+    const x = (t) => (t / span) * plotW;
     const y = (p) => PAD_Y + plotH - ((p - min) / (max - min)) * plotH;
 
     const last = series.at(-1)?.p ?? startPrice;

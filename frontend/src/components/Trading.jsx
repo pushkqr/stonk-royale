@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
@@ -13,8 +13,7 @@ export default function Trading() {
     useMatch();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
-  // The chart's x-axis spans the whole round, so the empty space to the right of the
-  // line is time remaining. That has to track the host's configured round length.
+  // Sets the chart's opening window, before enough of the round has elapsed to fill it.
   const roundMillis = (lobby?.roundSeconds ?? 90) * 1000;
 
   const startPrice = phase?.asset?.startPrice ?? 0;
@@ -29,9 +28,22 @@ export default function Trading() {
     const second = Math.ceil(left / 1000);
     if (lastTick.current !== second) {
       lastTick.current = second;
-      sound.tick();
+      sound.tick(second);
     }
   }, [left, urgent]);
+
+  // Losing your margin is the loudest thing that happens to you, and until now it was one
+  // grey line in a busy feed. Keyed remount is what replays the flash on a second blowup.
+  const [jolt, setJolt] = useState(0);
+  const seenJolt = useRef(0);
+  useEffect(() => {
+    const mine = feed.filter((f) => f.kind === "LIQUIDATION" && f.playerId === session.playerId);
+    const latest = mine.at(-1)?.id ?? 0;
+    if (latest > seenJolt.current) {
+      seenJolt.current = latest;
+      setJolt((n) => n + 1);
+    }
+  }, [feed, session.playerId]);
 
   return (
     <div className="table">
@@ -74,6 +86,8 @@ export default function Trading() {
       </section>
 
       <Wire feed={feed} onSay={say} disabled={false} />
+
+      {jolt > 0 && <div className="jolt" key={jolt} aria-hidden="true" />}
     </div>
   );
 }

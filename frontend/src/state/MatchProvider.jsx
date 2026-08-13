@@ -38,6 +38,7 @@ export function MatchProvider({ session, children }) {
   const offsetRef = useRef(0);
   const rumorRef = useRef(null);
   const roundRef = useRef(null);
+  const settleRef = useRef(null);
   const feedId = useRef(0);
 
   const { code, playerId, token } = session;
@@ -74,7 +75,12 @@ export function MatchProvider({ session, children }) {
           setTick(null);
           sound.roundStart();
         }
-        if (next.phase === "FINISHED") sound.finish();
+        // The final settle lands immediately before this, so its totals are the standings.
+        if (next.phase === "FINISHED") {
+          const results = settleRef.current?.results ?? [];
+          const top = results.reduce((a, b) => (b.totalScore > a.totalScore ? b : a), results[0]);
+          sound.finish(top?.playerId === playerId);
+        }
         // A rematch reopens the room, so the next round counts as new again.
         if (next.phase === "LOBBY") roundRef.current = null;
       });
@@ -91,13 +97,14 @@ export function MatchProvider({ session, children }) {
       on(topic("feed"), (item) => {
         feedId.current += 1;
         setFeed((prev) => [...prev.slice(-FEED_LIMIT), { ...item, id: feedId.current }]);
-        if (item.kind === "LIQUIDATION") sound.liquidation();
+        if (item.kind === "LIQUIDATION") sound.liquidation(item.playerId === playerId);
       });
 
       on(topic("settled"), (next) => {
-        sound.settle();
+        settleRef.current = next;
         setSettled(next);
         const mine = next.results.find((r) => r.playerId === playerId);
+        sound.settle(mine?.roundScore ?? 0);
         if (rumorRef.current) {
           setLastRumor({ text: rumorRef.current, wasTrue: mine?.rumorWasTrue ?? false });
         }
@@ -106,6 +113,7 @@ export function MatchProvider({ session, children }) {
       on("/user/queue/rumor", (next) => {
         rumorRef.current = next.text;
         setRumor(next.text);
+        sound.deal();
       });
 
       on("/user/queue/error", (next) => setError(next.error));
@@ -140,6 +148,8 @@ export function MatchProvider({ session, children }) {
     [code],
   );
 
+  const me = board.find((row) => row.playerId === playerId) ?? null;
+
   const value = useMemo(
     () => ({
       session,
@@ -156,16 +166,24 @@ export function MatchProvider({ session, children }) {
       lobby,
       error,
       dismissError,
-      me: board.find((row) => row.playerId === playerId) ?? null,
+      me,
       serverNow,
       start: () => publish("start"),
       rematch: (sameMarket) => publish("rematch", { sameMarket }),
-      open: (side, sizeFraction, leverage) => publish("open", { side, sizeFraction, leverage }),
-      close: () => publish("close"),
+      // Cued here rather than off the returning feed message, so your own trade answers
+      // under your finger instead of after a round trip.
+      open: (side, sizeFraction, leverage) => {
+        sound.open(side);
+        publish("open", { side, sizeFraction, leverage });
+      },
+      close: () => {
+        sound.close(me?.position?.unrealisedPnl ?? 0);
+        publish("close");
+      },
       say: (text, claim) => publish("chat", { text, claim }),
     }),
     [session, connected, phase, tick, board, feed, series, rumor, lastRumor, settled,
-      standings, lobby, error, playerId, publish, serverNow, dismissError],
+      standings, lobby, error, me, publish, serverNow, dismissError],
   );
 
   return <MatchContext.Provider value={value}>{children}</MatchContext.Provider>;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMatch } from "../state/MatchProvider";
+import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, toneOf } from "../lib/format";
 import RumorCard from "./RumorCard";
@@ -42,6 +43,7 @@ export default function Intermission() {
       return;
     }
     setBeat("reveal");
+    sound.stamp(lastRumor.wasTrue);
     // Never spend the whole intermission looking backwards: a host can set it as low as a
     // second, and the next round's tip is the half that players still have to act on.
     const remaining = (phase?.endsAtMillis ?? 0) - Date.now();

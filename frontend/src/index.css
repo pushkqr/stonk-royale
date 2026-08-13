@@ -73,6 +73,41 @@ input {
   outline-offset: 2px;
 }
 
+/*
+  The parts nobody draws. Selection, the caret and the scrollbars ship with browser defaults
+  that belong to no design, and in a room this saturated a stock blue highlight is the one
+  thing on screen that came from somewhere else.
+*/
+
+::selection {
+  background: var(--scream);
+  color: var(--void-deep);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--edge) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--edge);
+  border: 3px solid var(--void-deep);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--void-lift);
+}
+
 /* --- type ---------------------------------------------------------------- */
 
 .display {
@@ -197,6 +232,12 @@ input {
   border: 2px solid var(--edge);
   border-radius: var(--radius);
   font-family: var(--data);
+  caret-color: var(--scream);
+  transition: border-color 0.14s ease;
+}
+
+.field:hover:not(:disabled) {
+  border-color: var(--void-lift);
 }
 
 .field::placeholder {

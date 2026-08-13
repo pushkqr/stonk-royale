@@ -11,7 +11,6 @@ export default function Results() {
   return (
     <main className="center-page">
       <header className="hero">
-        <p className="eyebrow">That's the match</p>
         <h1 className="display hero-verdict">
           {solo
             ? "That's practice done."

@@ -367,7 +367,9 @@
   border-radius: 5px;
   transform: rotate(-11deg);
   opacity: 0.88;
-  animation: slam 0.34s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  /* Ease-out-expo, not a spring: the verdict lands like a heavy stamp on paper. Bouncing it
+     back up would make the rubber feel light, which is the opposite of the moment. */
+  animation: slam 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .stamp-lie {
@@ -432,7 +434,9 @@
   position: relative;
   z-index: 1;
   height: 100%;
-  padding: var(--gap);
+  /* Extra at the top clears the mute tab clipped to the corner, so the masthead starts
+     below it instead of underneath it. */
+  padding: calc(var(--gap) + 1.4rem) var(--gap) var(--gap);
   display: grid;
   gap: var(--gap);
   grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr) minmax(17rem, 21rem);
@@ -448,9 +452,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  /* The mute pill is fixed to the top-right corner, so the strip leaves it a lane
-     rather than letting it land on the player's score. */
-  padding: 0.5rem 6rem 0.5rem 1rem;
+  padding: 0.5rem 1rem;
   background: var(--scream);
   color: var(--void-deep);
   border-radius: var(--radius);
@@ -472,14 +474,40 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A beat rather than a blink. The old on/off opacity flash read as a broken element; this
+   lands on the same second as the countdown cue, so the clock and the sound pulse together. */
 .strip-clock.is-urgent {
   color: var(--dump);
-  animation: pulse 1s steps(2, jump-none) infinite;
+  animation: countbeat 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  transform-origin: center;
 }
 
-@keyframes pulse {
-  50% {
-    opacity: 0.35;
+@keyframes countbeat {
+  0% {
+    transform: scale(1.16);
+  }
+  45%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Your own liquidation, felt rather than read. Fires once and leaves nothing behind. */
+.jolt {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 35%, var(--dump) 140%);
+  animation: jolt 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes jolt {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
   }
 }
 
@@ -637,6 +665,13 @@
   font-size: 0.85rem;
 }
 
+/* Talk settles against the input it is answered from, the way every chat does — rather than
+   stranding three lines at the top of a tall empty column. Pushing the first item down
+   keeps the list scrollable, which `justify-content: flex-end` would not. */
+.wire-list > li:first-child {
+  margin-top: auto;
+}
+
 .wire-empty {
   font-style: italic;
 }
@@ -718,14 +753,19 @@
   padding-left: 0.18em;
 }
 
+/* Clipped to the page's top-right corner rather than floating over it. As a free pill it
+   landed on the masthead's rounded corner and read as a browser artifact; as a tab with the
+   content cleared below, it belongs to the sheet. */
 .mute {
   position: fixed;
-  top: 0.5rem;
-  right: 0.6rem;
+  top: 0;
+  right: 0;
   z-index: 30;
-  padding: 0.2rem 0.5rem;
-  border: 1px solid var(--edge);
-  border-radius: 999px;
+  padding: 0.25rem 0.6rem 0.3rem;
+  border: 2px solid var(--edge);
+  border-top: 0;
+  border-right: 0;
+  border-radius: 0 0 0 var(--radius);
   background: var(--void-deep);
   color: var(--haze);
   font-size: 0.6rem;
@@ -847,6 +887,10 @@
 .podium-row:first-child .podium-total.dump {
   color: #a81026;
 }
+/* A flat round scores as neither, and the default haze is unreadable on yellow. */
+.podium-row:first-child .podium-total.muted {
+  color: var(--void-deep);
+}
 
 .podium-rank {
   font-size: 1.6rem;
@@ -916,8 +960,12 @@
   }
 
   .mute {
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.8rem 0.55rem;
     font-size: 0.66rem;
+  }
+
+  .table {
+    padding-top: calc(var(--gap) + 2.1rem);
   }
 
   input[type="range"] {
