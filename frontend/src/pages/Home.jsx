@@ -1,162 +1,109 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { LogIn, Play, PlusCircle, Settings } from "lucide-react";
+import { createMatch, joinMatch } from "../lib/api";
+import { authAvailable, signIn } from "../lib/auth";
+import { saveSeat } from "../lib/session";
 
 export default function Home() {
-  const { user, login, firebaseUser } = useAuth();
   const navigate = useNavigate();
-  const [joinCode, setJoinCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [roomSettings, setRoomSettings] = useState({
-    startingBalance: 100000,
-    maxPlayers: 20,
-    durationMinutes: 60
-  });
+  const [nickname, setNickname] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [token, setToken] = useState(null);
 
-  const handleCreateRoom = async () => {
-    if (!user || !firebaseUser) return;
-    setLoading(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch("http://localhost:8080/api/room/create", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(roomSettings)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        handleJoinRoom(data.roomCode);
-      } else {
-        alert(data.message || "Failed to create room");
-      }
-    } catch (error) {
-      console.error(error);
+  const go = async (action) => {
+    if (!nickname.trim()) {
+      setError("Pick a name first.");
+      return;
     }
-    setLoading(false);
+    setBusy(true);
+    setError(null);
+    try {
+      const seat = await action();
+      saveSeat(seat);
+      navigate(`/m/${seat.code}`);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleJoinRoom = async (code = joinCode) => {
-    if (!user || !firebaseUser || !code) return;
-    setLoading(true);
-    try {
-      const token = await firebaseUser.getIdToken();
-      const res = await fetch(`http://localhost:8080/api/room/join/${code}`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (res.ok) {
-        navigate(`/lobby/${code}`);
-      } else {
-        const data = await res.json();
-        alert(data.message || "Failed to join room");
-      }
-    } catch (error) {
-      console.error(error);
+  const host = () => go(() => createMatch(nickname.trim(), null, token));
+
+  const join = (event) => {
+    event.preventDefault();
+    if (code.trim().length !== 5) {
+      setError("Codes are five characters.");
+      return;
     }
-    setLoading(false);
+    go(() => joinMatch(code.trim().toUpperCase(), nickname.trim(), token));
   };
 
   return (
-    <div className="flex-center" style={{ minHeight: "100vh", flexDirection: "column", gap: "2rem", position: "relative" }}>
-      
-      {/* Unskippable Login Modal Overlay */}
-      {!user && (
-        <div style={{
-          position: "fixed",
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: "rgba(0,0,0,0.8)",
-          backdropFilter: "blur(8px)",
-          zIndex: 50,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column"
-        }}>
-          <h2 className="text-blue mono" style={{ marginBottom: "2rem", fontSize: "2rem" }}>AUTHENTICATION REQUIRED</h2>
-          <div className="glass-panel" style={{ width: "400px", textAlign: "center" }}>
-            <p className="text-secondary mb-4" style={{ marginBottom: "1.5rem" }}>Please sign in to access Stonk Royale.</p>
-            <button className="btn btn-primary" onClick={login} style={{ width: "100%", height: "60px", fontSize: "1.2rem" }}>
-              <LogIn size={24} /> Login with Google
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Home Screen (Visible underneath but blocked by modal if not logged in) */}
-      <div style={{ textAlign: "center", zIndex: 10 }}>
-        <h1 className="text-green" style={{ fontSize: "5rem", textShadow: "0 0 30px var(--accent-green-glow)" }}>
-          STONK ROYALE
+    <main className="center-page">
+      <header className="hero">
+        <h1 className="display hero-title">
+          Stonk<span className="hero-title-break">Royale</span>
         </h1>
-        <p className="text-secondary mono" style={{ fontSize: "1.2rem", marginTop: "1rem" }}>
-          THE ULTIMATE 60-MINUTE PAPER TRADING DEATHMATCH
+        <p className="hero-sub">
+          Nine minutes. Five rounds. Everyone gets a tip, and
+          <em> most of them are lies.</em>
         </p>
-      </div>
+      </header>
 
-      <div className="glass-panel" style={{ width: "450px", display: "flex", flexDirection: "column", gap: "1.5rem", zIndex: 10 }}>
-        {user && (
-          <div style={{ textAlign: "center", marginBottom: "0.5rem" }}>
-            <p style={{ fontSize: "1.1rem" }}>Welcome back, <span className="text-blue font-bold">{user.username}</span>!</p>
-          </div>
-        )}
-        
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <button className="btn btn-success" onClick={handleCreateRoom} disabled={loading || !user} style={{ padding: "16px", fontSize: "1.2rem", width: "100%" }}>
-            <PlusCircle size={24} /> Create New Room
-          </button>
-          
-          <button className="btn" onClick={() => setShowAdvanced(!showAdvanced)} style={{ width: "100%", fontSize: "0.9rem", padding: "8px", background: "transparent", border: "1px dashed var(--panel-border)" }}>
-            <Settings size={16} /> {showAdvanced ? "Hide Advanced Settings" : "Advanced Settings"}
-          </button>
-        </div>
-
-        {showAdvanced && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", background: "rgba(0,0,0,0.3)", padding: "1rem", borderRadius: "8px", border: "1px solid var(--panel-border)" }}>
-            <div>
-              <label className="text-secondary mono" style={{ fontSize: "0.8rem", display: "block", marginBottom: "0.4rem" }}>STARTING BALANCE ($)</label>
-              <input type="number" min="100" className="input-field mono" value={roomSettings.startingBalance} onChange={e => setRoomSettings({...roomSettings, startingBalance: Math.max(100, parseInt(e.target.value) || 100)})} />
-            </div>
-            <div className="flex-between" style={{ gap: "1rem" }}>
-              <div style={{ flex: 1 }}>
-                <label className="text-secondary mono" style={{ fontSize: "0.8rem", display: "block", marginBottom: "0.4rem" }}>MAX PLAYERS</label>
-                <input type="number" min="2" max="100" className="input-field mono" value={roomSettings.maxPlayers} onChange={e => setRoomSettings({...roomSettings, maxPlayers: Math.max(2, parseInt(e.target.value) || 2)})} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label className="text-secondary mono" style={{ fontSize: "0.8rem", display: "block", marginBottom: "0.4rem" }}>DURATION (MIN)</label>
-                <input type="number" min="1" className="input-field mono" value={roomSettings.durationMinutes} onChange={e => setRoomSettings({...roomSettings, durationMinutes: Math.max(1, parseInt(e.target.value) || 1)})} />
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div style={{ position: "relative", margin: "1rem 0", textAlign: "center" }}>
-          <hr style={{ borderColor: "var(--panel-border)", margin: "0" }} />
-          <span className="text-secondary mono" style={{ position: "absolute", top: "-10px", left: "50%", transform: "translateX(-50%)", background: "var(--bg-color)", padding: "0 10px" }}>OR</span>
-        </div>
-
-        <div className="flex-between" style={{ gap: "1rem" }}>
-          <input 
-            type="text" 
-            className="input-field mono" 
-            placeholder="ENTER 5-LETTER CODE" 
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            maxLength={5}
-            style={{ textAlign: "center", textTransform: "uppercase", height: "60px", fontSize: "1.5rem", letterSpacing: "5px" }}
-            disabled={!user}
+      <div className="panel sheet stack">
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span className="eyebrow">Your name</span>
+          <input
+            className="field"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="what should they call you"
+            maxLength={16}
+            autoFocus
           />
-          <button className="btn btn-primary" onClick={() => handleJoinRoom()} disabled={loading || joinCode.length !== 5 || !user} style={{ height: "60px", padding: "0 24px" }}>
-            <Play size={24} /> Join
-          </button>
+        </label>
+
+        <button className="btn btn-big btn-scream" onClick={host} disabled={busy}>
+          Start a game
+        </button>
+
+        <div className="or">
+          <span className="eyebrow">or join one</span>
         </div>
+
+        <form className="join-row" onSubmit={join}>
+          <input
+            className="field field-code"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
+            placeholder="CODE"
+            maxLength={5}
+            aria-label="Game code"
+          />
+          <button className="btn btn-big" type="submit" disabled={busy}>
+            Join
+          </button>
+        </form>
+
+        {error && <p className="notice notice-bad">{error}</p>}
+
+        {authAvailable && (
+          <button
+            className="link-btn muted"
+            onClick={async () => setToken(await signIn())}
+            disabled={busy}
+          >
+            {token ? "Signed in — your stats will stick" : "Sign in to keep your stats"}
+          </button>
+        )}
       </div>
-    </div>
+
+      <p className="footnote muted">
+        Fake tickers, fake money, real lying. Nothing here is investment advice.
+      </p>
+    </main>
   );
 }

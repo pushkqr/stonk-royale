@@ -1,27 +1,16 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { SocketProvider } from "./contexts/SocketContext";
-
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
-import Lobby from "./pages/Lobby";
-import Game from "./pages/Game";
-import Results from "./pages/Results";
+import Room from "./pages/Room";
 
-function App() {
+export default function App() {
   return (
-    <AuthProvider>
-      <SocketProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/lobby/:roomCode" element={<Lobby />} />
-            <Route path="/game/:roomCode" element={<Game />} />
-            <Route path="/results/:roomCode" element={<Results />} />
-          </Routes>
-        </Router>
-      </SocketProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        {/* Short path because this link gets pasted into group chats. */}
+        <Route path="/m/:code" element={<Room />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="Stonk Royale">
+  <defs>
+    <pattern id="halftone" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#ffffff" opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="320" fill="#2A0F3D"/>
+  <rect width="1200" height="320" fill="url(#halftone)"/>
+
+  <g font-family="Impact, Haettenschweiler, 'Arial Narrow Bold', 'Anton', sans-serif"
+     font-size="118" text-anchor="middle" letter-spacing="2">
+    <text x="604" y="146" fill="#FF3B54">STONK ROYALE</text>
+    <text x="600" y="142" fill="#FFE81A">STONK ROYALE</text>
+  </g>
+
+  <text x="600" y="196" text-anchor="middle" fill="#FFF4E0"
+        font-family="Archivo, Helvetica, Arial, sans-serif" font-size="25" font-weight="600">
+    Nine minutes. Five rounds. Everyone gets a tip.
+  </text>
+  <text x="600" y="234" text-anchor="middle" fill="#FFE81A"
+        font-family="Archivo, Helvetica, Arial, sans-serif" font-size="25" font-weight="800">
+    Most of them are lies.
+  </text>
+
+  <g font-family="'Space Mono', Consolas, monospace" font-size="15" opacity="0.85">
+    <text x="600" y="284" text-anchor="middle" fill="#9E7EBB">
+      $SOLARIS &#183; $DOGZ &#183; $MOONR &#183; $VOID &#183; $NUKE &#183; $HYPR &#183; $GRIFT &#183; $BAGZ
+    </text>
+  </g>
+</svg>

@@ -1,0 +1,84 @@
+import { useEffect, useState } from "react";
+import { useMatch } from "../state/MatchProvider";
+import { useCountdown } from "../lib/useCountdown";
+import { clock, pct, toneOf } from "../lib/format";
+import RumorCard from "./RumorCard";
+
+/** What the round actually turned out to be, in the game's own voice. */
+const REGIME_VERDICT = {
+  PUMP: "It went up. Straight up.",
+  DUMP: "It bled out.",
+  CHOP: "It went nowhere, violently.",
+  RUG: "It was a rug pull.",
+  SQUEEZE: "The shorts got squeezed.",
+};
+
+const HOLD_ON_REVEAL_MS = 5000;
+
+export default function Intermission() {
+  const { phase, rumor, lastRumor, settled, standings, session, serverNow } = useMatch();
+  const left = useCountdown(phase?.endsAtMillis, serverNow);
+
+  // Two beats: what just happened to you, then what's coming next. Without the pause the
+  // stamp would be replaced by the next card before anyone read it.
+  const [beat, setBeat] = useState(lastRumor ? "reveal" : "deal");
+
+  useEffect(() => {
+    if (!lastRumor) {
+      setBeat("deal");
+      return;
+    }
+    setBeat("reveal");
+    const id = setTimeout(() => setBeat("deal"), HOLD_ON_REVEAL_MS);
+    return () => clearTimeout(id);
+  }, [lastRumor]);
+
+  const myResult = settled?.results.find((r) => r.playerId === session.playerId);
+
+  return (
+    <main className="center-page">
+      {beat === "reveal" && settled ? (
+        <>
+          <header className="hero">
+            <p className="eyebrow">Round {settled.roundIndex + 1} is done</p>
+            <h1 className="display hero-verdict">{REGIME_VERDICT[settled.regime]}</h1>
+            {myResult && (
+              <p className={`display hero-score ${toneOf(myResult.roundScore)}`}>
+                {pct(myResult.roundScore)}
+              </p>
+            )}
+          </header>
+
+          <RumorCard text={lastRumor.text} stamp={lastRumor.wasTrue ? "TRUE" : "LIE"} />
+        </>
+      ) : (
+        <>
+          <header className="hero">
+            <p className="eyebrow">
+              Round {(phase?.roundIndex ?? 0) + 1} of {phase?.totalRounds ?? 5} · opens in{" "}
+              {clock(left)}
+            </p>
+            <h1 className="display hero-ticker">${phase?.asset?.ticker}</h1>
+            <p className="hero-blurb">{phase?.asset?.blurb}</p>
+          </header>
+
+          <RumorCard text={rumor} />
+
+          {standings.length > 0 && (
+            <ol className="mini-standings">
+              {standings.map((row) => (
+                <li key={row.playerId} className={row.playerId === session.playerId ? "is-me" : ""}>
+                  <span className="mini-rank display">{row.rank}</span>
+                  <span className="mini-name">{row.nickname}</span>
+                  <span className={`mono ${toneOf(row.totalScore)}`}>{pct(row.totalScore)}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          <p className="footnote muted">Talk it over. Nobody has to tell the truth.</p>
+        </>
+      )}
+    </main>
+  );
+}

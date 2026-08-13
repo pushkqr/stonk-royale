@@ -1,0 +1,293 @@
+package com.pushkqr.springBackend.game;
+
+import com.pushkqr.springBackend.game.model.MatchConfig;
+import com.pushkqr.springBackend.game.model.Side;
+import com.pushkqr.springBackend.game.sim.Regime;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class MatchTest {
+
+    /** Short rounds so a whole match can be stepped through in a test. */
+    private static final MatchConfig CONFIG = new MatchConfig(3, 10, 1, 10_000, 12);
+    private static final long STEP = 100;
+
+    private Match lobbyOfTwo(String code) {
+        Match match = new Match(code, CONFIG);
+        match.join("p1", "alice");
+        match.join("p2", "bob");
+        return match;
+    }
+
+    private List<GameEvent> step(Match match, long from, long to) {
+        List<GameEvent> events = new ArrayList<>();
+        for (long t = from; t <= to; t += STEP) {
+            events.addAll(match.tick(t));
+        }
+        return events;
+    }
+
+    private static <T extends GameEvent> List<T> only(List<GameEvent> events, Class<T> type) {
+        return events.stream().filter(type::isInstance).map(type::cast).toList();
+    }
+
+    /** Finds a match code whose first round runs the given regime, keeping tests deterministic. */
+    private static String codeWithRegime(Regime target) {
+        for (int i = 0; i < 10_000; i++) {
+            String code = "SEED" + i;
+            Match match = new Match(code, CONFIG);
+            match.join("p1", "alice");
+            match.join("p2", "bob");
+            match.start(0);
+            if (match.round().regime() == target) {
+                return code;
+            }
+        }
+        throw new IllegalStateException("No code produced " + target);
+    }
+
+    // --- lobby ---------------------------------------------------------------
+
+    @Test
+    void firstPlayerToJoinIsTheHost() {
+        Match match = lobbyOfTwo("ABCDE");
+
+        assertTrue(match.player("p1").isHost());
+        assertFalse(match.player("p2").isHost());
+    }
+
+    @Test
+    void rejoiningReturnsTheSameSeat() {
+        Match match = lobbyOfTwo("ABCDE");
+        assertSame(match.player("p1"), match.join("p1", "alice"));
+        assertEquals(2, match.players().size());
+    }
+
+    @Test
+    void matchNeedsTwoPlayersToStart() {
+        Match match = new Match("ABCDE", CONFIG);
+        match.join("p1", "alice");
+
+        assertThrows(IllegalStateException.class, () -> match.start(0));
+    }
+
+    @Test
+    void rejectsJoiningAfterStart() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        assertThrows(IllegalStateException.class, () -> match.join("p3", "carol"));
+    }
+
+    @Test
+    void rejectsJoiningAFullMatch() {
+        MatchConfig twoSeats = new MatchConfig(3, 10, 1, 10_000, 2);
+        Match match = new Match("ABCDE", twoSeats);
+        match.join("p1", "alice");
+        match.join("p2", "bob");
+
+        assertThrows(IllegalStateException.class, () -> match.join("p3", "carol"));
+    }
+
+    // --- phases --------------------------------------------------------------
+
+    @Test
+    void startOpensAnIntermissionWithTheFirstRoundAlreadyPlanned() {
+        Match match = lobbyOfTwo("ABCDE");
+        List<GameEvent> events = match.start(0);
+
+        assertEquals(MatchPhase.INTERMISSION, match.phase());
+        assertEquals(0, match.roundIndex());
+        assertEquals(1_000, match.phaseEndsAtMillis());
+
+        // The asset and every player's rumor exist before trading opens, so the lying
+        // can start during the intermission.
+        assertNotNull(match.round().asset());
+        assertNotNull(match.rumorFor("p1"));
+        assertNotNull(match.rumorFor("p2"));
+
+        assertEquals(MatchPhase.INTERMISSION, only(events, GameEvent.PhaseChanged.class).get(0).phase());
+    }
+
+    @Test
+    void intermissionGivesWayToTrading() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        List<GameEvent> events = step(match, 0, 1_000);
+
+        assertEquals(MatchPhase.TRADING, match.phase());
+        assertEquals(11_000, match.phaseEndsAtMillis());
+        assertEquals(CONFIG.startingCash(), match.player("p1").round().cash());
+        assertTrue(only(events, GameEvent.PhaseChanged.class).stream()
+                .anyMatch(e -> e.phase() == MatchPhase.TRADING));
+    }
+
+    @Test
+    void tradingIsClosedOutsideAnOpenRound() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        assertThrows(IllegalStateException.class,
+                () -> match.openPosition("p1", Side.LONG, 1.0, 5, 500));
+    }
+
+    // --- the round -----------------------------------------------------------
+
+    @Test
+    void bothHeadlinesBreakDuringTheRound() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        List<GameEvent> events = step(match, 0, 11_000);
+
+        assertEquals(2, only(events, GameEvent.NewsBroken.class).size());
+    }
+
+    @Test
+    void aRuggedLongAtMaxLeverageIsLiquidated() {
+        Match match = lobbyOfTwo(codeWithRegime(Regime.RUG));
+        match.start(0);
+        step(match, 0, 1_000);
+
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+        List<GameEvent> events = step(match, 1_100, 11_000);
+
+        List<GameEvent.PlayerLiquidated> liquidations = only(events, GameEvent.PlayerLiquidated.class);
+        assertEquals(1, liquidations.size());
+        assertEquals("alice", liquidations.get(0).nickname());
+        // 90% of the $10,000 margin.
+        assertEquals(9_000, liquidations.get(0).marginLost(), 1e-6);
+    }
+
+    @Test
+    void roundSettlesWithScoresAndTheRumorReveal() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        step(match, 0, 1_000);
+
+        List<GameEvent> events = step(match, 1_100, 11_000);
+        GameEvent.RoundSettled settled = only(events, GameEvent.RoundSettled.class).get(0);
+
+        assertEquals(0, settled.roundIndex());
+        assertEquals(2, settled.results().size());
+        assertNotNull(settled.regime());
+
+        // Nobody traded, so both are flat.
+        settled.results().forEach(result -> {
+            assertEquals(0, result.roundScore(), 1e-9);
+            assertNotNull(result.rumorClaimed());
+        });
+    }
+
+    @Test
+    void openPositionsAreForceClosedAtTheBuzzer() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        step(match, 0, 1_000);
+        match.openPosition("p1", Side.LONG, 0.5, 2, 1_000);
+
+        List<GameEvent> events = step(match, 1_100, 11_000);
+        GameEvent.RoundSettled settled = only(events, GameEvent.RoundSettled.class).get(0);
+
+        RoundResult alice = settled.results().stream()
+                .filter(r -> r.playerId().equals("p1")).findFirst().orElseThrow();
+        assertNotEquals(0.0, alice.roundScore(), "a held position must settle to a real score");
+    }
+
+    /**
+     * The rule the whole design rests on: a blowup in one round must not carry into the
+     * next, so nobody spends the match watching.
+     */
+    @Test
+    void cashResetsEveryRound() {
+        Match match = lobbyOfTwo(codeWithRegime(Regime.RUG));
+        match.start(0);
+        step(match, 0, 1_000);
+
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+        step(match, 1_100, 11_000);
+
+        // Wiped out in round 0...
+        assertTrue(match.player("p1").roundScores().get(0) < -50);
+
+        // ...and back to a full stack for round 1.
+        step(match, 11_100, 12_000);
+        assertEquals(MatchPhase.TRADING, match.phase());
+        assertEquals(CONFIG.startingCash(), match.player("p1").round().cash());
+        assertFalse(match.player("p1").round().hasPosition());
+    }
+
+    // --- whole match ---------------------------------------------------------
+
+    @Test
+    void matchRunsEveryRoundThenFinishes() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        List<GameEvent> events = step(match, 0, 33_000);
+
+        assertEquals(MatchPhase.FINISHED, match.phase());
+        assertEquals(3, only(events, GameEvent.RoundSettled.class).size());
+        assertEquals(3, match.player("p1").roundScores().size());
+        assertTrue(only(events, GameEvent.PhaseChanged.class).stream()
+                .anyMatch(e -> e.phase() == MatchPhase.FINISHED));
+    }
+
+    @Test
+    void finishedMatchStopsProducingEvents() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        step(match, 0, 33_000);
+
+        assertTrue(step(match, 33_100, 40_000).isEmpty());
+    }
+
+    @Test
+    void everyRoundUsesADifferentAsset() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        List<String> tickers = new ArrayList<>();
+        for (long t = 0; t <= 33_000; t += STEP) {
+            match.tick(t);
+            if (match.round() != null && !tickers.contains(match.round().asset().ticker())) {
+                tickers.add(match.round().asset().ticker());
+            }
+        }
+
+        assertEquals(3, tickers.size(), "a match should not repeat an asset: " + tickers);
+    }
+
+    @Test
+    void standingsRankByTotalScore() {
+        Match match = lobbyOfTwo(codeWithRegime(Regime.PUMP));
+        match.start(0);
+        step(match, 0, 1_000);
+
+        match.openPosition("p1", Side.LONG, 1.0, 2, 1_000);   // rides the pump
+        step(match, 1_100, 33_000);
+
+        List<Standing> standings = match.standings();
+        assertEquals(2, standings.size());
+        assertEquals(1, standings.get(0).rank());
+        assertEquals("alice", standings.get(0).nickname());
+        assertTrue(standings.get(0).totalScore() > standings.get(1).totalScore());
+    }
+
+    @Test
+    void sameCodeReplaysTheSameMarket() {
+        Match first = lobbyOfTwo("REPLAY");
+        Match second = lobbyOfTwo("REPLAY");
+        first.start(0);
+        second.start(0);
+
+        assertEquals(first.round().regime(), second.round().regime());
+        assertEquals(first.round().asset(), second.round().asset());
+        assertArrayEquals(first.round().path().toArray(), second.round().path().toArray());
+    }
+}

@@ -1,0 +1,9 @@
+services:
+  stonk-royale:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Lock this to your own origin once it's on a real domain.
+      ALLOWED_ORIGINS: "*"
+    restart: unless-stopped

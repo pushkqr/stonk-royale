@@ -1,181 +1,259 @@
+/*
+  Stonk Royale — "scandal rag"
+
+  The subject of this game is gossip, not finance: the tickers are jokes, the headlines
+  are tabloid, and most rumours are lies. So the surface is a cheap printed scandal sheet
+  rather than a trading terminal. Deep grape base keeps red and green both legible
+  without the near-black fintech cliche; tabloid yellow does all the shouting.
+*/
+
 :root {
-  /* Color Palette */
-  --bg-color: #0A0A0A;
-  --panel-bg: rgba(255, 255, 255, 0.03);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --text-primary: #FFFFFF;
-  --text-secondary: #A0A0A0;
-  
-  /* Cyberpunk / Neon Accents */
-  --accent-green: #00FF66;
-  --accent-green-glow: rgba(0, 255, 102, 0.2);
-  --accent-red: #FF3366;
-  --accent-red-glow: rgba(255, 51, 102, 0.2);
-  --accent-blue: #00E5FF;
-  --accent-blue-glow: rgba(0, 229, 255, 0.2);
-  --accent-purple: #B026FF;
+  --void: #2a0f3d;
+  --void-deep: #1b0a28;
+  --void-lift: #3d1a55;
+  --edge: #56287a;
 
-  /* Typography */
-  --font-main: 'Inter', system-ui, sans-serif;
-  --font-mono: 'Space Grotesk', 'Roboto Mono', monospace;
+  --scream: #ffe81a;
+  --pump: #21e07a;
+  --dump: #ff3b54;
 
-  /* Effects */
-  --glass-blur: blur(12px);
-  --transition: all 0.2s ease-in-out;
+  --paper: #fff4e0;
+  --haze: #9e7ebb;
+
+  --display: "Anton", "Haettenschweiler", "Impact", sans-serif;
+  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --data: "Space Mono", "SFMono-Regular", Consolas, monospace;
+
+  --gap: clamp(0.6rem, 1.2vw, 1rem);
+  --radius: 6px;
 }
 
-* {
-  margin: 0;
-  padding: 0;
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
-  background-color: var(--bg-color);
-  color: var(--text-primary);
-  font-family: var(--font-main);
-  min-height: 100vh;
-  overflow-x: hidden;
-  /* subtle radial gradient for arcade screen effect */
-  background-image: radial-gradient(circle at 50% 50%, #151515 0%, #0A0A0A 100%);
+  margin: 0;
+  background: var(--void);
+  color: var(--paper);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Glassmorphism Panel Utility */
-.glass-panel {
-  background: var(--panel-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--panel-border);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+/* Cheap-print halftone, barely there — gives flat panels a printed grain. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
+  background-size: 4px 4px;
 }
 
-/* Typography Utilities */
-h1, h2, h3, h4 {
-  font-weight: 700;
-  letter-spacing: -0.02em;
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--scream);
+  outline-offset: 2px;
+}
+
+/* --- type ---------------------------------------------------------------- */
+
+.display {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 0.92;
+  text-transform: uppercase;
 }
 
 .mono {
-  font-family: var(--font-mono);
+  font-family: var(--data);
+  font-variant-numeric: tabular-nums;
 }
 
-.text-green { color: var(--accent-green); }
-.text-red { color: var(--accent-red); }
-.text-blue { color: var(--accent-blue); }
-.text-secondary { color: var(--text-secondary); }
+.eyebrow {
+  font-family: var(--data);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
 
-/* Buttons */
+.pump {
+  color: var(--pump);
+}
+.dump {
+  color: var(--dump);
+}
+.scream {
+  color: var(--scream);
+}
+.muted {
+  color: var(--haze);
+}
+
+/* --- surfaces ------------------------------------------------------------ */
+
+.panel {
+  position: relative;
+  z-index: 1;
+  background: var(--void-deep);
+  border: 2px solid var(--edge);
+  border-radius: var(--radius);
+  padding: var(--gap);
+  min-height: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+/* --- buttons ------------------------------------------------------------- */
+
 .btn {
-  background: var(--panel-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--panel-border);
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-family: var(--font-main);
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: var(--transition);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0.4rem;
+  padding: 0.7rem 1.1rem;
+  border: 2px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--void-lift);
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  /* Some buttons are anchors — "Play again" is a link home — so reset link styling. */
+  text-decoration: none;
+  transition: transform 0.08s ease, filter 0.15s ease;
 }
 
-.btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+.btn:hover:not(:disabled) {
+  filter: brightness(1.18);
 }
 
-.btn:active {
-  transform: translateY(1px);
+.btn:active:not(:disabled) {
+  transform: translateY(2px);
 }
 
-.btn-primary {
-  background: var(--accent-blue);
-  color: #000;
-  border: none;
-  box-shadow: 0 0 15px var(--accent-blue-glow);
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.btn-primary:hover {
-  background: #33EEFF;
-  box-shadow: 0 0 25px var(--accent-blue-glow);
+.btn-scream {
+  background: var(--scream);
+  border-color: var(--scream);
+  color: var(--void-deep);
 }
 
-.btn-success {
-  background: var(--accent-green);
-  color: #000;
-  border: none;
-  box-shadow: 0 0 15px var(--accent-green-glow);
+.btn-pump {
+  background: var(--pump);
+  border-color: var(--pump);
+  color: var(--void-deep);
 }
 
-.btn-success:hover {
-  background: #33FF88;
-  box-shadow: 0 0 25px var(--accent-green-glow);
+.btn-dump {
+  background: var(--dump);
+  border-color: var(--dump);
+  color: var(--void-deep);
 }
 
-.btn-danger {
-  background: var(--accent-red);
-  color: #fff;
-  border: none;
-  box-shadow: 0 0 15px var(--accent-red-glow);
+.btn-big {
+  padding: 1rem 1.4rem;
+  font-size: 1.6rem;
 }
 
-.btn-danger:hover {
-  background: #FF5588;
-  box-shadow: 0 0 25px var(--accent-red-glow);
-}
+/* --- inputs -------------------------------------------------------------- */
 
-/* Inputs */
-.input-field {
+.field {
   width: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--panel-border);
-  color: var(--text-primary);
-  padding: 14px 16px;
-  border-radius: 8px;
-  font-family: var(--font-main);
-  font-size: 1rem;
-  transition: var(--transition);
+  padding: 0.8rem 0.9rem;
+  background: var(--void);
+  border: 2px solid var(--edge);
+  border-radius: var(--radius);
+  font-family: var(--data);
 }
 
-.input-field:focus {
-  outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 10px var(--accent-blue-glow);
+.field::placeholder {
+  color: var(--haze);
 }
 
-.input-field::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+.field-code {
+  font-family: var(--display);
+  font-size: 1.9rem;
+  text-align: center;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  text-transform: uppercase;
 }
 
-/* Layout Utilities */
-.flex-center {
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--scream);
+}
+
+/* --- shared layout ------------------------------------------------------- */
+
+.stack {
   display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.center-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
 }
 
-.flex-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.sheet {
+  width: min(28rem, 100%);
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

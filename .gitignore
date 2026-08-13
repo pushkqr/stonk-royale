@@ -6,14 +6,16 @@ dist-ssr/
 .npm
 .yarn/cache/
 .eslintcache
-node-backend/
 
 # Spring Boot / Backend
 backend/target/
 !backend/.mvn/wrapper/maven-wrapper.jar
-backend/src/main/resources/application.properties
-backend/src/test/resources/application-test.properties
 backend/src/main/resources/serviceAccount.json
+
+# Local env overrides
+.env
+.env.local
+frontend/.env
 
 
 # Logs
@@ -40,3 +42,6 @@ Thumbs.db
 .settings
 .springBeans
 .sts4-cache
+
+# Built frontend, folded in at package time by the Dockerfile
+backend/src/main/resources/static/

@@ -1,0 +1,78 @@
+package com.pushkqr.springBackend.server;
+
+import com.pushkqr.springBackend.game.Match;
+import com.pushkqr.springBackend.game.MatchPlayer;
+import com.pushkqr.springBackend.game.model.MatchConfig;
+import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/match")
+public class MatchController {
+
+    private final MatchRegistry matches;
+    private final SessionRegistry sessions;
+    private final PlayerIdentity identity;
+    private final MatchBroadcaster broadcaster;
+
+    public MatchController(MatchRegistry matches, SessionRegistry sessions,
+            PlayerIdentity identity, MatchBroadcaster broadcaster) {
+        this.matches = matches;
+        this.sessions = sessions;
+        this.identity = identity;
+        this.broadcaster = broadcaster;
+    }
+
+    @PostMapping
+    public Views.JoinResult create(@RequestBody Requests.Create request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        Match match = matches.create(configFor(request));
+        return seat(match, request.nickname(), authorization);
+    }
+
+    @PostMapping("/{code}/join")
+    public Views.JoinResult join(@PathVariable String code, @RequestBody Requests.Join request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        Match match = require(code);
+        Views.JoinResult result = seat(match, request.nickname(), authorization);
+        broadcaster.lobby(match);
+        return result;
+    }
+
+    @GetMapping("/{code}")
+    public Views.Lobby lobby(@PathVariable String code) {
+        return broadcaster.lobbyView(require(code));
+    }
+
+    private Views.JoinResult seat(Match match, String requestedNickname, String authorization) {
+        String nickname = Text.nickname(requestedNickname);
+        MatchPlayer player = match.join(identity.resolve(authorization), nickname);
+        PlayerSession session = sessions.create(match.code(), player.id(), nickname);
+
+        return new Views.JoinResult(
+                match.code(), player.id(), player.nickname(), session.token(), player.isHost());
+    }
+
+    private Match require(String code) {
+        Match match = matches.get(code);
+        if (match == null) {
+            throw new MatchNotFoundException("No match with code " + code);
+        }
+        return match;
+    }
+
+    /**
+     * Shorter rounds make a full match testable in under a minute, which matters a lot
+     * more during playtesting than it does in a real game.
+     */
+    private MatchConfig configFor(Requests.Create request) {
+        MatchConfig standard = MatchConfig.standard();
+        return new MatchConfig(
+                request.rounds() == null ? standard.rounds() : request.rounds(),
+                request.roundSeconds() == null ? standard.roundSeconds() : request.roundSeconds(),
+                standard.intermissionSeconds(),
+                standard.startingCash(),
+                standard.maxPlayers());
+    }
+}
