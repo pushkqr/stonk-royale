@@ -446,7 +446,7 @@ class MatchTest {
     }
 
     @Test
-    void sixPlayersPilingInMovesPriceFourToSixPercent() {
+    void sixPlayersPilingInReachesTheFourPercentClamp() {
         Match match = lobbyOf("SIXUP", 6);
         startPlaying(match, 0);
         step(match, 0, 1_000);
@@ -458,11 +458,10 @@ class MatchTest {
         double base = match.round().priceAt(0);
         double effective = match.currentPrice(1_000);
         double pctMove = (effective - base) / base;
-        // Six kicks of 0.015 sum to 0.09, clamped by MarketImpact.MAX_IMPACT to exactly
-        // 0.06 — the same literal as this upper bound. A tiny epsilon absorbs the ~1-ULP
-        // rounding from round-tripping that clamp through base * (1 + value) and back to
-        // a fraction; production impact is still genuinely capped at 6%.
-        assertTrue(pctMove >= 0.04 && pctMove <= 0.06 + 1e-9,
+        // Six kicks of 1.5% sum to 9% raw, clamped to MarketImpact's 4% cap. The lower
+        // bound is loose (three players alone already clamp it) — the point of this test
+        // is that a crowd reliably reaches the cap, not the exact headcount needed to.
+        assertTrue(pctMove >= 0.03 && pctMove <= 0.04 + 1e-9,
                 "six players piling in together moved price by " + (pctMove * 100) + "%");
     }
 

@@ -55,8 +55,8 @@ class MarketImpactTest {
             impact.record(500_000, +1, REFERENCE, now);
             now += 100;
         }
-        assertTrue(impact.valueAt(now) <= 0.06 + 1e-9,
-                "impact must never exceed the documented 6% cap, however hard the room pushes");
+        assertTrue(impact.valueAt(now) <= 0.04 + 1e-9,
+                "impact must never exceed the documented 4% cap, however hard the room pushes");
     }
 
     @Test
@@ -93,5 +93,41 @@ class MarketImpactTest {
         }
         assertTrue(Math.abs(impact.valueAt(now)) < worstCaseLiquidationMove,
                 "the impact cap must stay under the smallest liquidation-triggering move at any leverage");
+    }
+
+    /**
+     * The test above only proves one kick can't liquidate. It doesn't prove the thing that
+     * actually matters for a held position: a position's entry price already has whatever
+     * impact existed AT ENTRY baked into it, so the real exposure is the swing between that
+     * entry-time impact and wherever impact is when the position is later checked — which,
+     * if the room piles hard one way at entry and hard the other way afterward, can be up
+     * to twice the cap, not just the cap once.
+     */
+    @Test
+    void theFullSwingFromEntryToNowCanNeverAloneTriggerLiquidationEither() {
+        double worstCaseLiquidationMove = Position.MAINTENANCE / Position.MAX_LEVERAGE;
+
+        MarketImpact impact = new MarketImpact(0);
+        // Push hard to the ceiling — this stands in for the impact a position's entry
+        // price would have been filled against, in the worst case.
+        long now = 0;
+        for (int i = 0; i < 50; i++) {
+            impact.record(1_000_000, +1, REFERENCE, now);
+            now += 50;
+        }
+        double atEntry = impact.valueAt(now);
+
+        // Then reverse hard to the floor — the room dumping after the position opened.
+        for (int i = 0; i < 50; i++) {
+            impact.record(1_000_000, -1, REFERENCE, now);
+            now += 50;
+        }
+        double later = impact.valueAt(now);
+
+        double fullSwing = Math.abs(later - atEntry);
+        assertTrue(fullSwing < worstCaseLiquidationMove,
+                "the total swing between a position's entry-time impact and any later read "
+                + "must stay under the smallest liquidation-triggering move, since entry "
+                + "price already embeds whatever impact existed when the position opened");
     }
 }

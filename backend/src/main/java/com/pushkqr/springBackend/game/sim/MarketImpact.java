@@ -16,8 +16,16 @@ public final class MarketImpact {
     /** How fast a kick fades: within one time constant it is down to ~37% of its peak. */
     private static final double DECAY_TAU_SECONDS = 4.0;
 
-    /** However hard the room pushes, the price can never be displaced more than this. */
-    private static final double MAX_IMPACT = 0.06;
+    /**
+     * However hard the room pushes, the price can never be displaced more than this.
+     *
+     * Set so that twice this value — the worst-case swing a held position can see between
+     * its own entry (which already has whatever impact existed at entry baked into its
+     * fill price) and any later read — stays under the smallest move that liquidates any
+     * leverage up to {@code Position.MAX_LEVERAGE} (9%, at 10x). A single kick alone was
+     * always safely under that; the full entry-to-now swing was not, at the old 6% cap.
+     */
+    private static final double MAX_IMPACT = 0.04;
 
     private double value;
     private long lastMillis;
