@@ -34,4 +34,13 @@ public final class Requests {
     /** sameMarket replays the identical market, making the rematch a fair rerun. */
     public record Rematch(boolean sameMarket) {
     }
+
+    /** Host-only, lobby-only. Frees the seat; the room code still works, so it is not a ban. */
+    public record Kick(String playerId) {
+    }
+
+    /** Host-only, lobby-only retune. All five values are required — the client sends the full set. */
+    public record Config(int rounds, int roundSeconds, int intermissionSeconds,
+            double startingCash, int maxPlayers) {
+    }
 }

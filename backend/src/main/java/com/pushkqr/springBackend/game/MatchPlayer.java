@@ -14,6 +14,12 @@ public final class MatchPlayer {
     /** Not final: the badge moves if the host leaves, so the room stays startable. */
     private boolean host;
 
+    /**
+     * Whether this player's socket is currently up. Starts true — a seat is only ever
+     * created by a join that is about to open one.
+     */
+    private boolean connected = true;
+
     private PlayerRound round;
 
     public MatchPlayer(String id, String nickname, boolean host) {
@@ -36,6 +42,14 @@ public final class MatchPlayer {
 
     void promoteToHost() {
         host = true;
+    }
+
+    public boolean isConnected() {
+        return connected;
+    }
+
+    void setConnected(boolean value) {
+        connected = value;
     }
 
     /** Current round state, or null outside a round. */

@@ -97,6 +97,12 @@ The host picks these before starting, either with a preset — **Quick** (3×60s
 (5×90s) or **Long** (7×90s) — or from individual dials behind an _Advanced settings_
 toggle, which shows the estimated match length as you move them.
 
+The host keeps those controls in the room itself: **Change match settings** retunes rounds,
+length, intermission, seats and starting cash from the lobby, and the change is broadcast to
+everyone waiting. Settings lock the moment the match starts. A host can also clear a seat
+with the ✕ beside a player's name — that frees the slot but is not a ban, since the room
+code still works.
+
 Rounds cap at 8 because a match never repeats an asset. Starting cash is **cosmetic**:
 scoring is a percentage of it, so changing it alters the numbers on screen and nothing
 about the outcome. The UI says so plainly rather than letting hosts mistake it for a
@@ -110,6 +116,12 @@ won't unlock its Ready button until you've actually scrolled to the end. Everyon
 ready up before play begins, but a 90-second failsafe starts it anyway — one player
 wandering off shouldn't be able to stall the whole table indefinitely. Anyone who has read
 the briefing before on this browser skips straight to a waiting screen.
+
+A dropped socket is treated differently depending on when it happens. In the lobby it frees
+the seat immediately, so someone who closes their window and comes back does not leave a
+ghost behind holding a slot. Mid-match the seat is kept — phones lock their screens
+constantly and the client reconnects — but a player whose socket is down no longer holds the
+briefing gate shut for everyone else.
 
 Each round cycles through three beats:
 
@@ -395,7 +407,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-118 tests, all passing. They assert **design targets rather than implementation details**:
+127 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias

@@ -95,7 +95,14 @@ export default function Briefing() {
           </div>
 
           {sent ? (
-            waiting
+            <>
+              {waiting}
+              {/* Re-opened by choice after already readying up, so there has to be a way
+                  back out — otherwise the only exit is sitting out the failsafe timer. */}
+              <button type="button" className="btn" onClick={() => setOpen(false)}>
+                Back to the room
+              </button>
+            </>
           ) : (
             <>
               <button className="btn btn-big btn-scream" onClick={confirm} disabled={!readAll}>

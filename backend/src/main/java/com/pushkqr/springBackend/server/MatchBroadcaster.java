@@ -12,6 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /** Owns every topic name and every model-to-wire conversion, so nothing else has to. */
 @Component
@@ -94,6 +95,14 @@ public class MatchBroadcaster {
         }
     }
 
+    /**
+     * Tells one player they are out, so their client can stand down instead of retrying a
+     * token the server has already dropped.
+     */
+    public void kicked(String playerId) {
+        template.convertAndSendToUser(playerId, "/queue/kicked", Map.of("kicked", true));
+    }
+
     // --- views ---------------------------------------------------------------
 
     public Views.Lobby lobbyView(Match match) {
@@ -102,6 +111,7 @@ public class MatchBroadcaster {
                 match.phase().name(),
                 match.config().rounds(),
                 match.config().roundSeconds(),
+                match.config().intermissionSeconds(),
                 match.config().startingCash(),
                 match.config().maxPlayers(),
                 match.players().stream()

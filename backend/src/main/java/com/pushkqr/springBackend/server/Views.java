@@ -74,7 +74,8 @@ public final class Views {
     }
 
     public record Lobby(String code, String phase, int totalRounds, int roundSeconds,
-            double startingCash, int maxPlayers, List<LobbyPlayer> players) {
+            int intermissionSeconds, double startingCash, int maxPlayers,
+            List<LobbyPlayer> players) {
     }
 
     public record JoinResult(String code, String playerId, String nickname, String token, boolean host) {

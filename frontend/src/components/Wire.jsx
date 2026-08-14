@@ -28,10 +28,15 @@ const QUICK_LINES = [
  */
 function Wire({ feed, onSay, disabled, className = "" }) {
   const [draft, setDraft] = useState("");
-  const endRef = useRef(null);
+  const listRef = useRef(null);
 
+  // Scroll the list's own box, never scrollIntoView. scrollIntoView walks up and scrolls
+  // every ancestor container too — on mobile, where the page itself scrolls, that dragged
+  // the whole viewport down to the wire on every incoming message and made trading
+  // impossible.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
   }, [feed]);
 
   const submit = (event) => {
@@ -48,7 +53,7 @@ function Wire({ feed, onSay, disabled, className = "" }) {
         <h2 className="display pane-title">The Wire</h2>
       </header>
 
-      <ul className="wire-list">
+      <ul className="wire-list" ref={listRef}>
         {feed.length === 0 && <li className="wire-empty muted">Nobody's talking. Suspicious.</li>}
 
         {feed.map((item) => (
@@ -63,7 +68,6 @@ function Wire({ feed, onSay, disabled, className = "" }) {
             )}
           </li>
         ))}
-        <li ref={endRef} />
       </ul>
 
       {/* A round leaves no time to read a chart, size a position and type a convincing

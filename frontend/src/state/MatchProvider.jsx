@@ -166,12 +166,29 @@ export function MatchProvider({ session, children }) {
 
       on("/user/queue/error", (next) => setError(next.error));
 
+      on("/user/queue/kicked", () => {
+        // The host cleared this seat. The token is already dead server-side, so retrying
+        // is pointless — drop it and go back to the front page.
+        clearSeat(code);
+        window.location.assign("/");
+      });
+
       client.publish({ destination: `/app/match/${code}/sync`, body: "{}" });
     };
 
     client.onWebSocketClose = () => setConnected(false);
-    client.onStompError = (frame) =>
-      setError(frame.headers?.message ?? "Lost the connection to the game.");
+    client.onStompError = (frame) => {
+      const message = frame.headers?.message ?? "Lost the connection to the game.";
+      // The server no longer knows this token — the seat was given up while the socket was
+      // down. Retrying can never succeed, so drop the dead seat and let the join screen
+      // ask for a name again instead of looping on "Reconnecting…" forever.
+      if (message.toLowerCase().includes("token")) {
+        clearSeat(code);
+        window.location.reload();
+        return;
+      }
+      setError(message);
+    };
 
     client.activate();
     clientRef.current = client;
@@ -227,6 +244,8 @@ export function MatchProvider({ session, children }) {
   const ready = useCallback(() => publish("ready"), [publish]);
   const start = useCallback(() => publish("start"), [publish]);
   const rematch = useCallback((sameMarket) => publish("rematch", { sameMarket }), [publish]);
+  const kick = useCallback((playerId) => publish("kick", { playerId }), [publish]);
+  const configure = useCallback((settings) => publish("config", settings), [publish]);
   const say = useCallback((text, claim) => publish("chat", { text, claim }), [publish]);
 
   // Cued here rather than off the returning feed message, so your own trade answers under
@@ -267,11 +286,13 @@ export function MatchProvider({ session, children }) {
       open,
       close,
       say,
+      kick,
+      configure,
       quit,
     }),
     [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, lobby,
       error, me, serverNow, dismissError, quit, readyState, ready, start, rematch, open,
-      close, say],
+      close, say, kick, configure],
   );
 
   const priceValue = useMemo(() => ({ tick, series }), [tick, series]);

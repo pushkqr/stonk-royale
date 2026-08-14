@@ -107,6 +107,37 @@ class MatchTest {
         assertThrows(IllegalStateException.class, () -> match.join("p3", "carol"));
     }
 
+    @Test
+    void theHostCanRetuneTheMatchFromTheLobby() {
+        Match match = lobbyOfTwo("CONFIG1");
+        match.updateConfig(new MatchConfig(7, 120, 30, 50_000, 8));
+
+        assertEquals(7, match.config().rounds());
+        assertEquals(120, match.config().roundSeconds());
+        assertEquals(8, match.config().maxPlayers());
+    }
+
+    @Test
+    void settingsAreFrozenOnceTheMatchIsRunning() {
+        Match match = lobbyOfTwo("CONFIG2");
+        startPlaying(match, 0);
+
+        assertThrows(IllegalStateException.class,
+                () -> match.updateConfig(new MatchConfig(7, 120, 30, 50_000, 8)));
+    }
+
+    @Test
+    void theRoomCannotBeShrunkBelowThePeopleAlreadyInIt() {
+        Match match = new Match("CONFIG3", CONFIG);
+        match.join("p1", "alice");
+        match.join("p2", "bob");
+        match.join("p3", "carol");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> match.updateConfig(new MatchConfig(5, 90, 25, 10_000, 2)),
+                "three players cannot fit in a two-seat room");
+    }
+
     // --- phases --------------------------------------------------------------
 
     @Test
@@ -173,6 +204,59 @@ class MatchTest {
         step(match, 0, 5_000);
 
         assertEquals(MatchPhase.BRIEFING, match.phase());
+    }
+
+    @Test
+    void aDisconnectedPlayerDoesNotHoldTheBriefingGateOpen() {
+        Match match = lobbyOfTwo("GHOST1");
+        match.start(0);
+        match.markReady("p1");
+
+        // p2 closed their window without readying. Before disconnect handling existed this
+        // hung the whole room until the 90s failsafe.
+        match.tick(100);
+        assertEquals(MatchPhase.BRIEFING, match.phase(), "still waiting on p2");
+
+        match.markConnected("p2", false);
+        match.tick(200);
+        assertEquals(MatchPhase.INTERMISSION, match.phase(),
+                "a disconnected player must not block the gate");
+    }
+
+    @Test
+    void aReconnectingPlayerCountsAgainstTheGate() {
+        Match match = lobbyOfTwo("GHOST2");
+        match.start(0);
+        match.markReady("p1");
+        match.markConnected("p2", false);
+        match.markConnected("p2", true);
+
+        match.tick(100);
+        assertEquals(MatchPhase.BRIEFING, match.phase(),
+                "p2 is back and has not readied, so the gate must stay shut");
+    }
+
+    @Test
+    void theGateDoesNotOpenWhenEverybodyHasVanished() {
+        Match match = lobbyOfTwo("GHOST3");
+        match.start(0);
+        match.markConnected("p1", false);
+        match.markConnected("p2", false);
+
+        match.tick(100);
+        assertEquals(MatchPhase.BRIEFING, match.phase(),
+                "an empty room must not fall through the gate on a vacuous truth");
+    }
+
+    @Test
+    void leavingIsAllowedFromTheLobbyButNotMidRound() {
+        Match lobby = lobbyOfTwo("LEAVE1");
+        assertTrue(lobby.leave("p2"), "a lobby seat can be given up");
+
+        Match playing = lobbyOfTwo("LEAVE2");
+        startPlaying(playing, 0);
+        step(playing, 0, 1_000);
+        assertFalse(playing.leave("p2"), "a mid-round seat is kept on purpose");
     }
 
     @Test

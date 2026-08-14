@@ -48,12 +48,16 @@ public final class Match {
     private static final long FLOW_SURGE_COOLDOWN_MILLIS = 5_000;
 
     private final String code;
-    private final MatchConfig config;
+    /** Not final: the host can retune the room from the lobby, before anything is planned. */
+    private MatchConfig config;
     private final Map<String, MatchPlayer> players = new LinkedHashMap<>();
     private final RoundPlanner planner = new RoundPlanner();
 
-    /** One player's largest possible position — what one trade's impact is measured against. */
-    private final double referenceNotional;
+    /**
+     * One player's largest possible position — what one trade's impact is measured against.
+     * Not final: it is derived from starting cash, which the host can change in the lobby.
+     */
+    private double referenceNotional;
 
     private MatchPhase phase = MatchPhase.LOBBY;
     private int roundIndex = -1;
@@ -153,6 +157,25 @@ public final class Match {
     }
 
     /**
+     * Retunes the room before it opens.
+     *
+     * Lobby only. After the start whistle the config drives round planning and scoring, and
+     * swapping it under a running match would leave the two disagreeing about how long a
+     * round is and how many are left.
+     */
+    public void updateConfig(MatchConfig next) {
+        if (phase != MatchPhase.LOBBY) {
+            throw new IllegalStateException("Settings are locked once the match has started");
+        }
+        if (next.maxPlayers() < players.size()) {
+            throw new IllegalArgumentException(
+                    "There are already " + players.size() + " players in the room");
+        }
+        config = next;
+        referenceNotional = config.startingCash() * Position.MAX_LEVERAGE;
+    }
+
+    /**
      * Reopens the finished room for another match, keeping every seat and setting.
      *
      * Returning to LOBBY rather than straight into a round is deliberate: it is the only
@@ -188,7 +211,7 @@ public final class Match {
             case LOBBY, FINISHED -> {
             }
             case BRIEFING -> {
-                if (readyIds.containsAll(players.keySet()) || now >= phaseEndsAtMillis) {
+                if (everyPresentPlayerIsReady() || now >= phaseEndsAtMillis) {
                     enterIntermission(now, events);
                 }
             }
@@ -333,6 +356,35 @@ public final class Match {
             return false;
         }
         return readyIds.add(playerId);
+    }
+
+    /**
+     * Records whether a player's socket is up.
+     *
+     * A dropped socket is not a departure — phones lock their screens constantly and the
+     * client reconnects — so this never frees the seat. It exists so a player who has
+     * vanished cannot hold the briefing gate shut for everybody else.
+     */
+    public void markConnected(String playerId, boolean connected) {
+        MatchPlayer player = players.get(playerId);
+        if (player != null) {
+            player.setConnected(connected);
+        }
+    }
+
+    /**
+     * Whether everyone still here has readied. Players whose socket has dropped are not
+     * counted — otherwise one closed window holds the whole room until the failsafe.
+     *
+     * An entirely empty room returns false rather than true: with nobody connected the
+     * check would otherwise be vacuously satisfied and start a match to an empty room.
+     */
+    private boolean everyPresentPlayerIsReady() {
+        List<String> present = players.values().stream()
+                .filter(MatchPlayer::isConnected)
+                .map(MatchPlayer::id)
+                .toList();
+        return !present.isEmpty() && readyIds.containsAll(present);
     }
 
     public int readyCount() {

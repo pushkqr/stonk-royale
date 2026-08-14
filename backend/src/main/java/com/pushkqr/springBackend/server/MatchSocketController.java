@@ -2,6 +2,8 @@ package com.pushkqr.springBackend.server;
 
 import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
 import com.pushkqr.springBackend.game.Match;
+import com.pushkqr.springBackend.game.MatchPhase;
+import com.pushkqr.springBackend.game.model.MatchConfig;
 import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.model.Side;
 import com.pushkqr.springBackend.game.sim.Regime;
@@ -21,10 +23,13 @@ public class MatchSocketController {
 
     private final MatchRegistry matches;
     private final MatchBroadcaster broadcaster;
+    private final SessionRegistry sessions;
 
-    public MatchSocketController(MatchRegistry matches, MatchBroadcaster broadcaster) {
+    public MatchSocketController(MatchRegistry matches, MatchBroadcaster broadcaster,
+            SessionRegistry sessions) {
         this.matches = matches;
         this.broadcaster = broadcaster;
+        this.sessions = sessions;
     }
 
     @MessageMapping("/match/{code}/start")
@@ -94,12 +99,64 @@ public class MatchSocketController {
     }
 
     /**
+     * Host clears a seat from the waiting room.
+     *
+     * Lobby only: once a match is running, seats are kept on purpose and yanking one would
+     * take a live player out of a round. Not a ban — the code still works and they can
+     * come back through the invite link.
+     */
+    @MessageMapping("/match/{code}/kick")
+    public void kick(@DestinationVariable String code, @Payload Requests.Kick request,
+            Principal principal) {
+        Match match = require(code, principal);
+        PlayerSession actor = session(principal);
+
+        if (!match.player(actor.playerId()).isHost()) {
+            throw new IllegalStateException("Only the host can remove a player");
+        }
+        if (match.phase() != MatchPhase.LOBBY) {
+            throw new IllegalStateException("Players can only be removed before the match starts");
+        }
+        if (actor.playerId().equals(request.playerId())) {
+            throw new IllegalStateException("You cannot remove yourself — use Leave");
+        }
+        if (!match.leave(request.playerId())) {
+            return;
+        }
+
+        broadcaster.kicked(request.playerId());
+        sessions.remove(sessionTokenOf(request.playerId()));
+        broadcaster.lobby(match);
+    }
+
+    /**
+     * Host retunes the room from the lobby. Bounds are enforced by MatchConfig's own
+     * constructor, so a bad value surfaces as an error to the host rather than a bad match.
+     */
+    @MessageMapping("/match/{code}/config")
+    public void config(@DestinationVariable String code, @Payload Requests.Config request,
+            Principal principal) {
+        Match match = require(code, principal);
+        if (!match.player(session(principal).playerId()).isHost()) {
+            throw new IllegalStateException("Only the host can change the settings");
+        }
+
+        match.updateConfig(new MatchConfig(
+                request.rounds(), request.roundSeconds(), request.intermissionSeconds(),
+                request.startingCash(), request.maxPlayers()));
+        broadcaster.lobby(match);
+    }
+
+    /**
      * Re-sends current state on connect. Phase messages only fire on transitions, so
      * without this a player who reloads mid-round sees nothing until the next one.
      */
     @MessageMapping("/match/{code}/sync")
     public void sync(@DestinationVariable String code, Principal principal) {
         Match match = require(code, principal);
+        // Resyncing means their socket is back up — clears any disconnect recorded while
+        // they were away, so they count against the briefing gate again.
+        match.markConnected(session(principal).playerId(), true);
         broadcaster.lobby(match);
         broadcaster.standings(match);
         broadcaster.ready(match);
@@ -200,5 +257,10 @@ public class MatchSocketController {
     /** Sub-dollar assets need more decimals than a stock ticker would. */
     private static String price(double value) {
         return value >= 1 ? String.format("$%,.2f", value) : String.format("$%.4f", value);
+    }
+
+    /** The kicked player's token, so their socket cannot reconnect onto a freed seat. */
+    private String sessionTokenOf(String playerId) {
+        return sessions.tokenFor(playerId);
     }
 }
