@@ -5,12 +5,13 @@ import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, price as fmtPrice, toneOf } from "../lib/format";
 import PriceChart from "./PriceChart";
+import Dossier from "./Dossier";
 import Standings from "./Standings";
 import TradeDeck from "./TradeDeck";
 import Wire from "./Wire";
 
 export default function Trading() {
-  const { phase, board, feed, me, session, lobby, open, close, say, serverNow } = useMatch();
+  const { phase, board, feed, me, session, lobby, rumor, open, close, say, serverNow } = useMatch();
   const { tick, series } = usePrice();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
@@ -74,6 +75,8 @@ export default function Trading() {
       </header>
 
       <Standings rows={board} meId={session.playerId} />
+
+      <Dossier rumor={rumor} truthfulTips={phase?.truthfulTips} feed={feed} />
 
       <section className="panel stack floor">
         <div className="floor-price">

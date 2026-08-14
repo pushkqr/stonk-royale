@@ -467,10 +467,12 @@
   display: grid;
   gap: var(--gap);
   grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr) minmax(17rem, 21rem);
-  grid-template-rows: auto minmax(0, 1fr);
+  /* The dossier row is `auto` so it sizes to its content and the standings keep the slack. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    "strip strip strip"
-    "rail  floor wire";
+    "strip   strip strip"
+    "rail    floor wire"
+    "dossier floor wire";
 }
 
 .strip {
@@ -569,6 +571,50 @@
 .wire {
   grid-area: wire;
   overflow: hidden;
+}
+
+.dossier {
+  grid-area: dossier;
+  overflow: hidden;
+}
+
+.dossier-count {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--scream);
+}
+
+/* Two headlines is the cap in practice, but a long ticker wraps and a resync can repeat
+   one, so the list is bounded rather than trusted. */
+.dossier-news {
+  min-height: 0;
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.dossier-news-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.dossier-headline {
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  background: var(--scream);
+  color: var(--void-deep);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.dossier-quiet {
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
 }
 
 /* On the intermission the wire sits in a centred column instead of a grid rail, so it needs
@@ -1039,10 +1085,14 @@
     height: auto;
     min-height: 100%;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto;
+    /* The dossier sits directly under the chart, not down with the standings — on a phone
+       the rail is the last thing on the page, and a tip below the whole chat log is a tip
+       nobody reads. */
     grid-template-areas:
       "strip"
       "floor"
+      "dossier"
       "wire"
       "rail";
   }
@@ -1056,6 +1106,10 @@
   }
 
   .rank-list {
+    max-height: none;
+  }
+
+  .dossier-news {
     max-height: none;
   }
 }
