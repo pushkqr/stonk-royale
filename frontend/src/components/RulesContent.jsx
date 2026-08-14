@@ -24,7 +24,9 @@ export default function RulesContent() {
             will move. The room is told how many tips are true — never all of them.
           </li>
           <li>
-            <b>Trade.</b> The market opens. Go long or short and ride it.
+            <b>Trade.</b> The market opens. Go long or short and ride it. Big trades push
+            the price themselves, briefly — the room's own buying and selling is part of
+            what moves the chart, not just the hidden regime underneath it.
           </li>
           <li>
             <b>Settle.</b> Positions close at the buzzer, the real move is revealed, and

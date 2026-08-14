@@ -800,6 +800,21 @@
   font-size: 0.75rem;
 }
 
+/* Deliberately unlike .wire-news: a headline can be a lie, this never is. Sharing that
+   solid-yellow treatment would teach players to start doubting it the way they doubt a
+   headline, which would be exactly wrong. */
+.wire-flow {
+  border: 2px solid var(--edge);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  color: var(--paper);
+  font-family: var(--data);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .quick-row {
   display: flex;
   flex-wrap: wrap;
