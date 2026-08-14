@@ -361,10 +361,10 @@ stonk-royale/
 │
 ├── frontend/src/
 │   ├── components/       # Trading, Intermission, Results, RumorCard, PriceChart,
-│   │                     #   Wire, Ledger, Standings, MatchSettings, MuteToggle,
-│   │                     #   Briefing, RulesContent, RulesTab
+│   │                     #   Wire, Ledger, Standings, Dossier, MatchSettings,
+│   │                     #   MuteToggle, Briefing, RulesContent, RulesTab
 │   ├── state/            # MatchProvider — owns the socket and all match state
-│   ├── lib/              # api, session, format, auth, sound, matchSettings, briefing, useCountdown
+│   ├── lib/              # api, session, format, regime, auth, sound, matchSettings, briefing, useCountdown
 │   └── styles/           # tokens in index.css, screens in game.css
 │
 ├── Dockerfile            # multi-stage: frontend build folded into the JAR
