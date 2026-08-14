@@ -91,7 +91,7 @@ public class MatchSocketController {
             return;
         }
 
-        if (match.isEmpty()) {
+        if (match.hasNoHumans()) {
             matches.remove(code);
             return;
         }
@@ -180,7 +180,7 @@ public class MatchSocketController {
 
         broadcaster.feed(match, "TRADE",
                 String.format("%s went %dx %s @ %s",
-                        session.nickname(), position.leverage(), side, price(position.entryPrice())),
+                        session.nickname(), position.leverage(), side, Text.price(position.entryPrice())),
                 session.playerId(), session.nickname());
     }
 
@@ -252,11 +252,6 @@ public class MatchSocketController {
         } catch (Exception e) {
             throw new IllegalArgumentException("Side must be LONG or SHORT");
         }
-    }
-
-    /** Sub-dollar assets need more decimals than a stock ticker would. */
-    private static String price(double value) {
-        return value >= 1 ? String.format("$%,.2f", value) : String.format("$%.4f", value);
     }
 
     /** The kicked player's token, so their socket cannot reconnect onto a freed seat. */

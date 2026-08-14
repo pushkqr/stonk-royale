@@ -8,4 +8,9 @@ public enum Side {
     public int direction() {
         return this == LONG ? 1 : -1;
     }
+
+    /** The other side of the same trade, which is what a closing kick pushes. */
+    public Side opposite() {
+        return this == LONG ? SHORT : LONG;
+    }
 }

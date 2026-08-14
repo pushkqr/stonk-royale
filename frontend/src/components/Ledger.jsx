@@ -31,7 +31,10 @@ export default function Ledger({ results, meId }) {
               key={row.playerId}
               className={`${lied ? "is-lie" : ""} ${row.playerId === meId ? "is-me" : ""}`}
             >
-              <td className="ledger-name">{row.nickname}</td>
+              <td className="ledger-name">
+                {row.nickname}
+                {row.bot && <span className="tag tag-bot">BOT</span>}
+              </td>
               <td className="mono">{row.tipClaim ?? "—"}</td>
               <td className="mono ledger-held">
                 {row.rumorClaimed}

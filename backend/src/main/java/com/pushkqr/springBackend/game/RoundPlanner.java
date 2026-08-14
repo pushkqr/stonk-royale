@@ -1,5 +1,6 @@
 package com.pushkqr.springBackend.game;
 
+import com.pushkqr.springBackend.game.bot.BotScripter;
 import com.pushkqr.springBackend.game.info.InformationScripter;
 import com.pushkqr.springBackend.game.info.Rumor;
 import com.pushkqr.springBackend.game.model.Asset;
@@ -26,8 +27,10 @@ public final class RoundPlanner {
 
     private final MarketSimulator simulator = new MarketSimulator();
     private final InformationScripter scripter = new InformationScripter();
+    private final BotScripter botScripter = new BotScripter();
 
-    public RoundPlan plan(long matchSeed, int roundIndex, Collection<String> playerIds, MatchConfig config) {
+    public RoundPlan plan(long matchSeed, int roundIndex, Collection<String> playerIds,
+            Collection<String> botIds, MatchConfig config) {
         Random random = new Random(matchSeed * 1_000_003L + roundIndex);
 
         Asset asset = AssetCatalog.shuffled(matchSeed).get(roundIndex % AssetCatalog.size());
@@ -36,13 +39,21 @@ public final class RoundPlanner {
         PricePath path = simulator.generate(
                 asset.basePrice(), regime, config.priceSteps(), MatchConfig.STEP_MILLIS, random.nextLong());
 
+        Map<String, Rumor> rumors = rumors(regime, asset, playerIds, random);
+
+        // Sorted for the same reason the rumors are: the bot script must not depend on the
+        // order seats happen to sit in a map.
+        List<String> orderedBots = botIds.stream().sorted().toList();
+
         return new RoundPlan(
                 roundIndex,
                 asset,
                 regime,
                 path,
                 scripter.eventsFor(regime, asset.ticker(), config.roundMillis(), random),
-                rumors(regime, asset, playerIds, random));
+                rumors,
+                botScripter.script(regime, config.roundMillis(), config.intermissionMillis(),
+                        orderedBots, rumors, random));
     }
 
     /** Sorted iteration keeps rumor assignment deterministic whatever order players arrive in. */

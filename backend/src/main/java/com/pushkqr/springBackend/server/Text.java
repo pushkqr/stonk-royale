@@ -23,6 +23,11 @@ final class Text {
         return clean(raw, MAX_CHAT);
     }
 
+    /** Sub-dollar assets need more decimals than a stock ticker would. */
+    public static String price(double value) {
+        return value >= 1 ? String.format("$%,.2f", value) : String.format("$%.4f", value);
+    }
+
     private static String clean(String raw, int maxLength) {
         if (raw == null) {
             return "";

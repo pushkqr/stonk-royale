@@ -21,7 +21,10 @@ function Standings({ rows, meId }) {
             {/* The live round score leads, because it's the number that moves. The
                 cumulative total only appears once there's a previous round in it. */}
             <span className="rank-body">
-              <span className="rank-name">{row.nickname}</span>
+              <span className="rank-name">
+                {row.nickname}
+                {row.bot && <span className="tag tag-bot">BOT</span>}
+              </span>
               <span className="rank-scores">
                 <span className={`rank-score mono ${toneOf(row.roundScore)}`}>
                   {pct(row.roundScore)}

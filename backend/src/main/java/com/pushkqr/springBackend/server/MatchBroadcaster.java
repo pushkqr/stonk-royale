@@ -55,7 +55,8 @@ public class MatchBroadcaster {
                 .map(r -> new Views.RoundResult(
                         r.playerId(), r.nickname(), round2(r.roundScore()), round2(r.totalScore()),
                         r.liquidations(), r.rumorClaimed().name(), r.rumorWasTrue(),
-                        r.claimedTipAs() == null ? null : r.claimedTipAs().name()))
+                        r.claimedTipAs() == null ? null : r.claimedTipAs().name(),
+                        isBot(match, r.playerId())))
                 .toList();
         send(match, "settled", new Views.Settled(event.roundIndex(), event.regime().name(), results));
     }
@@ -63,9 +64,15 @@ public class MatchBroadcaster {
     public void standings(Match match) {
         List<Views.Standing> standings = match.standings().stream()
                 .map(s -> new Views.Standing(s.rank(), s.playerId(), s.nickname(),
-                        round2(s.totalScore()), round2(s.bestRound())))
+                        round2(s.totalScore()), round2(s.bestRound()), isBot(match, s.playerId())))
                 .toList();
         send(match, "standings", standings);
+    }
+
+    /** Resolved by id because the game-side result records carry no seat, only a player. */
+    private boolean isBot(Match match, String playerId) {
+        MatchPlayer player = match.player(playerId);
+        return player != null && player.isBot();
     }
 
     public void lobby(Match match) {
@@ -115,7 +122,7 @@ public class MatchBroadcaster {
                 match.config().startingCash(),
                 match.config().maxPlayers(),
                 match.players().stream()
-                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost()))
+                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot()))
                         .toList());
     }
 
@@ -148,7 +155,7 @@ public class MatchBroadcaster {
         PlayerRound round = player.round();
         if (round == null) {
             return new Views.BoardRow(player.id(), player.nickname(), 0, 0,
-                    round2(player.totalScore()), null);
+                    round2(player.totalScore()), null, player.isBot());
         }
         return new Views.BoardRow(
                 player.id(),
@@ -156,7 +163,8 @@ public class MatchBroadcaster {
                 round2(round.equity(price)),
                 round2(round.scoreAt(price)),
                 round2(player.totalScore()),
-                positionView(round, price));
+                positionView(round, price),
+                player.isBot());
     }
 
     private Views.Position positionView(PlayerRound round, double price) {

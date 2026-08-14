@@ -22,10 +22,29 @@ public final class MatchPlayer {
 
     private PlayerRound round;
 
+    /**
+     * Whether this seat is filled by a scripted opponent rather than a person.
+     *
+     * Bots are real players in every way that matters to the market — they hold positions,
+     * move the price and place in the standings — so almost nothing branches on this. It
+     * exists for the three places where treating a bot as a person is actively wrong:
+     * reaping an abandoned room, opening the briefing gate, and counting who is online.
+     */
+    private final boolean bot;
+
     public MatchPlayer(String id, String nickname, boolean host) {
+        this(id, nickname, host, false);
+    }
+
+    MatchPlayer(String id, String nickname, boolean host, boolean bot) {
         this.id = id;
         this.nickname = nickname;
         this.host = host;
+        this.bot = bot;
+    }
+
+    public boolean isBot() {
+        return bot;
     }
 
     public String id() {

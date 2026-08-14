@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MatchTest {
@@ -246,6 +248,131 @@ class MatchTest {
         match.tick(100);
         assertEquals(MatchPhase.BRIEFING, match.phase(),
                 "an empty room must not fall through the gate on a vacuous truth");
+    }
+
+    @Test
+    void botsDoNotHoldTheBriefingGateShut() {
+        Match match = new Match("TEST1", new MatchConfig(1, 60, 8, 10_000, 12));
+        match.join("human", "You");
+        match.addBot("bot:1", "Vega");
+        match.addBot("bot:2", "Kite");
+
+        match.start(0);
+        match.markReady("human");
+
+        // The human is the only one who can read a briefing, so their click alone opens it.
+        List<GameEvent> events = match.tick(100);
+
+        assertThat(events).anyMatch(e -> e instanceof GameEvent.PhaseChanged phase
+                && phase.phase() == MatchPhase.INTERMISSION);
+    }
+
+    @Test
+    void aRoomOfNothingButBotsCountsAsAbandoned() {
+        Match match = new Match("TEST2", new MatchConfig(1, 60, 8, 10_000, 12));
+        match.join("human", "You");
+        match.addBot("bot:1", "Vega");
+
+        assertThat(match.hasNoHumans()).isFalse();
+
+        match.leave("human");
+
+        // Bots must never keep a room alive — nothing would ever reap it.
+        assertThat(match.hasNoHumans()).isTrue();
+        assertThat(match.players()).hasSize(1);
+    }
+
+    @Test
+    void botsAreFlaggedAndHumansAreNot() {
+        Match match = new Match("TEST3", new MatchConfig(1, 60, 8, 10_000, 12));
+        assertThat(match.join("human", "You").isBot()).isFalse();
+        assertThat(match.addBot("bot:1", "Vega").isBot()).isTrue();
+    }
+
+    private Match practiceLikeMatch(String code) {
+        Match match = new Match(code, new MatchConfig(1, 60, 20, 10_000, 12));
+        match.join("human", "You");
+        match.addBot("bot:1", "Vega");
+        match.addBot("bot:2", "Kite");
+        match.addBot("bot:3", "Moss");
+        return match;
+    }
+
+    /** Drives a match from its start to the given elapsed time inside the trading round. */
+    private List<GameEvent> runTo(Match match, long start, long untilElapsed) {
+        List<GameEvent> all = new ArrayList<>();
+        match.start(start);
+        match.markReady("human");
+        for (long t = start; t <= start + 20_000 + untilElapsed; t += 100) {
+            all.addAll(match.tick(t));
+        }
+        return all;
+    }
+
+    @Test
+    void botsTradeDuringTheRound() {
+        Match match = practiceLikeMatch("BOTS1");
+        List<GameEvent> events = runTo(match, 0, 60_000);
+
+        assertThat(events).anyMatch(GameEvent.BotOpened.class::isInstance);
+    }
+
+    @Test
+    void botsGoOnRecordDuringTheIntermission() {
+        Match match = practiceLikeMatch("BOTS2");
+        List<GameEvent> events = runTo(match, 0, 1_000);
+
+        assertThat(events)
+                .filteredOn(GameEvent.BotSaid.class::isInstance)
+                .hasSizeGreaterThanOrEqualTo(3);
+    }
+
+    @Test
+    void aBotsTradeMovesThePrice() {
+        Match match = practiceLikeMatch("BOTS3");
+        match.start(0);
+        match.markReady("human");
+
+        // The human's click opens the briefing at once, so the 20s intermission runs 0..20_000
+        // and trading begins exactly on the last tick of that loop.
+        for (long t = 0; t <= 20_000; t += 100) {
+            match.tick(t);
+        }
+        assertThat(match.phase()).isEqualTo(MatchPhase.TRADING);
+
+        // Derived, not assumed: the round's start is the only thing the impact is measured from.
+        long roundStart = match.phaseEndsAtMillis() - 60_000;
+        long elapsed = 12_000;
+        for (long t = roundStart; t <= roundStart + elapsed; t += 100) {
+            match.tick(t);
+        }
+
+        // By 12s all three bots have entered and none of their kicks has decayed away, so the
+        // live price is the path times a push of order 1e-3 — far above float noise.
+        double base = match.round().priceAt(elapsed);
+        double live = match.currentPrice(roundStart + elapsed);
+
+        assertThat(Math.abs(live / base - 1)).isGreaterThan(1e-6);
+    }
+
+    @Test
+    void botsPlaceInTheStandings() {
+        Match match = practiceLikeMatch("BOTS4");
+        runTo(match, 0, 61_000);
+
+        assertThat(match.standings()).hasSize(4);
+        assertThat(match.standings())
+                .extracting(Standing::nickname)
+                .contains("Vega", "Kite", "Moss");
+    }
+
+    @Test
+    void aWipedBotSkipsTheRestOfItsScriptInsteadOfThrowing() {
+        // Every scheduled action is precondition-checked, so a bot that has been liquidated out
+        // of its cash simply stops trading. An exception here would escape tick() and abandon
+        // the rest of the round — liquidation checks and settlement included.
+        Match match = practiceLikeMatch("BOTS5");
+        assertThatCode(() -> runTo(match, 0, 61_000)).doesNotThrowAnyException();
     }
 
     @Test

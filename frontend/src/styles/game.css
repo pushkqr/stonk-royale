@@ -261,6 +261,13 @@
   background: var(--dump);
   color: var(--void-deep);
 }
+.tag-bot {
+  background: var(--void-wash);
+  color: var(--ghost);
+  font-size: 0.55rem;
+  padding: 0.1rem 0.3rem;
+  letter-spacing: 0.08em;
+}
 
 /* --- the rumour card: the signature -------------------------------------- */
 

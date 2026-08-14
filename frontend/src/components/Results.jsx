@@ -7,7 +7,9 @@ export default function Results() {
   const { standings, session, rematch, lobby, settled, quit } = useMatch();
   const winner = standings[0];
   const iWon = winner?.playerId === session.playerId;
-  const solo = standings.length < 2;
+  // Bots fill the practice room, so a headcount no longer tells you whether anyone was
+  // actually playing against you.
+  const solo = standings.filter((row) => !row.bot).length < 2;
   const myResult = settled?.results.find((r) => r.playerId === session.playerId);
 
   return (
@@ -29,7 +31,10 @@ export default function Results() {
             className={`podium-row ${row.playerId === session.playerId ? "is-me" : ""}`}
           >
             <span className="podium-rank display">{row.rank}</span>
-            <span className="podium-name">{row.nickname}</span>
+            <span className="podium-name">
+              {row.nickname}
+              {row.bot && <span className="tag tag-bot">BOT</span>}
+            </span>
             <span className="podium-scores">
               {/* The one number worth counting to: it is final, and everyone is looking. */}
               <CountUp

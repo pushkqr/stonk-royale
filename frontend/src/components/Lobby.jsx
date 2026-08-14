@@ -87,6 +87,7 @@ export default function Lobby() {
           {players.map((player) => (
             <li key={player.playerId} className="lobby-player">
               <span className="lobby-name">{player.nickname}</span>
+              {player.bot && <span className="tag tag-bot">BOT</span>}
               {player.host && <span className="tag tag-scream">Host</span>}
               {player.playerId === session.playerId && <span className="tag">You</span>}
               {/* Host only, and never against themselves — Leave is how you remove you. */}

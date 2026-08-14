@@ -53,7 +53,7 @@ public class SocketLifecycleListener {
         if (match.phase() == MatchPhase.LOBBY || match.phase() == MatchPhase.FINISHED) {
             if (match.leave(session.playerId())) {
                 sessions.remove(session.token());
-                if (match.isEmpty()) {
+                if (match.hasNoHumans()) {
                     matches.remove(match.code());
                     return;
                 }

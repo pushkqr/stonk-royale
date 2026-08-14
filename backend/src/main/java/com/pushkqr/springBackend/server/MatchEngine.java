@@ -105,6 +105,19 @@ public class MatchEngine {
                 broadcaster.settled(match, settled);
                 stats.roundPlayed();
             }
+            case GameEvent.BotOpened opened ->
+                broadcaster.feed(match, "TRADE",
+                        String.format("%s went %dx %s @ %s",
+                                opened.nickname(), opened.leverage(), opened.side(),
+                                Text.price(opened.entryPrice())),
+                        opened.playerId(), opened.nickname());
+            case GameEvent.BotClosed closed ->
+                broadcaster.feed(match, "TRADE",
+                        String.format("%s closed for %s$%,.0f", closed.nickname(),
+                                closed.pnl() >= 0 ? "+" : "-", Math.abs(closed.pnl())),
+                        closed.playerId(), closed.nickname());
+            case GameEvent.BotSaid said ->
+                broadcaster.feed(match, "CHAT", said.text(), said.playerId(), said.nickname());
         }
     }
 }

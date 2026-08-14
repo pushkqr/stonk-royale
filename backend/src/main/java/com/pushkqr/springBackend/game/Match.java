@@ -1,5 +1,7 @@
 package com.pushkqr.springBackend.game;
 
+import com.pushkqr.springBackend.game.bot.BotAction;
+import com.pushkqr.springBackend.game.bot.BotChatter;
 import com.pushkqr.springBackend.game.info.MarketEvent;
 import com.pushkqr.springBackend.game.info.Rumor;
 import com.pushkqr.springBackend.game.model.MatchConfig;
@@ -52,6 +54,7 @@ public final class Match {
     private MatchConfig config;
     private final Map<String, MatchPlayer> players = new LinkedHashMap<>();
     private final RoundPlanner planner = new RoundPlanner();
+    private final BotChatter chatter = new BotChatter();
 
     /**
      * One player's largest possible position — what one trade's impact is measured against.
@@ -65,6 +68,8 @@ public final class Match {
     private long roundStartedAtMillis;
     private RoundPlan round;
     private int newsFired;
+    private int chatterFired;
+    private int botActionsFired;
     private MarketImpact impact;
     private boolean flowSurging;
     private long lastFlowEventMillis = Long.MIN_VALUE;
@@ -108,6 +113,25 @@ public final class Match {
     }
 
     /**
+     * Seats a scripted opponent.
+     *
+     * Practice only. A player alone in a room has no market to read, nobody to lie to and
+     * nothing to beat — the social half of the game is simply absent. Bots restore it
+     * without needing four friends in the room.
+     *
+     * Never host, whatever the seating order: the host badge carries the right to start the
+     * match and retune the room, and nothing can press those buttons on a bot's behalf.
+     */
+    public MatchPlayer addBot(String id, String nickname) {
+        if (phase != MatchPhase.LOBBY) {
+            throw new IllegalStateException("Match has already started");
+        }
+        MatchPlayer bot = new MatchPlayer(id, nickname, false, true);
+        players.put(id, bot);
+        return bot;
+    }
+
+    /**
      * Frees a seat. Only a deliberate departure reaches here — a dropped socket does not,
      * because phones lock their screens constantly and the client reconnects and resyncs.
      * Ejecting on disconnect would throw people out of rounds they are still playing.
@@ -135,8 +159,15 @@ public final class Match {
         return true;
     }
 
-    public boolean isEmpty() {
-        return players.isEmpty();
+    /**
+     * Whether anybody is still here who could be watching.
+     *
+     * Not "are there zero seats" — a practice room keeps its bots after its one human
+     * closes the tab, and a room that can never be reaped is a match that ticks forever
+     * and a registry entry that lives until the process dies.
+     */
+    public boolean hasNoHumans() {
+        return players.values().stream().allMatch(MatchPlayer::isBot);
     }
 
     /**
@@ -216,14 +247,19 @@ public final class Match {
                 }
             }
             case INTERMISSION -> {
+                fireDueChatter(now - (phaseEndsAtMillis - config.intermissionMillis()), events);
                 if (now >= phaseEndsAtMillis) {
                     beginTrading(now, events);
                 }
             }
             case TRADING -> {
                 long elapsed = now - roundStartedAtMillis;
-                double price = currentPrice(now);
                 fireDueNews(elapsed, events);
+                fireDueBotActions(elapsed, now, events);
+                // Read after the bots have traded, not before: their opens and closes move
+                // MarketImpact, and a liquidation checked against a pre-bot price would miss
+                // exactly the push that caused it.
+                double price = currentPrice(now);
                 checkLiquidations(price, now, events);
                 checkFlowSurge(now, events);
                 if (now >= phaseEndsAtMillis) {
@@ -231,6 +267,7 @@ public final class Match {
                 }
             }
         }
+        addBotReactions(events, now);
         return events;
     }
 
@@ -239,6 +276,95 @@ public final class Match {
         while (newsFired < scheduled.size() && scheduled.get(newsFired).atMillis() <= elapsed) {
             events.add(new GameEvent.NewsBroken(scheduled.get(newsFired).headline()));
             newsFired++;
+        }
+    }
+
+    private void fireDueChatter(long elapsed, List<GameEvent> events) {
+        List<BotAction.Say> scheduled = round.botScript().chatter();
+        while (chatterFired < scheduled.size() && scheduled.get(chatterFired).atMillis() <= elapsed) {
+            say(scheduled.get(chatterFired), events);
+            chatterFired++;
+        }
+    }
+
+    private void fireDueBotActions(long elapsed, long now, List<GameEvent> events) {
+        List<BotAction> scheduled = round.botScript().actions();
+        while (botActionsFired < scheduled.size() && scheduled.get(botActionsFired).atMillis() <= elapsed) {
+            perform(scheduled.get(botActionsFired), now, events);
+            botActionsFired++;
+        }
+    }
+
+    /**
+     * Runs one scheduled bot action, or quietly drops it.
+     *
+     * A script is authored before the round and cannot know what the market did to the bot
+     * meanwhile: a liquidation can wipe the cash an entry needed, or close a position the
+     * script still expects to exit. Every action is checked against the state it actually
+     * finds. Throwing instead would escape tick() and abandon the rest of the round for
+     * everyone — liquidation checks and settlement included.
+     */
+    private void perform(BotAction action, long now, List<GameEvent> events) {
+        MatchPlayer bot = players.get(action.botId());
+        if (bot == null || bot.round() == null) {
+            return;
+        }
+        PlayerRound playerRound = bot.round();
+
+        switch (action) {
+            case BotAction.Open open -> {
+                if (playerRound.hasPosition() || playerRound.cash() <= 0) {
+                    return;
+                }
+                Position position = openPosition(
+                        bot.id(), open.side(), open.sizeFraction(), open.leverage(), now);
+                events.add(new GameEvent.BotOpened(bot.id(), bot.nickname(),
+                        position.side(), position.leverage(), position.entryPrice()));
+            }
+            case BotAction.Close close -> {
+                if (!playerRound.hasPosition()) {
+                    return;
+                }
+                double pnl = closePosition(bot.id(), now);
+                events.add(new GameEvent.BotClosed(bot.id(), bot.nickname(), pnl));
+            }
+            case BotAction.Say say -> say(say, events);
+        }
+    }
+
+    private void say(BotAction.Say say, List<GameEvent> events) {
+        MatchPlayer bot = players.get(say.botId());
+        if (bot == null) {
+            return;
+        }
+        // Goes through the same ledger a person's claim does, so a bot's lie is caught and
+        // shown at settle exactly like a player's.
+        recordTipClaim(bot.id(), say.claim());
+        events.add(new GameEvent.BotSaid(bot.id(), bot.nickname(), say.text()));
+    }
+
+    /**
+     * Lets the bots answer what just happened.
+     *
+     * Iterates a copy taken before anything is appended, so a bot's reaction can never
+     * become the trigger for another one — three bots answering each other inside a single
+     * tick would not terminate.
+     */
+    private void addBotReactions(List<GameEvent> events, long now) {
+        List<String> bots = botIds();
+        if (bots.isEmpty()) {
+            return;
+        }
+        List<GameEvent> triggers = List.copyOf(events);
+        for (GameEvent trigger : triggers) {
+            String subject = trigger instanceof GameEvent.PlayerLiquidated liquidation
+                    ? liquidation.playerId()
+                    : null;
+            BotChatter.Reaction reaction = chatter.reactTo(trigger, bots, subject, now);
+            if (reaction != null) {
+                MatchPlayer bot = players.get(reaction.botId());
+                events.add(new GameEvent.BotSaid(bot.id(), bot.nickname(), reaction.text()));
+            }
         }
     }
 
@@ -304,7 +430,15 @@ public final class Match {
 
     private void planRound(int index) {
         roundIndex = index;
-        round = planner.plan(matchSeed(), index, players.keySet(), config);
+        round = planner.plan(matchSeed(), index, players.keySet(), botIds(), config);
+    }
+
+    /** Sorted downstream by the planner; this is just the subset of seats that are scripted. */
+    private List<String> botIds() {
+        return players.values().stream()
+                .filter(MatchPlayer::isBot)
+                .map(MatchPlayer::id)
+                .toList();
     }
 
     /** Same code and generation means the same market, which is what a replay rematch wants. */
@@ -324,6 +458,7 @@ public final class Match {
         // Cleared here rather than at the open, because this is where the new tip is dealt
         // and players can start going on record about it straight away.
         tipClaims.clear();
+        chatterFired = 0;
         phase = MatchPhase.INTERMISSION;
         phaseEndsAtMillis = now + config.intermissionMillis();
         events.add(new GameEvent.PhaseChanged(MatchPhase.INTERMISSION, roundIndex, phaseEndsAtMillis));
@@ -335,6 +470,7 @@ public final class Match {
         roundStartedAtMillis = now;
         phaseEndsAtMillis = now + config.roundMillis();
         newsFired = 0;
+        botActionsFired = 0;
         impact = new MarketImpact(now);
         flowSurging = false;
         lastFlowEventMillis = Long.MIN_VALUE;
@@ -381,6 +517,9 @@ public final class Match {
      */
     private boolean everyPresentPlayerIsReady() {
         List<String> present = players.values().stream()
+                // A bot has no briefing to read and never calls markReady, so counting one
+                // would hold the gate shut until the failsafe expires.
+                .filter(player -> !player.isBot())
                 .filter(MatchPlayer::isConnected)
                 .map(MatchPlayer::id)
                 .toList();

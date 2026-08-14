@@ -1,5 +1,6 @@
 package com.pushkqr.springBackend.game;
 
+import com.pushkqr.springBackend.game.bot.BotScript;
 import com.pushkqr.springBackend.game.info.MarketEvent;
 import com.pushkqr.springBackend.game.info.Rumor;
 import com.pushkqr.springBackend.game.model.Asset;
@@ -19,7 +20,8 @@ public record RoundPlan(
         Regime regime,
         PricePath path,
         List<MarketEvent> events,
-        Map<String, Rumor> rumors) {
+        Map<String, Rumor> rumors,
+        BotScript botScript) {
 
     public Rumor rumorFor(String playerId) {
         return rumors.get(playerId);

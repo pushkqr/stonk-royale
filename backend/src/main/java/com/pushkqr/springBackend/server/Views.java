@@ -39,7 +39,7 @@ public final class Views {
     }
 
     public record BoardRow(String playerId, String nickname, double equity, double roundScore,
-            double totalScore, Position position) {
+            double totalScore, Position position, boolean bot) {
     }
 
     /** kind is one of NEWS, LIQUIDATION, TRADE, CHAT, FLOW. */
@@ -61,16 +61,18 @@ public final class Views {
      * @param tipClaim     what they told the room it said, or null if they never said
      */
     public record RoundResult(String playerId, String nickname, double roundScore, double totalScore,
-            int liquidations, String rumorClaimed, boolean rumorWasTrue, String tipClaim) {
+            int liquidations, String rumorClaimed, boolean rumorWasTrue, String tipClaim,
+            boolean bot) {
     }
 
     public record Settled(int roundIndex, String regime, List<RoundResult> results) {
     }
 
-    public record Standing(int rank, String playerId, String nickname, double totalScore, double bestRound) {
+    public record Standing(int rank, String playerId, String nickname, double totalScore,
+            double bestRound, boolean bot) {
     }
 
-    public record LobbyPlayer(String playerId, String nickname, boolean host) {
+    public record LobbyPlayer(String playerId, String nickname, boolean host, boolean bot) {
     }
 
     public record Lobby(String code, String phase, int totalRounds, int roundSeconds,

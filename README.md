@@ -150,9 +150,10 @@ is the same, so whatever's different the second time is down to how the table tr
 the market getting lucky or unlucky again. Returning to the lobby rather than straight into
 a round is also the only window in which someone new can join.
 
-Arriving alone is not a dead end: **one round on your own** starts a solo practice match
-immediately, so an unaccompanied visitor still sees the game rather than a lobby that needs a
-second player.
+Arriving alone is not a dead end: **Practice mode** starts a three-round match against three
+scripted opponents immediately, so an unaccompanied visitor sees the whole game — order flow,
+intermission bluffing and the ledger included — rather than a dead-end lobby waiting for
+friends who aren't there.
 
 ---
 
@@ -371,7 +372,8 @@ stonk-royale/
 │   └── src/main/java/com/pushkqr/springBackend/
 │       ├── game/                  # no Spring, no persistence — the whole game
 │       │   ├── Match.java         # phases, tick loop, scoring, standings
-│       │   ├── RoundPlanner.java  # asset + regime + path + rumours from a seed
+│       │   ├── RoundPlanner.java  # asset + regime + path + rumours + bot scripts from a seed
+│       │   ├── bot/               # BotPersona, BotAction, BotScript, BotScripter, BotChatter
 │       │   ├── sim/               # Regime, PricePath, MarketSimulator
 │       │   ├── info/              # Rumor, MarketEvent, NewsCopy, InformationScripter
 │       │   └── model/             # Position, PlayerRound, Asset, MatchConfig
@@ -407,7 +409,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-127 tests, all passing. They assert **design targets rather than implementation details**:
+148 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
@@ -421,6 +423,9 @@ cd backend && ./mvnw test
 - The announced count always matches the tips actually dealt
 - A claim made in the intermission survives into the round; one made in the lobby does not,
   and none of them leak into the next round
+- Bots trade on deterministic timelines, react to live market events, and one bot per round lies
+  on the record about its tip
+- All bot actions are authored once per round from the seeded random, keeping runs fully reproducible
 
 > **The socket layer has no automated tests.** `MatchEngine`, `MatchBroadcaster`,
 > `MatchSocketController` and `StompAuthInterceptor` were verified by driving a real headless

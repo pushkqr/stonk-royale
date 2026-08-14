@@ -135,7 +135,9 @@ public class Stats {
     private AdminViews.Room roomOf(Match match) {
         return new AdminViews.Room(
                 match.code(),
-                match.players().size(),
+                // Bots would otherwise inflate every practice room by three and poison the
+                // lifetime peak, which is meant to count people.
+                (int) match.players().stream().filter(player -> !player.isBot()).count(),
                 match.phase().name(),
                 match.roundIndex() + 1,
                 match.config().rounds());

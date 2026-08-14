@@ -1,5 +1,6 @@
 package com.pushkqr.springBackend.game;
 
+import com.pushkqr.springBackend.game.model.Side;
 import com.pushkqr.springBackend.game.sim.Regime;
 
 import java.util.List;
@@ -30,5 +31,20 @@ public sealed interface GameEvent {
     }
 
     record RoundSettled(int roundIndex, Regime regime, List<RoundResult> results) implements GameEvent {
+    }
+
+    /**
+     * A bot took a position. Its own kind rather than a reuse of the human trade path,
+     * because a bot has no socket and no session — {@code MatchSocketController} is where a
+     * person's trade becomes a feed line, and nothing can call it on a bot's behalf.
+     */
+    record BotOpened(String playerId, String nickname, Side side, int leverage, double entryPrice)
+            implements GameEvent {
+    }
+
+    record BotClosed(String playerId, String nickname, double pnl) implements GameEvent {
+    }
+
+    record BotSaid(String playerId, String nickname, String text) implements GameEvent {
     }
 }
