@@ -339,6 +339,15 @@
   text-align: center;
 }
 
+.tip-lesson {
+  margin: 0;
+  max-width: min(30rem, 100%);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--paper);
+}
+
 /* The receipt for the round's talking. Deliberately plain — the drama is in the words
    "lied", not in the styling around them. */
 .ledger {

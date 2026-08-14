@@ -52,6 +52,20 @@ export default function Intermission() {
 
           <RumorCard text={lastRumor.text} stamp={lastRumor.wasTrue ? "TRUE" : "LIE"} />
 
+          {/* The three facts above are already on screen — the verdict, the score, the
+              stamp — but as unrelated elements. Stated as one sentence they become the
+              answer to "was my tip worth listening to", which is the thing that has to
+              accumulate over five rounds for anyone to start using it. */}
+          {myResult && (
+            <p className="tip-lesson mono" role="status">
+              Your tip said <strong>{myResult.rumorClaimed}</strong>. The round was{" "}
+              <strong>{settled.regime}</strong>.{" "}
+              {myResult.rumorWasTrue
+                ? "Trusting it was the right call."
+                : "Trusting it cost you."}
+            </p>
+          )}
+
           {/* The count told the room how many tips were real. This is where it gets settled. */}
           <Ledger results={settled.results} meId={session.playerId} />
         </>
