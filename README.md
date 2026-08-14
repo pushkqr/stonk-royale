@@ -395,7 +395,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-106 tests, all passing. They assert **design targets rather than implementation details**:
+118 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
