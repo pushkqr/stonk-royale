@@ -209,17 +209,31 @@ export function MatchProvider({ session, children }) {
    * purpose, so this is a way out of the room rather than a way to forfeit.
    */
   const quit = useCallback(() => {
-    clientRef.current?.publish({ destination: `/app/match/${code}/leave`, body: "{}" });
+    try {
+      if (clientRef.current?.connected) {
+        clientRef.current.publish({ destination: `/app/match/${code}/leave`, body: "{}" });
+      }
+    } catch {
+      // Ignored
+    }
     clearSeat(code);
     setTimeout(() => window.location.assign("/"), 120);
   }, [code]);
 
   const publish = useCallback(
     (action, body) => {
-      clientRef.current?.publish({
-        destination: `/app/match/${code}/${action}`,
-        body: JSON.stringify(body ?? {}),
-      });
+      const client = clientRef.current;
+      if (!client?.connected) {
+        return;
+      }
+      try {
+        client.publish({
+          destination: `/app/match/${code}/${action}`,
+          body: JSON.stringify(body ?? {}),
+        });
+      } catch (err) {
+        console.warn("Failed to publish STOMP action:", action, err);
+      }
     },
     [code],
   );

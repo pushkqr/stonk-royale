@@ -14,7 +14,7 @@ import RulesContent from "./RulesContent";
  * through in under a second.
  */
 export default function Briefing() {
-  const { phase, readyState, ready, serverNow } = useMatch();
+  const { phase, readyState, ready, connected, serverNow } = useMatch();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
   // Lazy initializers rather than a ref: both need the one-time localStorage read, and
@@ -27,10 +27,10 @@ export default function Briefing() {
   const endRef = useRef(null);
 
   useEffect(() => {
-    if (!seenBefore || sent) return;
+    if (!seenBefore || sent || !connected) return;
     setSent(true);
     ready();
-  }, [seenBefore, ready, sent]);
+  }, [seenBefore, ready, sent, connected]);
 
   useEffect(() => {
     const end = endRef.current;
