@@ -1,5 +1,6 @@
 import { useMatch } from "../state/MatchProvider";
 import { pct, toneOf } from "../lib/format";
+import CountUp from "./CountUp";
 import Ledger from "./Ledger";
 
 export default function Results() {
@@ -29,9 +30,12 @@ export default function Results() {
             <span className="podium-rank display">{row.rank}</span>
             <span className="podium-name">{row.nickname}</span>
             <span className="podium-scores">
-              <span className={`display podium-total ${toneOf(row.totalScore)}`}>
-                {pct(row.totalScore)}
-              </span>
+              {/* The one number worth counting to: it is final, and everyone is looking. */}
+              <CountUp
+                value={row.totalScore}
+                format={pct}
+                className={`display podium-total ${toneOf(row.totalScore)}`}
+              />
               <span className="eyebrow">best round {pct(row.bestRound)}</span>
             </span>
           </li>
