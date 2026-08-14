@@ -84,7 +84,7 @@ export default function Intermission() {
             <p className="hero-blurb">{phase?.asset?.blurb}</p>
           </header>
 
-          <RumorCard text={rumor} />
+          <RumorCard text={rumor?.text} claimedRegime={rumor?.claimedRegime} />
 
           {/* Withheld below two players, where the count would name its own holder. */}
           {phase?.truthfulTips != null && (

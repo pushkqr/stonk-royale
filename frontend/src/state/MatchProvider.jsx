@@ -157,7 +157,7 @@ export function MatchProvider({ session, children }) {
 
       on("/user/queue/rumor", (next) => {
         rumorRef.current = next.text;
-        setRumor(next.text);
+        setRumor({ text: next.text, claimedRegime: next.claimedRegime });
         sound.deal();
       });
 
