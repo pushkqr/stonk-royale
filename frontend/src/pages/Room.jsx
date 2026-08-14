@@ -53,11 +53,14 @@ function Screen() {
       <RulesTab />
       <MuteToggle />
 
-      {current === "LOBBY" && <Lobby />}
-      {current === "BRIEFING" && <Briefing />}
-      {current === "INTERMISSION" && <Intermission />}
-      {current === "TRADING" && <Trading />}
-      {current === "FINISHED" && <Results />}
+      {/* Keyed on the phase so each change replays the entrance instead of hard-cutting. */}
+      <div key={current} className="phase-swap">
+        {current === "LOBBY" && <Lobby />}
+        {current === "BRIEFING" && <Briefing />}
+        {current === "INTERMISSION" && <Intermission />}
+        {current === "TRADING" && <Trading />}
+        {current === "FINISHED" && <Results />}
+      </div>
     </>
   );
 }

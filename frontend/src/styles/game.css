@@ -1069,3 +1069,33 @@
     height: 2.25rem;
   }
 }
+
+/* Wraps whichever screen the phase currently is, so a change fades in rather than cutting.
+   Full height because .table and .center-page both measure against their parent.
+
+   Opacity and nothing else, deliberately: a transform here would make this element the
+   containing block for the fixed-position .jolt overlay inside Trading, and its inset:0
+   would quietly stop meaning the viewport. */
+.phase-swap {
+  height: 100%;
+  animation: phase-in 0.3s ease-out both;
+}
+
+@keyframes phase-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Nothing in this game conveys meaning through motion alone, so honouring the preference
+   costs nothing. The countdown's infinite pulse is the one most worth stopping. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
