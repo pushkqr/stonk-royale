@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMatch, usePrice } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
+import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, price as fmtPrice, toneOf } from "../lib/format";
 import PriceChart from "./PriceChart";
@@ -20,6 +21,13 @@ export default function Trading() {
   const live = tick?.price ?? startPrice;
   const move = startPrice ? ((live - startPrice) / startPrice) * 100 : 0;
   const urgent = left > 0 && left <= 10_000;
+
+  // Only measured while a round is live, which is the only time the chart is animating and
+  // the only time a stutter costs anybody anything.
+  useEffect(() => {
+    telemetry.start(session.code);
+    return () => telemetry.stop();
+  }, [session.code]);
 
   // One tick per second over the closing ten, not one per render.
   const lastTick = useRef(null);

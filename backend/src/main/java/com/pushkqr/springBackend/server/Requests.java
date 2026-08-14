@@ -7,12 +7,18 @@ public final class Requests {
     private Requests() {
     }
 
-    /** Every setting is optional; anything omitted falls back to {@link MatchConfig#standard()}. */
+    /**
+     * Every setting is optional; anything omitted falls back to {@link MatchConfig#standard()}.
+     *
+     * @param deviceId a value the browser generated and keeps, used only to count how many
+     *                 distinct people have played. Never used to identify anyone in game.
+     */
     public record Create(String nickname, Integer rounds, Integer roundSeconds,
-            Integer intermissionSeconds, Integer maxPlayers, Double startingCash) {
+            Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
+            String deviceId) {
     }
 
-    public record Join(String nickname) {
+    public record Join(String nickname, String deviceId) {
     }
 
     public record Open(String side, double sizeFraction, int leverage) {

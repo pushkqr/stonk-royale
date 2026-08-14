@@ -5,6 +5,14 @@ services:
       - "8080"
     environment:
       ALLOWED_ORIGINS: "https://stonks.pushkqr.app"
+      # Unlocks /admin. Set it in a .env file beside this one, never here — with no value
+      # the panel does not exist at all, which is the safe default.
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      STATS_FILE: "/data/stats.json"
+    volumes:
+      # Lifetime counters are the only thing the app keeps. Without this they reset on
+      # every redeploy, which is most days right now.
+      - stonk_data:/data
     restart: unless-stopped
 
   caddy:
@@ -23,3 +31,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  stonk_data:

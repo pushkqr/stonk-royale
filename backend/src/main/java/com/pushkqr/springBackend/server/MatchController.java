@@ -1,5 +1,6 @@
 package com.pushkqr.springBackend.server;
 
+import com.pushkqr.springBackend.admin.Stats;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPlayer;
 import com.pushkqr.springBackend.game.model.MatchConfig;
@@ -15,20 +16,23 @@ public class MatchController {
     private final SessionRegistry sessions;
     private final PlayerIdentity identity;
     private final MatchBroadcaster broadcaster;
+    private final Stats stats;
 
     public MatchController(MatchRegistry matches, SessionRegistry sessions,
-            PlayerIdentity identity, MatchBroadcaster broadcaster) {
+            PlayerIdentity identity, MatchBroadcaster broadcaster, Stats stats) {
         this.matches = matches;
         this.sessions = sessions;
         this.identity = identity;
         this.broadcaster = broadcaster;
+        this.stats = stats;
     }
 
     @PostMapping
     public Views.JoinResult create(@RequestBody Requests.Create request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         Match match = matches.create(configFor(request));
-        return seat(match, request.nickname(), authorization);
+        stats.matchCreated();
+        return seat(match, request.nickname(), authorization, request.deviceId());
     }
 
     /**
@@ -42,7 +46,8 @@ public class MatchController {
     public Views.JoinResult practice(@RequestBody Requests.Join request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         Match match = matches.create(new MatchConfig(1, 60, 8, 10_000, MatchConfig.MAX_PLAYERS));
-        Views.JoinResult seat = seat(match, request.nickname(), authorization);
+        stats.matchCreated();
+        Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId());
         match.start(System.currentTimeMillis());
         broadcaster.phase(match);
         return seat;
@@ -52,7 +57,7 @@ public class MatchController {
     public Views.JoinResult join(@PathVariable String code, @RequestBody Requests.Join request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         Match match = require(code);
-        Views.JoinResult result = seat(match, request.nickname(), authorization);
+        Views.JoinResult result = seat(match, request.nickname(), authorization, request.deviceId());
         broadcaster.lobby(match);
         return result;
     }
@@ -62,10 +67,12 @@ public class MatchController {
         return broadcaster.lobbyView(require(code));
     }
 
-    private Views.JoinResult seat(Match match, String requestedNickname, String authorization) {
+    private Views.JoinResult seat(Match match, String requestedNickname, String authorization,
+            String deviceId) {
         String nickname = Text.nickname(requestedNickname);
         MatchPlayer player = match.join(identity.resolve(authorization), nickname);
         PlayerSession session = sessions.create(match.code(), player.id(), nickname);
+        stats.seatTaken(deviceId);
 
         return new Views.JoinResult(
                 match.code(), player.id(), player.nickname(), session.token(), player.isHost());

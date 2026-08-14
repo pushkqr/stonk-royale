@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { price as fmtPrice } from "../lib/format";
+import { telemetry } from "../lib/telemetry";
 
 const PAD_RIGHT = 54;
 const PAD_Y = 14;
@@ -299,6 +300,9 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
     if (runningRef.current) return;
     runningRef.current = true;
     const loop = () => {
+      // Timed here rather than in a separate rAF, so the measurement is of the frames this
+      // chart actually drew — the ones a stutter would show up in.
+      telemetry.frame(liveRef.current.series.length);
       if (draw(canvasRef.current, sizeRef.current, liveRef.current)) {
         runningRef.current = false;
         return;

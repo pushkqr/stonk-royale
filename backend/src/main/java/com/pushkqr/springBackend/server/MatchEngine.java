@@ -1,5 +1,6 @@
 package com.pushkqr.springBackend.server;
 
+import com.pushkqr.springBackend.admin.Stats;
 import com.pushkqr.springBackend.game.GameEvent;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
@@ -32,13 +33,16 @@ public class MatchEngine {
     private final MatchRegistry matches;
     private final SessionRegistry sessions;
     private final MatchBroadcaster broadcaster;
+    private final Stats stats;
 
     private long ticks;
 
-    public MatchEngine(MatchRegistry matches, SessionRegistry sessions, MatchBroadcaster broadcaster) {
+    public MatchEngine(MatchRegistry matches, SessionRegistry sessions, MatchBroadcaster broadcaster,
+            Stats stats) {
         this.matches = matches;
         this.sessions = sessions;
         this.broadcaster = broadcaster;
+        this.stats = stats;
     }
 
     @Scheduled(fixedRate = MatchConfig.STEP_MILLIS)
@@ -82,15 +86,21 @@ public class MatchEngine {
                     broadcaster.standings(match);
                 } else if (phase.phase() == MatchPhase.FINISHED) {
                     broadcaster.standings(match);
+                    stats.matchFinished();
                 }
             }
             case GameEvent.NewsBroken news ->
                 broadcaster.feed(match, "NEWS", news.headline(), null, null);
-            case GameEvent.PlayerLiquidated liquidation ->
+            case GameEvent.PlayerLiquidated liquidation -> {
                 broadcaster.feed(match, "LIQUIDATION",
                         String.format("%s got LIQUIDATED for $%,.0f", liquidation.nickname(), liquidation.marginLost()),
                         liquidation.playerId(), liquidation.nickname());
-            case GameEvent.RoundSettled settled -> broadcaster.settled(match, settled);
+                stats.liquidated();
+            }
+            case GameEvent.RoundSettled settled -> {
+                broadcaster.settled(match, settled);
+                stats.roundPlayed();
+            }
         }
     }
 }
