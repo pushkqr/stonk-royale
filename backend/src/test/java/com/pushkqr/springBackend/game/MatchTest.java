@@ -400,6 +400,84 @@ class MatchTest {
         assertEquals(9_000, liquidations.get(0).marginLost(), 1e-6);
     }
 
+    /**
+     * For tests where the exact headcount matters and the existing lobbyOfTwo is not
+     * enough. Left separate from lobbyOfTwo rather than generalising it, since other tests
+     * depend on that method's exact name and two-player shape.
+     */
+    private Match lobbyOf(String code, int n) {
+        Match match = new Match(code, CONFIG);
+        for (int i = 1; i <= n; i++) {
+            match.join("p" + i, "player" + i);
+        }
+        return match;
+    }
+
+    @Test
+    void oneMaxTradeMovesPriceOneToTwoPercent() {
+        Match match = lobbyOfTwo("SOLOMAX");
+        startPlaying(match, 0);
+        step(match, 0, 1_000);
+
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+
+        double base = match.round().priceAt(0);
+        double effective = match.currentPrice(1_000);
+        double pctMove = (effective - base) / base;
+        assertTrue(pctMove >= 0.01 && pctMove <= 0.02,
+                "one player's largest trade moved price by " + (pctMove * 100) + "%");
+    }
+
+    @Test
+    void sixPlayersPilingInMovesPriceFourToSixPercent() {
+        Match match = lobbyOf("SIXUP", 6);
+        startPlaying(match, 0);
+        step(match, 0, 1_000);
+
+        for (int i = 1; i <= 6; i++) {
+            match.openPosition("p" + i, Side.LONG, 1.0, 10, 1_000);
+        }
+
+        double base = match.round().priceAt(0);
+        double effective = match.currentPrice(1_000);
+        double pctMove = (effective - base) / base;
+        // Six kicks of 0.015 sum to 0.09, clamped by MarketImpact.MAX_IMPACT to exactly
+        // 0.06 — the same literal as this upper bound. A tiny epsilon absorbs the ~1-ULP
+        // rounding from round-tripping that clamp through base * (1 + value) and back to
+        // a fraction; production impact is still genuinely capped at 6%.
+        assertTrue(pctMove >= 0.04 && pctMove <= 0.06 + 1e-9,
+                "six players piling in together moved price by " + (pctMove * 100) + "%");
+    }
+
+    @Test
+    void aForcedLiquidationPushesPriceFurtherInTheDirectionOfTheForcedSell() {
+        Match match = lobbyOfTwo(codeWithRegime(Regime.RUG));
+        startPlaying(match, 0);
+        step(match, 0, 1_000);
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+
+        long now = 1_100;
+        double impactBefore;
+        double impactAfter;
+        List<GameEvent> events;
+        while (true) {
+            long elapsed = now - 1_000;
+            impactBefore = match.currentPrice(now) - match.round().priceAt(elapsed);
+            events = match.tick(now);
+            impactAfter = match.currentPrice(now) - match.round().priceAt(elapsed);
+            if (!only(events, GameEvent.PlayerLiquidated.class).isEmpty()) {
+                break;
+            }
+            now += 100;
+            assertTrue(now < 11_000, "expected a liquidation before the round ended");
+        }
+
+        // The liquidation force-sells a long: extra downward pressure on top of whatever
+        // the RUG shock itself was already doing at that instant.
+        assertTrue(impactAfter < impactBefore,
+                "a forced close must push price further in its own direction, like any trade");
+    }
+
     @Test
     void roundSettlesWithScoresAndTheRumorReveal() {
         Match match = lobbyOfTwo("ABCDE");

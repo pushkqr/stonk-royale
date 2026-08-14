@@ -6,6 +6,7 @@ import com.pushkqr.springBackend.game.model.MatchConfig;
 import com.pushkqr.springBackend.game.model.PlayerRound;
 import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.model.Side;
+import com.pushkqr.springBackend.game.sim.MarketImpact;
 import com.pushkqr.springBackend.game.sim.Regime;
 
 import java.util.ArrayList;
@@ -45,12 +46,18 @@ public final class Match {
     private final Map<String, MatchPlayer> players = new LinkedHashMap<>();
     private final RoundPlanner planner = new RoundPlanner();
 
+    /** One player's largest possible position — what one trade's impact is measured against. */
+    private final double referenceNotional;
+
     private MatchPhase phase = MatchPhase.LOBBY;
     private int roundIndex = -1;
     private long phaseEndsAtMillis;
     private long roundStartedAtMillis;
     private RoundPlan round;
     private int newsFired;
+    private MarketImpact impact;
+    private boolean flowSurging;
+    private long lastFlowEventMillis = Long.MIN_VALUE;
 
     /**
      * What each player has told the room their tip says, this round only.
@@ -70,6 +77,7 @@ public final class Match {
     public Match(String code, MatchConfig config) {
         this.code = code;
         this.config = config;
+        this.referenceNotional = config.startingCash() * Position.MAX_LEVERAGE;
     }
 
     // --- lobby ---------------------------------------------------------------
@@ -185,9 +193,9 @@ public final class Match {
             }
             case TRADING -> {
                 long elapsed = now - roundStartedAtMillis;
-                double price = round.priceAt(elapsed);
+                double price = currentPrice(now);
                 fireDueNews(elapsed, events);
-                checkLiquidations(price, events);
+                checkLiquidations(price, now, events);
                 if (now >= phaseEndsAtMillis) {
                     settleRound(price, now, events);
                 }
@@ -204,14 +212,18 @@ public final class Match {
         }
     }
 
-    private void checkLiquidations(double price, List<GameEvent> events) {
+    private void checkLiquidations(double price, long now, List<GameEvent> events) {
         for (MatchPlayer player : players.values()) {
             PlayerRound playerRound = player.round();
             if (playerRound == null || !playerRound.hasPosition()) {
                 continue;
             }
-            double margin = playerRound.position().margin();
+            Position position = playerRound.position();
+            double margin = position.margin();
             if (playerRound.liquidateIfBreached(price)) {
+                // A forced close is a sell like any other — it pushes the price further
+                // in its own direction, which is what lets a cascade emerge on its own.
+                impact.record(position.notional(), -position.side().direction(), referenceNotional, now);
                 events.add(new GameEvent.PlayerLiquidated(
                         player.id(), player.nickname(), margin * Position.MAINTENANCE));
             }
@@ -283,6 +295,9 @@ public final class Match {
         roundStartedAtMillis = now;
         phaseEndsAtMillis = now + config.roundMillis();
         newsFired = 0;
+        impact = new MarketImpact(now);
+        flowSurging = false;
+        lastFlowEventMillis = Long.MIN_VALUE;
         events.add(new GameEvent.PhaseChanged(MatchPhase.TRADING, roundIndex, phaseEndsAtMillis));
     }
 
@@ -308,11 +323,25 @@ public final class Match {
     }
 
     public Position openPosition(String playerId, Side side, double sizeFraction, int leverage, long now) {
-        return tradingRound(playerId).open(side, sizeFraction, leverage, currentPrice(now), now);
+        PlayerRound playerRound = tradingRound(playerId);
+        // Notional is known before the fill: margin is cash * sizeFraction, exactly what
+        // open() is about to post. Recording the kick here, before currentPrice(now) is
+        // read below, is what makes the trader's own push land in their own fill price —
+        // the thing that rules out opening, watching your own kick, and closing for free.
+        double notional = playerRound.cash() * sizeFraction * leverage;
+        impact.record(notional, side.direction(), referenceNotional, now);
+        return playerRound.open(side, sizeFraction, leverage, currentPrice(now), now);
     }
 
     public double closePosition(String playerId, long now) {
-        return tradingRound(playerId).close(currentPrice(now));
+        PlayerRound playerRound = tradingRound(playerId);
+        if (playerRound.hasPosition()) {
+            Position position = playerRound.position();
+            impact.record(position.notional(), -position.side().direction(), referenceNotional, now);
+        }
+        // hasPosition() guards the impact recording only; close() still runs unconditionally
+        // so a no-position call keeps throwing its existing "No position is open" exception.
+        return playerRound.close(currentPrice(now));
     }
 
     /**
@@ -348,9 +377,11 @@ public final class Match {
         if (round == null) {
             return 0;
         }
-        return phase == MatchPhase.TRADING
-                ? round.priceAt(now - roundStartedAtMillis)
-                : round.path().startPrice();
+        if (phase != MatchPhase.TRADING) {
+            return round.path().startPrice();
+        }
+        double base = round.priceAt(now - roundStartedAtMillis);
+        return base * (1 + impact.valueAt(now));
     }
 
     public List<Standing> standings() {
