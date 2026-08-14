@@ -144,6 +144,13 @@ const MAJOR = [0, 4, 7, 12];
 const MINOR = [0, 3, 7, 12];
 const step = (root, semitones) => root * 2 ** (semitones / 12);
 
+/**
+ * A dozen people talking over one intermission would otherwise machine-gun the chatter
+ * cue into a rattle. One blip per gap, and the rest of the room's typing is silent.
+ */
+const CHATTER_GAP_MS = 130;
+let lastChatterAt = 0;
+
 export const sound = {
   /**
    * The closing ten seconds. Pitch and weight climb as the clock falls, so the run-in
@@ -237,6 +244,46 @@ export const sound = {
     noise({ duration: 0.14, gain: 0.05, from: 2600, to: 900, q: 0.9 });
     note({ from: 180, duration: 0.05, gain: 0.02, type: "triangle", at: 0.02 });
   },
+
+  /**
+   * A bulletin coming off the wire: teletype keys, then the bell.
+   *
+   * The one cue meant to pull your eyes off the chart, because a headline is the only
+   * thing inside a round that changes what the price is about to do. Pitched well above
+   * everything else so it cuts through a moving market.
+   */
+  news: () => {
+    for (let i = 0; i < 3; i += 1) {
+      noise({ duration: 0.03, gain: 0.028, from: 3000, to: 2200, q: 2.4, at: i * 0.045 });
+    }
+    note({ from: 1560, type: "triangle", duration: 0.22, gain: 0.045, at: 0.14, detune: 5 });
+    // A fifth above the bell, quiet — it reads as shimmer rather than a second note.
+    note({ from: 2340, type: "triangle", duration: 0.16, gain: 0.02, at: 0.14 });
+  },
+
+  /**
+   * Somebody said something. Deliberately the quietest cue in the game: it has to register
+   * while your eyes are on the chart without ever becoming the sound of the game.
+   */
+  chatter: () => {
+    const now = Date.now();
+    if (now - lastChatterAt < CHATTER_GAP_MS) return;
+    lastChatterAt = now;
+    noise({ duration: 0.025, gain: 0.022, from: 2600, to: 1700, q: 3 });
+  },
+
+  /**
+   * Somebody readied up in the briefing. Pitch climbs with the count, so the room hears
+   * itself filling without anyone having to read the number.
+   */
+  ready: (fraction = 0) =>
+    note({
+      from: 440 + fraction * 380,
+      type: "triangle",
+      duration: 0.09,
+      gain: 0.035,
+      detune: 5,
+    }),
 
   /** The verdict stamp hitting the card. */
   stamp: (wasTrue = false) => {

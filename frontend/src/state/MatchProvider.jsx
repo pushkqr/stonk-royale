@@ -53,6 +53,7 @@ export function MatchProvider({ session, children }) {
   const roundRef = useRef(null);
   const settleRef = useRef(null);
   const feedId = useRef(0);
+  const readyRef = useRef(0);
 
   const { code, playerId, token } = session;
 
@@ -105,6 +106,7 @@ export function MatchProvider({ session, children }) {
           roundRef.current = null;
           rumorRef.current = null;
           settleRef.current = null;
+          readyRef.current = 0;
           setSettled(null);
           setLastRumor(null);
           setRumor(null);
@@ -124,12 +126,23 @@ export function MatchProvider({ session, children }) {
       on(topic("board"), setBoard);
       on(topic("standings"), setStandings);
       on(topic("lobby"), setLobby);
-      on(topic("ready"), setReadyState);
+      on(topic("ready"), (next) => {
+        // Only the climb. The count also lands on first sync and on a rematch reset,
+        // neither of which is somebody pressing the button.
+        if (next.ready > readyRef.current) {
+          sound.ready(next.total ? next.ready / next.total : 0);
+        }
+        readyRef.current = next.ready;
+        setReadyState(next);
+      });
 
       on(topic("feed"), (item) => {
         feedId.current += 1;
         setFeed((prev) => [...prev.slice(-FEED_LIMIT), { ...item, id: feedId.current }]);
         if (item.kind === "LIQUIDATION") sound.liquidation(item.playerId === playerId);
+        else if (item.kind === "NEWS") sound.news();
+        // Your own line needs no announcing — you just typed it.
+        else if (item.kind === "CHAT" && item.playerId !== playerId) sound.chatter();
       });
 
       on(topic("settled"), (next) => {
