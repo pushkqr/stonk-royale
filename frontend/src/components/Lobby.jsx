@@ -9,9 +9,28 @@ export default function Lobby() {
   const ready = players.length >= 2;
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const url = window.location.href;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // Clipboard API needs a secure context (HTTPS or localhost); fall back
+        // to the old execCommand trick for plain-HTTP access.
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Nothing we can do without a secure context or a user gesture; leave
+      // the button label as-is rather than claiming success.
+    }
   };
 
   return (

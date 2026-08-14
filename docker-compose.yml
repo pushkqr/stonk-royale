@@ -1,9 +1,25 @@
 services:
   stonk-royale:
     build: .
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
-      # Lock this to your own origin once it's on a real domain.
-      ALLOWED_ORIGINS: "*"
+      ALLOWED_ORIGINS: "https://stonks.pushkqr.app"
     restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - stonk-royale
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

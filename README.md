@@ -286,6 +286,15 @@ The frontend calls `/api` relatively, so the same build serves both from one ori
 CORS to configure. `docker compose up` does these steps in a multi-stage build, though that
 layer has never actually been run — the equivalent arrangement was verified by hand.
 
+`docker-compose.yml` fronts the app container with Caddy, which terminates TLS for a real
+domain (edit the hostname in `Caddyfile`, point an A record at the host, and Caddy handles
+the certificate via Let's Encrypt automatically — no manual cert setup). The app container
+itself is no longer published on the host; only Caddy's `80`/`443` are, so open those in the
+droplet firewall instead of `8080`. `ALLOWED_ORIGINS` in the compose file is locked to that
+domain's `https://` origin rather than `*`, since the browser's Clipboard API (used by the
+lobby's invite-link copy button) also refuses to run outside a secure context — plain
+`http://ip:8080` access silently can't copy to the clipboard for this reason.
+
 ---
 
 ## Configuration
@@ -338,7 +347,8 @@ stonk-royale/
 │   └── styles/           # tokens in index.css, screens in game.css
 │
 ├── Dockerfile            # multi-stage: frontend build folded into the JAR
-└── docker-compose.yml
+├── docker-compose.yml    # app + Caddy (automatic HTTPS reverse proxy)
+└── Caddyfile
 ```
 
 `Views.java` exists because the game model is dangerous to serialise: a `Rumor` carries

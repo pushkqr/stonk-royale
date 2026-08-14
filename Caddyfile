@@ -1,0 +1,3 @@
+stonks.pushkqr.app {
+	reverse_proxy stonk-royale:8080
+}
