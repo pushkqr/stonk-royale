@@ -62,7 +62,12 @@ public class MatchController {
         stats.matchCreated();
         Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId());
         seatBots(match, seat.nickname());
-        match.start(System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        match.start(now);
+        if (Boolean.TRUE.equals(request.skipBriefing())) {
+            match.markReady(seat.playerId());
+            match.tick(now);
+        }
         broadcaster.phase(match);
         return seat;
     }

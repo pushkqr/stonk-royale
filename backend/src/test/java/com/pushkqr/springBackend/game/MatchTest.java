@@ -968,6 +968,24 @@ class MatchTest {
     }
 
     @Test
+    void markingHumanReadyAdvancesDirectlyToIntermissionInPracticeWithBots() {
+        Match match = new Match("PRACTICE", new MatchConfig(3, 10, 1, 10_000, 12));
+        match.join("p1", "alice");
+        match.addBot("bot:0", "Vega");
+        match.addBot("bot:1", "Kite");
+        match.addBot("bot:2", "Moss");
+
+        match.start(0);
+        assertEquals(MatchPhase.BRIEFING, match.phase());
+
+        boolean advanced = match.markReady("p1");
+        assertTrue(advanced);
+        match.tick(0);
+        assertEquals(MatchPhase.INTERMISSION, match.phase());
+        assertEquals(0, match.round().roundIndex());
+    }
+
+    @Test
     void sameCodeReplaysTheSameMarket() {
         Match first = lobbyOfTwo("REPLAY");
         Match second = lobbyOfTwo("REPLAY");

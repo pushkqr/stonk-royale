@@ -1,4 +1,5 @@
 import { deviceId } from "./device";
+import { hasSeenBriefing } from "./briefing";
 
 // Relative by default so one build works in dev (via the Vite proxy) and in the single
 // container. Set VITE_API_URL only when the API lives on a different host.
@@ -28,9 +29,13 @@ export const createMatch = (nickname, settings, token) =>
 export const joinMatch = (code, nickname, token) =>
   post(`/match/${code}/join`, { nickname, deviceId: deviceId() }, token);
 
-/** A one-round solo match, already started by the time this resolves. */
+/** A solo practice match against bots, already started by the time this resolves. */
 export const practiceMatch = (nickname, token) =>
-  post("/match/practice", { nickname, deviceId: deviceId() }, token);
+  post(
+    "/match/practice",
+    { nickname, deviceId: deviceId(), skipBriefing: hasSeenBriefing() },
+    token,
+  );
 
 /**
  * How the game is running on this device. Fire-and-forget: a failed report must never

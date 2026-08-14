@@ -18,7 +18,10 @@ public final class Requests {
             String deviceId) {
     }
 
-    public record Join(String nickname, String deviceId) {
+    public record Join(String nickname, String deviceId, Boolean skipBriefing) {
+        public Join(String nickname, String deviceId) {
+            this(nickname, deviceId, false);
+        }
     }
 
     public record Open(String side, double sizeFraction, int leverage) {
