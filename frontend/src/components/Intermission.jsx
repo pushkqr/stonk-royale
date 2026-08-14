@@ -3,30 +3,12 @@ import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, toneOf } from "../lib/format";
+import { REGIME_VERDICT, tipCountLine } from "../lib/regime";
 import RumorCard from "./RumorCard";
 import Ledger from "./Ledger";
 import Wire from "./Wire";
 
-/** What the round actually turned out to be, in the game's own voice. */
-const REGIME_VERDICT = {
-  PUMP: "It went up. Straight up.",
-  DUMP: "It bled out.",
-  CHOP: "It went nowhere, violently.",
-  RUG: "It was a rug pull.",
-  SQUEEZE: "The shorts got squeezed.",
-};
-
 const HOLD_ON_REVEAL_MS = 5000;
-
-/**
- * The one fact everybody shares. It makes the wire checkable: if four people claim a pump
- * and only one tip is true, three of them are lying where you can see it. Never zero — the
- * server guarantees a round holds at least one real tip.
- */
-function tipCountLine(count) {
-  if (count === 1) return "One of you got the truth.";
-  return `${count} of you got the truth.`;
-}
 
 export default function Intermission() {
   const { phase, rumor, lastRumor, settled, standings, session, serverNow, feed, say } =

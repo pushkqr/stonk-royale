@@ -298,6 +298,33 @@
   color: #7a6a55;
 }
 
+.rumor-claim {
+  margin: 0.6rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #4a3d55;
+}
+
+.rumor-claim-regime {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #1a1420;
+}
+
+/* The rail variant. A -1.6deg tilt and a 14px drop shadow are fine on a hero card in a
+   centred column; in a 14rem rail they overlap whatever sits above and below. */
+.rumor-compact {
+  width: 100%;
+  padding: 0.9rem 0.85rem 0.75rem;
+  transform: none;
+  box-shadow: 0 6px 0 -3px rgba(0, 0, 0, 0.3);
+  animation: none;
+}
+
+.rumor-compact .rumor-text {
+  font-size: 0.92rem;
+}
+
 /* The public half of the round's information, and deliberately unlike the card above it:
    that one is a whisper on paper, this is posted where everyone can see the same thing. */
 .tip-count {
