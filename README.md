@@ -33,6 +33,13 @@ account to create, and no market data feed to depend on.
   is generated during the intermission. That's what lets a "true" rumour be genuinely true,
   and lets a warning headline land 2–4 seconds _before_ the crash it warns about.
 
+- **The room's own trading moves the price too.** Every open, close and forced liquidation
+  gives the price a shove that fades over a few seconds — transient, never permanent, and
+  never able to change the round's hidden fate by itself. The seeded path is the tide; the
+  room is the chop on top of it. Six players piling into the same side together can push
+  price by several percent, and a liquidation is a forced sell like any other, which is how
+  a cascade can take a table down together without any special-case code for it.
+
 - **Cash resets every round.** Each round starts every player at the same $10,000 and scores
   that round's PnL independently. A blowup in round one costs that round and nothing else —
   carrying losses forward would leave a player dead for eight minutes, which is the moment
@@ -67,9 +74,11 @@ account to create, and no market data feed to depend on.
   fanfare are synthesised through the Web Audio API rather than shipped as files, so nothing
   is downloaded and nothing is licensed. Mute persists across sessions.
 
-- **Deterministic and replayable.** Everything derives from the match code and round number,
-  so the same code replays the same market exactly — a rematch is a fair comparison and any
-  bug is reproducible from its code alone.
+- **The underlying market is deterministic and replayable.** Everything derives from the
+  match code and round number, so the same code replays the same seeded path exactly — any
+  bug is reproducible from its code alone. What the room does on top of that path is not
+  replayed: order flow (see above) means a rematch rides the same tide, and the difference
+  is entirely what the table did to it.
 
 ---
 
@@ -114,7 +123,8 @@ Each round cycles through three beats:
    Your liquidation price is drawn on the chart, because leverage should be a legible
    decision rather than a hidden trapdoor. The dossier keeps your tip, the true-tip count
    and the round's headlines beside it, so the information you were dealt is still there
-   when you act on it.
+   when you act on it. Big trades — yours and everyone else's — push the price themselves,
+   briefly, so a crowded trade is a real, visible force in the room.
 3. **Settle.** Open positions force-close at the buzzer, scores are added to the running
    total, and the regime is revealed — next to what your tip claimed, so you find out
    whether trusting it was the right call.
@@ -123,8 +133,9 @@ Highest cumulative score across all rounds wins, ties broken on best single roun
 round has no intermission behind it, so its ledger appears on the results screen instead.
 
 When it's over the room stays open. **Play again** keeps every seat, code and setting on a
-fresh market; **Rerun the same market** replays the identical price paths, which the seeded
-generator makes a genuinely fair comparison. Returning to the lobby rather than straight into
+fresh market; **Rerun the same market** replays the identical seeded price paths — the tide
+is the same, so whatever's different the second time is down to how the table traded it, not
+the market getting lucky or unlucky again. Returning to the lobby rather than straight into
 a round is also the only window in which someone new can join.
 
 Arriving alone is not a dead end: **one round on your own** starts a solo practice match
