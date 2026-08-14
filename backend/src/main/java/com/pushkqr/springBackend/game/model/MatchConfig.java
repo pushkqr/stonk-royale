@@ -46,7 +46,7 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
     }
 
     public static MatchConfig standard() {
-        return new MatchConfig(5, 90, 15, 10_000, MAX_PLAYERS);
+        return new MatchConfig(5, 90, 25, 10_000, MAX_PLAYERS);
     }
 
     public long roundMillis() {

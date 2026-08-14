@@ -89,7 +89,7 @@ public class MatchController {
         return new MatchConfig(
                 orDefault(request.rounds(), standard.rounds()),
                 orDefault(request.roundSeconds(), standard.roundSeconds()),
-                standard.intermissionSeconds(),
+                orDefault(request.intermissionSeconds(), standard.intermissionSeconds()),
                 request.startingCash() == null ? standard.startingCash() : request.startingCash(),
                 orDefault(request.maxPlayers(), standard.maxPlayers()));
     }

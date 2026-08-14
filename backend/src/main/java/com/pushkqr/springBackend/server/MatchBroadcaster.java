@@ -27,6 +27,10 @@ public class MatchBroadcaster {
         send(match, "phase", phaseView(match));
     }
 
+    public void ready(Match match) {
+        send(match, "ready", new Views.Ready(match.readyCount(), match.players().size()));
+    }
+
     public void price(Match match, long now) {
         send(match, "price", new Views.Price(
                 match.currentPrice(now), now - roundElapsedBase(match, now)));

@@ -7,6 +7,7 @@
 export const DEFAULTS = {
   rounds: 5,
   roundSeconds: 90,
+  intermissionSeconds: 25,
   maxPlayers: 12,
   startingCash: 10_000,
 };
@@ -14,17 +15,12 @@ export const DEFAULTS = {
 export const LIMITS = {
   rounds: { min: 1, max: 8, step: 1 },
   roundSeconds: { min: 10, max: 180, step: 10 },
+  intermissionSeconds: { min: 5, max: 60, step: 5 },
   maxPlayers: { min: 2, max: 12, step: 1 },
 };
 
 /** Cosmetic, so a short list of round numbers beats a free-text field. */
 export const CASH_STEPS = [1_000, 10_000, 100_000, 1_000_000];
-
-/**
- * Mirrors the server's intermission default. Only used to estimate match length before a
- * match exists, so there is nothing to read it from yet.
- */
-const INTERMISSION_SECONDS = 15;
 
 export const PRESETS = [
   { id: "quick", label: "Quick", rounds: 3, roundSeconds: 60 },
@@ -32,8 +28,8 @@ export const PRESETS = [
   { id: "long", label: "Long", rounds: 7, roundSeconds: 90 },
 ];
 
-export function estimateMinutes({ rounds, roundSeconds }) {
-  return Math.max(1, Math.round((rounds * (roundSeconds + INTERMISSION_SECONDS)) / 60));
+export function estimateMinutes({ rounds, roundSeconds, intermissionSeconds }) {
+  return Math.max(1, Math.round((rounds * (roundSeconds + intermissionSeconds)) / 60));
 }
 
 export function matchingPreset({ rounds, roundSeconds }) {

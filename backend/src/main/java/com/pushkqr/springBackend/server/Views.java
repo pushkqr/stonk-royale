@@ -27,6 +27,10 @@ public final class Views {
             long serverTime, Asset asset, Integer truthfulTips) {
     }
 
+    /** How far the briefing has got. Its own shape so a click never re-sends a phase. */
+    public record Ready(int ready, int total) {
+    }
+
     public record Price(double price, long elapsedMillis) {
     }
 

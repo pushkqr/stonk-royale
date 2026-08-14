@@ -15,20 +15,20 @@ class MatchConfigTest {
     }
 
     @Test
-    void standardIsTheDocumentedDefault() {
+    void standardIsTheIntendedExperience() {
         MatchConfig standard = MatchConfig.standard();
 
         assertEquals(5, standard.rounds());
         assertEquals(90, standard.roundSeconds());
-        assertEquals(15, standard.intermissionSeconds());
+        assertEquals(25, standard.intermissionSeconds());
         assertEquals(10_000, standard.startingCash());
         assertEquals(12, standard.maxPlayers());
     }
 
     @Test
     void estimatedLengthCountsIntermissions() {
-        // 5 rounds of 90s plus 5 intermissions of 15s.
-        assertEquals((90 + 15) * 5 * 1000L, MatchConfig.standard().estimatedMillis());
+        // 5 rounds of 90s plus 5 intermissions of 25s.
+        assertEquals((90 + 25) * 5 * 1000L, MatchConfig.standard().estimatedMillis());
     }
 
     @Test
@@ -69,6 +69,12 @@ class MatchConfigTest {
         assertDoesNotThrow(() -> with(5, 90, MatchConfig.MAX_INTERMISSION_SECONDS, 10_000, 12));
         assertThrows(IllegalArgumentException.class, () -> with(5, 90, 0, 10_000, 12));
         assertThrows(IllegalArgumentException.class, () -> with(5, 90, MatchConfig.MAX_INTERMISSION_SECONDS + 1, 10_000, 12));
+    }
+
+    @Test
+    void anIntermissionInsideTheBoundsIsAccepted() {
+        assertDoesNotThrow(() -> with(5, 90, 40, 10_000, 12));
+        assertEquals(40, with(5, 90, 40, 10_000, 12).intermissionSeconds());
     }
 
     /**

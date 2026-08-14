@@ -34,6 +34,7 @@ export function MatchProvider({ session, children }) {
   const [standings, setStandings] = useState([]);
   const [lobby, setLobby] = useState(null);
   const [error, setError] = useState(null);
+  const [readyState, setReadyState] = useState(null);
 
   const clientRef = useRef(null);
   const offsetRef = useRef(0);
@@ -100,6 +101,7 @@ export function MatchProvider({ session, children }) {
           setTick(null);
           setBoard([]);
           setFeed([]);
+          setReadyState(null);
         }
       });
 
@@ -111,6 +113,7 @@ export function MatchProvider({ session, children }) {
       on(topic("board"), setBoard);
       on(topic("standings"), setStandings);
       on(topic("lobby"), setLobby);
+      on(topic("ready"), setReadyState);
 
       on(topic("feed"), (item) => {
         feedId.current += 1;
@@ -197,6 +200,8 @@ export function MatchProvider({ session, children }) {
       dismissError,
       me,
       serverNow,
+      readyState,
+      ready: () => publish("ready"),
       start: () => publish("start"),
       rematch: (sameMarket) => publish("rematch", { sameMarket }),
       // Cued here rather than off the returning feed message, so your own trade answers
@@ -213,7 +218,7 @@ export function MatchProvider({ session, children }) {
       quit,
     }),
     [session, connected, phase, tick, board, feed, series, rumor, lastRumor, settled,
-      standings, lobby, error, me, publish, serverNow, dismissError, quit],
+      standings, lobby, error, me, publish, serverNow, dismissError, quit, readyState],
   );
 
   return <MatchContext.Provider value={value}>{children}</MatchContext.Provider>;

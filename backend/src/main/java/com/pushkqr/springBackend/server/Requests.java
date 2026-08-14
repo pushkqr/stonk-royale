@@ -9,7 +9,7 @@ public final class Requests {
 
     /** Every setting is optional; anything omitted falls back to {@link MatchConfig#standard()}. */
     public record Create(String nickname, Integer rounds, Integer roundSeconds,
-            Integer maxPlayers, Double startingCash) {
+            Integer intermissionSeconds, Integer maxPlayers, Double startingCash) {
     }
 
     public record Join(String nickname) {

@@ -11,9 +11,11 @@ import com.pushkqr.springBackend.game.sim.Regime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * One live match, held entirely in memory.
@@ -30,6 +32,13 @@ public final class Match {
      * "don't start before your friends turn up" actually belongs.
      */
     public static final int MIN_PLAYERS = 1;
+
+    /**
+     * How long the briefing waits for a full house before starting anyway. Long enough that
+     * a room reading at its own pace never sees it, short enough that one locked phone does
+     * not end the evening.
+     */
+    public static final long BRIEFING_FAILSAFE_MILLIS = 90_000;
 
     private final String code;
     private final MatchConfig config;
@@ -51,6 +60,9 @@ public final class Match {
      * lie the server can prove.
      */
     private final Map<String, Regime> tipClaims = new LinkedHashMap<>();
+
+    /** Who has read the briefing. Covering the roster is what opens the first round. */
+    private final Set<String> readyIds = new HashSet<>();
 
     /** Bumped by a rematch that wants a fresh market; held to replay the same one. */
     private int generation;
@@ -110,8 +122,8 @@ public final class Match {
     }
 
     /**
-     * Starts the match into its first intermission. The upcoming round is planned here so
-     * the intermission can reveal the asset and hand out rumors before trading opens.
+     * Starts the match into the briefing. The first round is planned here so the
+     * intermission has an asset and a rumor ready the moment the gate opens.
      */
     public List<GameEvent> start(long now) {
         if (phase != MatchPhase.LOBBY) {
@@ -122,7 +134,7 @@ public final class Match {
         }
         List<GameEvent> events = new ArrayList<>();
         planRound(0);
-        enterIntermission(now, events);
+        enterBriefing(now, events);
         return events;
     }
 
@@ -144,6 +156,7 @@ public final class Match {
 
         players.values().forEach(MatchPlayer::resetForRematch);
         tipClaims.clear();
+        readyIds.clear();
         phase = MatchPhase.LOBBY;
         roundIndex = -1;
         round = null;
@@ -159,6 +172,11 @@ public final class Match {
         List<GameEvent> events = new ArrayList<>();
         switch (phase) {
             case LOBBY, FINISHED -> {
+            }
+            case BRIEFING -> {
+                if (readyIds.containsAll(players.keySet()) || now >= phaseEndsAtMillis) {
+                    enterIntermission(now, events);
+                }
             }
             case INTERMISSION -> {
                 if (now >= phaseEndsAtMillis) {
@@ -242,7 +260,15 @@ public final class Match {
         return (code + ":" + generation).hashCode();
     }
 
+    private void enterBriefing(long now, List<GameEvent> events) {
+        readyIds.clear();
+        phase = MatchPhase.BRIEFING;
+        phaseEndsAtMillis = now + BRIEFING_FAILSAFE_MILLIS;
+        events.add(new GameEvent.PhaseChanged(MatchPhase.BRIEFING, roundIndex, phaseEndsAtMillis));
+    }
+
     private void enterIntermission(long now, List<GameEvent> events) {
+        readyIds.clear();
         // Cleared here rather than at the open, because this is where the new tip is dealt
         // and players can start going on record about it straight away.
         tipClaims.clear();
@@ -261,6 +287,25 @@ public final class Match {
     }
 
     // --- player actions ------------------------------------------------------
+
+    /**
+     * Records that a player has read the briefing.
+     *
+     * An unknown id is ignored rather than rejected: the gate opens on covering the roster,
+     * so a stale id could never open it early anyway.
+     *
+     * @return whether this changed anything and the room needs telling
+     */
+    public boolean markReady(String playerId) {
+        if (phase != MatchPhase.BRIEFING || !players.containsKey(playerId)) {
+            return false;
+        }
+        return readyIds.add(playerId);
+    }
+
+    public int readyCount() {
+        return readyIds.size();
+    }
 
     public Position openPosition(String playerId, Side side, double sizeFraction, int leverage, long now) {
         return tradingRound(playerId).open(side, sizeFraction, leverage, currentPrice(now), now);

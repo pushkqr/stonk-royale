@@ -36,7 +36,19 @@ public class MatchSocketController {
 
         match.start(System.currentTimeMillis());
         broadcaster.phase(match);
-        broadcaster.rumors(match);
+        broadcaster.ready(match);
+    }
+
+    /**
+     * Says this player has read the briefing. The phase is not advanced here — the tick
+     * loop owns every transition and will pick this up within 100ms.
+     */
+    @MessageMapping("/match/{code}/ready")
+    public void ready(@DestinationVariable String code, Principal principal) {
+        Match match = require(code, principal);
+        if (match.markReady(session(principal).playerId())) {
+            broadcaster.ready(match);
+        }
     }
 
     /**
@@ -90,6 +102,7 @@ public class MatchSocketController {
         Match match = require(code, principal);
         broadcaster.lobby(match);
         broadcaster.standings(match);
+        broadcaster.ready(match);
         if (match.round() != null) {
             broadcaster.phase(match);
         }

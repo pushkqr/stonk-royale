@@ -73,10 +73,10 @@ account to create, and no market data feed to depend on.
 | ------------- | -------------------------- | ------------ |
 | Rounds        | 5                          | 1–8          |
 | Round length  | 90 seconds                 | 10–300s      |
-| Intermission  | 15 seconds                 | —            |
+| Intermission  | 25 seconds                 | 5–60s        |
 | Starting cash | $10,000, reset every round | see below    |
 | Players       | 12 max                     | 2–12         |
-| Total         | ~9 minutes                 |              |
+| Total         | ~10 minutes                |              |
 
 The host picks these before starting, either with a preset — **Quick** (3×60s), **Standard**
 (5×90s) or **Long** (7×90s) — or from individual dials behind an _Advanced settings_
@@ -89,6 +89,12 @@ difficulty setting.
 
 Bounds are enforced server-side in `MatchConfig`, not just in the UI — the create endpoint
 is public, and without an upper bound a crafted request could ask for a 24-hour round.
+
+Before the first round, the room sits in a **Briefing**: a scrollable rules panel that
+won't unlock its Ready button until you've actually scrolled to the end. Everyone has to
+ready up before play begins, but a 90-second failsafe starts it anyway — one player
+wandering off shouldn't be able to stall the whole table indefinitely. Anyone who has read
+the briefing before on this browser skips straight to a waiting screen.
 
 Each round cycles through three beats:
 
@@ -130,6 +136,11 @@ sequenceDiagram
     participant M as Match
     participant S as MarketSimulator
 
+    Note over P,E: Briefing - once, before round 1
+    E-->>P: phase BRIEFING
+    P->>E: ready, one per player
+    Note over E: advances once everyone is ready, or after 90s regardless
+
     Note over M,S: Intermission - the round is decided before it opens
     M->>S: generate from seed hash of code and round
     S-->>M: 900-point price path
@@ -161,7 +172,7 @@ sequenceDiagram
 flowchart LR
     UI["React app<br/>one STOMP socket"]
     API["MatchController<br/>create, join, lobby"]
-    SC["MatchSocketController<br/>open, close, chat, rematch"]
+    SC["MatchSocketController<br/>open, close, chat, ready, rematch"]
     AUTH["StompAuthInterceptor<br/>session token to Principal"]
     BC["MatchBroadcaster<br/>owns every wire shape"]
     ENG["MatchEngine<br/>scheduled every 100ms"]
@@ -245,13 +256,13 @@ per match in `sessionStorage`, so two normal tabs in the same profile will share
 
 ### Playtesting faster
 
-A full match is nine minutes, which is slow when you're iterating. The create endpoint takes
+A full match is ten minutes, which is slow when you're iterating. The create endpoint takes
 optional overrides:
 
 ```bash
 curl -X POST localhost:5173/api/match \
   -H 'Content-Type: application/json' \
-  -d '{"nickname":"alice","rounds":2,"roundSeconds":20}'
+  -d '{"nickname":"alice","rounds":2,"roundSeconds":20,"intermissionSeconds":5}'
 ```
 
 That returns a `code`; open `http://localhost:5173/m/CODE` to join it. A 2-round, 20-second
@@ -341,9 +352,10 @@ stonk-royale/
 │
 ├── frontend/src/
 │   ├── components/       # Trading, Intermission, Results, RumorCard, PriceChart,
-│   │                     #   Wire, Ledger, Standings, MatchSettings, MuteToggle
+│   │                     #   Wire, Ledger, Standings, MatchSettings, MuteToggle,
+│   │                     #   Briefing, RulesContent, RulesTab
 │   ├── state/            # MatchProvider — owns the socket and all match state
-│   ├── lib/              # api, session, format, auth, sound, matchSettings, useCountdown
+│   ├── lib/              # api, session, format, auth, sound, matchSettings, briefing, useCountdown
 │   └── styles/           # tokens in index.css, screens in game.css
 │
 ├── Dockerfile            # multi-stage: frontend build folded into the JAR

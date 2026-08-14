@@ -52,7 +52,7 @@ export default function Home() {
           Stonk<span className="hero-title-break">Royale</span>
         </h1>
         <p className="hero-sub">
-          Nine minutes. Five rounds. Everyone gets a tip, and
+          Ten minutes. Five rounds. Everyone gets a tip, and
           <em> most of them are lies.</em>
         </p>
       </header>

@@ -33,6 +33,18 @@ class MatchTest {
         return events;
     }
 
+    /**
+     * Starts a match and clears the briefing, which is where every test about rounds
+     * actually wants to begin. The tick at {@code now} opens the intermission on the same
+     * millisecond the old start(now) did, so timing assertions are unaffected.
+     */
+    private List<GameEvent> startPlaying(Match match, long now) {
+        List<GameEvent> events = new ArrayList<>(match.start(now));
+        match.players().forEach(player -> match.markReady(player.id()));
+        events.addAll(match.tick(now));
+        return events;
+    }
+
     private static <T extends GameEvent> List<T> only(List<GameEvent> events, Class<T> type) {
         return events.stream().filter(type::isInstance).map(type::cast).toList();
     }
@@ -98,21 +110,80 @@ class MatchTest {
     // --- phases --------------------------------------------------------------
 
     @Test
-    void startOpensAnIntermissionWithTheFirstRoundAlreadyPlanned() {
+    void startOpensTheBriefingWithTheFirstRoundAlreadyPlanned() {
         Match match = lobbyOfTwo("ABCDE");
         List<GameEvent> events = match.start(0);
 
-        assertEquals(MatchPhase.INTERMISSION, match.phase());
+        assertEquals(MatchPhase.BRIEFING, match.phase());
         assertEquals(0, match.roundIndex());
-        assertEquals(1_000, match.phaseEndsAtMillis());
+        assertEquals(Match.BRIEFING_FAILSAFE_MILLIS, match.phaseEndsAtMillis());
 
-        // The asset and every player's rumor exist before trading opens, so the lying
-        // can start during the intermission.
+        // Planned up front, so the intermission has something to reveal the instant the
+        // gate opens.
         assertNotNull(match.round().asset());
         assertNotNull(match.rumorFor("p1"));
         assertNotNull(match.rumorFor("p2"));
 
-        assertEquals(MatchPhase.INTERMISSION, only(events, GameEvent.PhaseChanged.class).get(0).phase());
+        assertEquals(MatchPhase.BRIEFING, only(events, GameEvent.PhaseChanged.class).get(0).phase());
+    }
+
+    @Test
+    void theBriefingHoldsUntilEveryoneHasReadied() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        assertTrue(match.markReady("p1"));
+        step(match, 0, 5_000);
+        assertEquals(MatchPhase.BRIEFING, match.phase(), "one of two is not everyone");
+
+        assertTrue(match.markReady("p2"));
+        step(match, 5_100, 5_100);
+        assertEquals(MatchPhase.INTERMISSION, match.phase());
+        assertEquals(5_100 + 1_000, match.phaseEndsAtMillis());
+    }
+
+    @Test
+    void theBriefingGivesUpWaitingAfterTheFailsafe() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        match.markReady("p1");
+
+        step(match, 0, Match.BRIEFING_FAILSAFE_MILLIS);
+
+        assertEquals(MatchPhase.INTERMISSION, match.phase(), "a locked phone cannot hold the room");
+    }
+
+    @Test
+    void readyingTwiceChangesNothing() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+
+        assertTrue(match.markReady("p1"));
+        assertFalse(match.markReady("p1"), "the room does not need telling twice");
+        assertEquals(1, match.readyCount());
+    }
+
+    @Test
+    void aStrangerCannotOpenTheGate() {
+        Match match = lobbyOfTwo("ABCDE");
+        match.start(0);
+        match.markReady("p1");
+
+        assertFalse(match.markReady("nobody"));
+        step(match, 0, 5_000);
+
+        assertEquals(MatchPhase.BRIEFING, match.phase());
+    }
+
+    @Test
+    void aRematchClosesTheGateAgain() {
+        Match match = finishedMatch("ABCDE");
+        match.rematch(false, 40_000);
+        match.start(41_000);
+
+        assertEquals(0, match.readyCount(), "last match's readiness must not open this one");
+        step(match, 41_000, 46_000);
+        assertEquals(MatchPhase.BRIEFING, match.phase());
     }
 
     @Test
@@ -127,7 +198,7 @@ class MatchTest {
     @Test
     void aRematchDoesNotReseatSomebodyWhoLeft() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 60_000);
         assertEquals(MatchPhase.FINISHED, match.phase());
 
@@ -141,7 +212,7 @@ class MatchTest {
     @Test
     void leavingMidRoundKeepsTheSeat() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
         assertEquals(MatchPhase.TRADING, match.phase());
 
@@ -166,7 +237,7 @@ class MatchTest {
         // the number agreeing with the cards. Many seeds, because one proves nothing.
         for (int i = 0; i < 200; i++) {
             Match match = lobbyOfTwo("TIPS" + i);
-            match.start(0);
+            startPlaying(match, 0);
 
             int truthful = 0;
             for (String id : List.of("p1", "p2")) {
@@ -185,7 +256,7 @@ class MatchTest {
         // planner forces one. This is the assertion that keeps that promise honest.
         for (int i = 0; i < 500; i++) {
             Match match = lobbyOfTwo("TRUE" + i);
-            match.start(0);
+            startPlaying(match, 0);
             assertTrue(match.round().truthfulTipCount() >= 1,
                     "round planned from seed TRUE" + i + " dealt no true tip");
         }
@@ -196,7 +267,7 @@ class MatchTest {
         Set<Integer> seen = new HashSet<>();
         for (int i = 0; i < 500 && seen.size() < 2; i++) {
             Match match = lobbyOfTwo("VARY" + i);
-            match.start(0);
+            startPlaying(match, 0);
             seen.add(match.round().truthfulTipCount());
         }
 
@@ -208,7 +279,7 @@ class MatchTest {
     @Test
     void intermissionGivesWayToTrading() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
 
         List<GameEvent> events = step(match, 0, 1_000);
 
@@ -222,7 +293,7 @@ class MatchTest {
     @Test
     void tradingIsClosedOutsideAnOpenRound() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
 
         assertThrows(IllegalStateException.class,
                 () -> match.openPosition("p1", Side.LONG, 1.0, 5, 500));
@@ -233,7 +304,7 @@ class MatchTest {
     @Test
     void aTipClaimIsCarriedIntoTheSettleAndCanBeCaughtOut() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
 
         // alice tells the room something; bob keeps quiet.
@@ -255,7 +326,7 @@ class MatchTest {
     @Test
     void tipClaimsDoNotSurviveIntoTheNextRound() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
         match.recordTipClaim("p1", Regime.RUG);
 
@@ -270,7 +341,7 @@ class MatchTest {
     @Test
     void aClaimMadeDuringTheIntermissionSurvivesIntoTheRound() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
 
         // The market is shut, but the tip has been dealt and this is where the talking
         // happens — so going on record here has to count.
@@ -286,7 +357,7 @@ class MatchTest {
 
         // Still the lobby: no tip exists yet, so there is nothing to be claiming about.
         match.recordTipClaim("p1", Regime.PUMP);
-        match.start(0);
+        startPlaying(match, 0);
 
         List<GameEvent> events = step(match, 0, 11_000);
         assertNull(resultFor(events, "p1").claimedTipAs());
@@ -306,7 +377,7 @@ class MatchTest {
     @Test
     void bothHeadlinesBreakDuringTheRound() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
 
         List<GameEvent> events = step(match, 0, 11_000);
 
@@ -316,7 +387,7 @@ class MatchTest {
     @Test
     void aRuggedLongAtMaxLeverageIsLiquidated() {
         Match match = lobbyOfTwo(codeWithRegime(Regime.RUG));
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
 
         match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
@@ -332,7 +403,7 @@ class MatchTest {
     @Test
     void roundSettlesWithScoresAndTheRumorReveal() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
 
         List<GameEvent> events = step(match, 1_100, 11_000);
@@ -352,7 +423,7 @@ class MatchTest {
     @Test
     void openPositionsAreForceClosedAtTheBuzzer() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
         match.openPosition("p1", Side.LONG, 0.5, 2, 1_000);
 
@@ -371,7 +442,7 @@ class MatchTest {
     @Test
     void cashResetsEveryRound() {
         Match match = lobbyOfTwo(codeWithRegime(Regime.RUG));
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
 
         match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
@@ -392,7 +463,7 @@ class MatchTest {
     @Test
     void matchRunsEveryRoundThenFinishes() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
 
         List<GameEvent> events = step(match, 0, 33_000);
 
@@ -406,7 +477,7 @@ class MatchTest {
     @Test
     void finishedMatchStopsProducingEvents() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 33_000);
 
         assertTrue(step(match, 33_100, 40_000).isEmpty());
@@ -415,7 +486,7 @@ class MatchTest {
     @Test
     void everyRoundUsesADifferentAsset() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
 
         List<String> tickers = new ArrayList<>();
         for (long t = 0; t <= 33_000; t += STEP) {
@@ -431,7 +502,7 @@ class MatchTest {
     @Test
     void standingsRankByTotalScore() {
         Match match = lobbyOfTwo(codeWithRegime(Regime.PUMP));
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 1_000);
 
         match.openPosition("p1", Side.LONG, 1.0, 2, 1_000);   // rides the pump
@@ -448,7 +519,7 @@ class MatchTest {
 
     private Match finishedMatch(String code) {
         Match match = lobbyOfTwo(code);
-        match.start(0);
+        startPlaying(match, 0);
         step(match, 0, 33_000);
         return match;
     }
@@ -482,11 +553,11 @@ class MatchTest {
         var firstRegime = new ArrayList<Regime>();
         // Re-derive round 0 of the original by replaying a fresh match on the same code.
         Match reference = lobbyOfTwo("ABCDE");
-        reference.start(0);
+        startPlaying(reference, 0);
         firstRegime.add(reference.round().regime());
 
         match.rematch(true, 40_000);
-        match.start(41_000);
+        startPlaying(match, 41_000);
 
         assertEquals(firstRegime.get(0), match.round().regime());
         assertEquals(reference.round().asset(), match.round().asset());
@@ -497,10 +568,10 @@ class MatchTest {
     void rematchOnANewMarketChangesThePath() {
         Match match = finishedMatch("ABCDE");
         Match reference = lobbyOfTwo("ABCDE");
-        reference.start(0);
+        startPlaying(reference, 0);
 
         match.rematch(false, 40_000);
-        match.start(41_000);
+        startPlaying(match, 41_000);
 
         assertFalse(
                 java.util.Arrays.equals(reference.round().path().toArray(), match.round().path().toArray()),
@@ -510,7 +581,7 @@ class MatchTest {
     @Test
     void rematchIsRejectedWhileTheMatchIsStillRunning() {
         Match match = lobbyOfTwo("ABCDE");
-        match.start(0);
+        startPlaying(match, 0);
 
         assertThrows(IllegalStateException.class, () -> match.rematch(false, 1_000));
     }
@@ -523,6 +594,7 @@ class MatchTest {
         match.join("p1", "alice");
 
         assertDoesNotThrow(() -> match.start(0));
+        match.markReady("p1");
         step(match, 0, 12_000);
         assertEquals(MatchPhase.FINISHED, match.phase());
         assertEquals(1, match.player("p1").roundScores().size());
@@ -532,8 +604,8 @@ class MatchTest {
     void sameCodeReplaysTheSameMarket() {
         Match first = lobbyOfTwo("REPLAY");
         Match second = lobbyOfTwo("REPLAY");
-        first.start(0);
-        second.start(0);
+        startPlaying(first, 0);
+        startPlaying(second, 0);
 
         assertEquals(first.round().regime(), second.round().regime());
         assertEquals(first.round().asset(), second.round().asset());

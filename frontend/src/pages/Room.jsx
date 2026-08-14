@@ -6,6 +6,8 @@ import JoinGate from "../components/JoinGate";
 import MuteToggle from "../components/MuteToggle";
 import LeaveTab from "../components/LeaveTab";
 import Lobby from "../components/Lobby";
+import Briefing from "../components/Briefing";
+import RulesTab from "../components/RulesTab";
 import Intermission from "../components/Intermission";
 import Trading from "../components/Trading";
 import Results from "../components/Results";
@@ -48,9 +50,11 @@ function Screen() {
       )}
 
       <LeaveTab />
+      <RulesTab />
       <MuteToggle />
 
       {current === "LOBBY" && <Lobby />}
+      {current === "BRIEFING" && <Briefing />}
       {current === "INTERMISSION" && <Intermission />}
       {current === "TRADING" && <Trading />}
       {current === "FINISHED" && <Results />}

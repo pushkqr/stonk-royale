@@ -57,6 +57,7 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
         <div className="advanced stack">
           {dial("Rounds", "rounds", (v) => v)}
           {dial("Round length", "roundSeconds", (v) => `${v}s`)}
+          {dial("Talk between rounds", "intermissionSeconds", (v) => `${v}s`)}
           {dial("Max players", "maxPlayers", (v) => v)}
 
           <label className="setting">
