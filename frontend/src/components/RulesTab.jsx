@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMatch } from "../state/MatchProvider";
 import RulesContent from "./RulesContent";
 
@@ -14,8 +14,15 @@ export default function RulesTab() {
   // This overlay is mounted for the whole match and never unmounts, so its own state has
   // to be reset on a phase change — otherwise it can still be open, covering the chart and
   // liquidation line, when TRADING starts underneath it.
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- closing on phase change is exactly what this effect is for
-  useEffect(() => setOpen(false), [phase?.phase]);
+  //
+  // Adjusted during render rather than in an effect: React re-runs this pass immediately
+  // with the new state, so the overlay is gone in the same frame the phase changes instead
+  // of flashing for one paint after it.
+  const [lastPhase, setLastPhase] = useState(phase?.phase);
+  if (phase?.phase !== lastPhase) {
+    setLastPhase(phase?.phase);
+    setOpen(false);
+  }
 
   return (
     <>

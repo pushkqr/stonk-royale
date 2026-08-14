@@ -206,6 +206,41 @@ export function MatchProvider({ session, children }) {
 
   const me = board.find((row) => row.playerId === playerId) ?? null;
 
+  /*
+    The actions below are wrapped so their identities survive a board update, which lands
+    twice a second. Without that they were new functions on every one, and the memoised
+    Wire and TradeDeck they are passed to re-rendered anyway — the memo was there but
+    never held.
+
+    `close` needs the current position to pick its sound, and reading that from a ref
+    rather than a dependency is what keeps it stable; a cue being one render behind is not
+    something an ear can hear.
+  */
+  const meRef = useRef(null);
+  useEffect(() => {
+    meRef.current = me;
+  }, [me]);
+
+  const ready = useCallback(() => publish("ready"), [publish]);
+  const start = useCallback(() => publish("start"), [publish]);
+  const rematch = useCallback((sameMarket) => publish("rematch", { sameMarket }), [publish]);
+  const say = useCallback((text, claim) => publish("chat", { text, claim }), [publish]);
+
+  // Cued here rather than off the returning feed message, so your own trade answers under
+  // your finger instead of after a round trip.
+  const open = useCallback(
+    (side, sizeFraction, leverage) => {
+      sound.open(side);
+      publish("open", { side, sizeFraction, leverage });
+    },
+    [publish],
+  );
+
+  const close = useCallback(() => {
+    sound.close(meRef.current?.position?.unrealisedPnl ?? 0);
+    publish("close");
+  }, [publish]);
+
   const value = useMemo(
     () => ({
       session,
@@ -223,24 +258,17 @@ export function MatchProvider({ session, children }) {
       me,
       serverNow,
       readyState,
-      ready: () => publish("ready"),
-      start: () => publish("start"),
-      rematch: (sameMarket) => publish("rematch", { sameMarket }),
-      // Cued here rather than off the returning feed message, so your own trade answers
-      // under your finger instead of after a round trip.
-      open: (side, sizeFraction, leverage) => {
-        sound.open(side);
-        publish("open", { side, sizeFraction, leverage });
-      },
-      close: () => {
-        sound.close(me?.position?.unrealisedPnl ?? 0);
-        publish("close");
-      },
-      say: (text, claim) => publish("chat", { text, claim }),
+      ready,
+      start,
+      rematch,
+      open,
+      close,
+      say,
       quit,
     }),
-    [session, connected, phase, board, feed, rumor, lastRumor, settled,
-      standings, lobby, error, me, publish, serverNow, dismissError, quit, readyState],
+    [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, lobby,
+      error, me, serverNow, dismissError, quit, readyState, ready, start, rematch, open,
+      close, say],
   );
 
   const priceValue = useMemo(() => ({ tick, series }), [tick, series]);

@@ -82,7 +82,7 @@ export default function Trading() {
           startPrice={startPrice}
         />
 
-        <TradeDeck me={me} livePrice={live} onOpen={open} onClose={close} disabled={!me} />
+        <TradeDeck me={me} onOpen={open} onClose={close} disabled={!me} />
       </section>
 
       <Wire feed={feed} onSay={say} disabled={false} />

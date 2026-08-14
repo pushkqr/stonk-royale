@@ -9,7 +9,7 @@ import { money, price as fmtPrice, signedMoney, toneOf } from "../lib/format";
  * Memoised because it hangs off the trading screen, which re-renders on every price tick,
  * while everything shown here moves with the board instead — five times slower.
  */
-function TradeDeck({ me, livePrice, onOpen, onClose, disabled }) {
+function TradeDeck({ me, onOpen, onClose, disabled }) {
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
 

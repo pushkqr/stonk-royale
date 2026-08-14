@@ -72,7 +72,7 @@ account to create, and no market data feed to depend on.
 |               | Default                    | Host can set |
 | ------------- | -------------------------- | ------------ |
 | Rounds        | 5                          | 1–8          |
-| Round length  | 90 seconds                 | 10–300s      |
+| Round length  | 90 seconds                 | 10–180s      |
 | Intermission  | 25 seconds                 | 5–60s        |
 | Starting cash | $10,000, reset every round | see below    |
 | Players       | 12 max                     | 2–12         |
