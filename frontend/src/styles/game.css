@@ -1099,3 +1099,85 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* The briefing is the first thing a new player ever sees, so it opens with the rag's
+   nameplate rather than a bare panel. The rules themselves stay on the dark sheet: they
+   are also rendered by the corner tab over a live round, and one set of colours has to
+   work in both places. */
+.briefing-plate {
+  position: relative;
+  z-index: 1;
+  width: min(30rem, 100%);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.5rem 1rem 0.55rem;
+  background: var(--paper);
+  color: #1a1420;
+  border-radius: 2px;
+  box-shadow: 0 10px 0 -4px rgba(0, 0, 0, 0.3), 0 16px 30px rgba(0, 0, 0, 0.4);
+  animation: deal 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.briefing-plate-name {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.briefing-plate-sub {
+  font-family: var(--data);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.62;
+}
+
+/* Smaller than a hero verdict: this screen has a tall panel under it and has to survive
+   a short phone without pushing the Ready button below the fold. */
+.briefing-title {
+  font-size: clamp(1.7rem, 5.2vw, 2.6rem);
+  margin: 0 0 0.45rem;
+}
+
+.briefing-waiting {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.ready-pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.34rem;
+}
+
+.ready-pip {
+  width: 0.62rem;
+  height: 0.62rem;
+  border: 2px solid var(--edge);
+  border-radius: 50%;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.ready-pip.is-in {
+  background: var(--scream);
+  border-color: var(--scream);
+}
+
+/* Available to anything that needs to say a number out loud without printing it twice. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

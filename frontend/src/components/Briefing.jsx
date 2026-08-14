@@ -54,41 +54,61 @@ export default function Briefing() {
     ready();
   };
 
-  const count = readyState ? `${readyState.ready}/${readyState.total} ready` : "";
+  // Anonymous on purpose: the count is a nudge to get on with it, not a way to put one
+  // person's name on the screen in front of everybody.
+  const readyNow = readyState?.ready ?? 0;
+  const seats = readyState?.total ?? 0;
+
+  const waiting = (
+    <div className="briefing-waiting">
+      <p className="eyebrow">Waiting for the others</p>
+      <div className="ready-pips" aria-hidden="true">
+        {Array.from({ length: seats }, (_, i) => (
+          <span key={i} className={`ready-pip ${i < readyNow ? "is-in" : ""}`} />
+        ))}
+      </div>
+      <p className="sr-only" role="status">
+        {readyNow} of {seats} ready
+      </p>
+    </div>
+  );
 
   return (
     <main className="center-page">
+      <div className="briefing-plate">
+        <span className="briefing-plate-name">House Rules</span>
+        <span className="briefing-plate-sub">Read before trading</span>
+      </div>
+
       <header className="hero">
-        <p className="eyebrow">Before the first round · starts anyway in {clock(left)}</p>
-        <h1 className="display hero-verdict">Here is how this works</h1>
-        {count && <p className="tip-count mono" role="status">{count}</p>}
+        <h1 className="display briefing-title">Read this. They won&rsquo;t.</h1>
+        <p className="eyebrow">
+          Starts without you in <b className="scream">{clock(left)}</b>
+        </p>
       </header>
 
       {open ? (
-        <div className="panel sheet">
+        <div className="panel sheet stack">
           <div className="rules-scroll">
             <RulesContent />
             <div ref={endRef} className="rules-end" />
           </div>
 
           {sent ? (
-            <p className="notice muted">Waiting for the others.</p>
+            waiting
           ) : (
             <>
-              <button
-                className="btn btn-big btn-scream"
-                onClick={confirm}
-                disabled={!readAll}
-              >
+              <button className="btn btn-big btn-scream" onClick={confirm} disabled={!readAll}>
                 {readAll ? "Got it — I'm ready" : "Read to the end first"}
               </button>
-              {!readAll && <p className="notice muted">Scroll down. It is short.</p>}
+              {!readAll && <p className="notice muted">Keep scrolling. It is short.</p>}
             </>
           )}
         </div>
       ) : (
         <div className="panel sheet stack">
-          <p className="notice">You have played before. Waiting for the others.</p>
+          <p className="notice">You have done this before.</p>
+          {waiting}
           <button type="button" className="link-btn muted" onClick={() => setOpen(true)}>
             Read the rules again
           </button>
