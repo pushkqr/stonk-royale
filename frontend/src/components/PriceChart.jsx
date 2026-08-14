@@ -1,23 +1,32 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { price as fmtPrice } from "../lib/format";
 
 const PAD_RIGHT = 54;
 const PAD_Y = 14;
 
 /**
- * Beyond 2x the line stops looking any sharper, but the cost keeps climbing: a 3x phone
- * would back a 400x200 canvas with 1200x600 pixels and re-path the whole series into it
- * on every frame.
+ * Beyond 2x the line stops looking any sharper, but the cost keeps climbing: a 3x display
+ * would back the canvas with nine times the pixels and rasterise the whole stroke into
+ * them on every frame.
  */
 const MAX_DPR = 2;
+
+/**
+ * An absolute ceiling on plotted points, deliberately not tied to the canvas width.
+ *
+ * Tying it to width meant a wide desktop chart (~1250px) never thinned at all, because a
+ * 90-second round produces only ~900 points — so the machines with the most pixels to fill
+ * were also the ones drawing every last point. A line chart gains nothing visible from
+ * more than one point per few pixels.
+ */
+const MAX_POINTS = 350;
 
 /** Falls back to the server's tick spacing if a round somehow starts with one point. */
 const DEFAULT_GAP_MS = 100;
 
 /**
  * Read once, on the first draw. These are `:root` custom properties that never change at
- * run time, and `getComputedStyle` forces a style recalculation — reading them per draw
- * meant a flush every frame for values that are constant.
+ * run time, and `getComputedStyle` forces a style recalculation.
  */
 let palette;
 function colors() {
@@ -35,18 +44,17 @@ function colors() {
 }
 
 /**
- * Collapses the series to at most two points per pixel column.
+ * Thins the first {@code count} points down to at most two per bucket.
  *
- * A 180-second round produces 1800 points for a chart a few hundred pixels wide, so most
- * of them land on top of each other. Keeping the lowest and highest of each column rather
- * than sampling preserves the envelope — including the single spike a rug pull hangs on,
- * which plain stride sampling would eventually drop.
+ * Keeping each bucket's lowest and highest rather than sampling preserves the envelope,
+ * including the single spike a rug pull hangs on, which stride sampling would eventually
+ * drop.
  */
-function decimate(series, plotW, span) {
-  if (series.length <= plotW) return series;
+function decimate(series, count, span) {
+  if (count <= MAX_POINTS) return series.slice(0, count);
 
   const out = [];
-  let column = -1;
+  let bucket = -1;
   let lo = null;
   let hi = null;
 
@@ -58,11 +66,12 @@ function decimate(series, plotW, span) {
     if (second !== first) out.push(second);
   };
 
-  for (const point of series) {
-    const at = Math.floor((point.t / span) * plotW);
-    if (at !== column) {
+  for (let i = 0; i < count; i += 1) {
+    const point = series[i];
+    const at = Math.floor((point.t / span) * MAX_POINTS);
+    if (at !== bucket) {
       flush();
-      column = at;
+      bucket = at;
       lo = point;
       hi = point;
     } else {
@@ -75,8 +84,8 @@ function decimate(series, plotW, span) {
 }
 
 /**
- * Draws one frame. Returns whether the chart has caught up with the latest price and has
- * nothing left to animate, which is the loop's signal to stop until the next point lands.
+ * Draws one frame. Returns whether the head has caught up with the latest price and there
+ * is nothing left to animate, which is the loop's signal to park until the next point.
  */
 function draw(canvas, size, state) {
   const { series, position, startPrice, roundMillis } = state;
@@ -87,7 +96,7 @@ function draw(canvas, size, state) {
   const backingH = Math.round(size.h * dpr);
 
   // Assigning width or height reallocates the backing bitmap and resets every context
-  // property, so it must not happen on a frame where the size did not actually change.
+  // property, so it must not happen on a frame where the size did not change.
   if (canvas.width !== backingW || canvas.height !== backingH) {
     canvas.width = backingW;
     canvas.height = backingH;
@@ -103,13 +112,10 @@ function draw(canvas, size, state) {
 
   const paint = colors();
 
-  // The liquidation price is deliberately kept out of the scale. At low leverage it can
-  // sit 30% away, and including it would squash the price action into a sliver. It gets
-  // pinned to the edge instead when it's far off, and drawn in place once it's close —
-  // which is exactly when it starts to matter.
-  //
-  // Walked rather than spread through Math.min: the spread builds an argument list as
-  // long as the series, which a long round pushes past a thousand.
+  // The liquidation price is deliberately kept out of the scale. At low leverage it can sit
+  // 30% away, and including it would squash the price action into a sliver. It gets pinned
+  // to the edge instead when far off, and drawn in place once it is close — which is
+  // exactly when it starts to matter.
   let min = Infinity;
   let max = -Infinity;
   for (const point of series) {
@@ -127,19 +133,17 @@ function draw(canvas, size, state) {
   min -= pad;
   max += pad;
 
-  // The window grows with the round rather than reserving the full width for time that
-  // has not happened yet. Reserving it left the line as a squiggle in the corner for most
-  // of a round; the clock in the strip is what tells you how long is left. The floor stops
-  // the first few ticks from being stretched across the whole panel.
+  // The window grows with the round rather than reserving width for time that has not
+  // happened yet. The floor stops the first few ticks being stretched across the panel.
   const elapsed = series.at(-1)?.t ?? 0;
   const span = Math.max(elapsed, roundMillis * 0.12);
 
   const x = (t) => (t / span) * plotW;
   const y = (p) => PAD_Y + plotH - ((p - min) / (max - min)) * plotH;
 
-  // Prices land ten times a second while the screen refreshes sixty, so the head is eased
-  // from the previous point to the newest one across the gap between them. It costs one
-  // tick of lag and buys motion that does not visibly step.
+  // Prices land ten times a second while the screen refreshes sixty, so the head eases from
+  // the previous point to the newest across the gap between them. It costs one tick of lag
+  // and buys motion that does not visibly step.
   const last = series.at(-1);
   const prev = series.length > 1 ? series[series.length - 2] : null;
   let alpha = 1;
@@ -154,8 +158,7 @@ function draw(canvas, size, state) {
     };
   }
 
-  const lastPrice = head?.p ?? startPrice;
-  const lineColor = lastPrice >= startPrice ? paint.pump : paint.dump;
+  const lineColor = (head?.p ?? startPrice) >= startPrice ? paint.pump : paint.dump;
 
   const hLine = (value, color, dash, label, clampToEdge = false) => {
     if (value == null) return;
@@ -183,51 +186,85 @@ function draw(canvas, size, state) {
     ctx.globalAlpha = 1;
   };
 
-  // Suppressed when a position's entry sits on top of it, otherwise the two labels
-  // collide and both become unreadable.
+  // Suppressed when a position's entry sits on top of it, otherwise the two labels collide
+  // and both become unreadable.
   const entryNearOpen = position && Math.abs(y(position.entryPrice) - y(startPrice)) < 13;
   if (!entryNearOpen) {
     hLine(startPrice, paint.haze, [2, 4], "open");
   }
 
   if (series.length > 1) {
-    // Cached: the thinned path only changes when a point lands or the chart is resized,
-    // never between frames of the same tick.
-    if (state.thinnedFor !== series || state.thinnedW !== plotW) {
-      state.thinned = decimate(series.slice(0, -1), plotW, span);
-      state.thinnedFor = series;
-      state.thinnedW = plotW;
+    /*
+      Everything behind the head is fixed for the whole tick, so its geometry is built once
+      per tick and replayed for the six or so frames that follow. Rebuilding a Path2D of
+      several hundred segments on every frame was the actual fault here: it churned enough
+      memory to earn a garbage-collection pause, which read on screen as the chart freezing,
+      stuttering, then carrying on.
+
+      The scale moves whenever the price sets a new extreme, so the cache is keyed on it
+      rather than on the series alone.
+    */
+    if (
+      state.keyCount !== series.length ||
+      state.keyMin !== min ||
+      state.keyMax !== max ||
+      state.keySpan !== span ||
+      state.keyW !== plotW ||
+      state.keyH !== plotH
+    ) {
+      const body = decimate(series, series.length - 1, span);
+      const line = new Path2D();
+      const area = new Path2D();
+
+      line.moveTo(x(body[0].t), y(body[0].p));
+      area.moveTo(x(body[0].t), PAD_Y + plotH);
+      for (const point of body) {
+        const px = x(point.t);
+        const py = y(point.p);
+        line.lineTo(px, py);
+        area.lineTo(px, py);
+      }
+
+      const tail = body[body.length - 1];
+      area.lineTo(x(tail.t), PAD_Y + plotH);
+      area.closePath();
+
+      state.line = line;
+      state.area = area;
+      state.tailX = x(tail.t);
+      state.tailY = y(tail.p);
+      state.keyCount = series.length;
+      state.keyMin = min;
+      state.keyMax = max;
+      state.keySpan = span;
+      state.keyW = plotW;
+      state.keyH = plotH;
     }
-    const body = state.thinned;
-
-    const trace = (target, moveToFloor) => {
-      if (moveToFloor) target.moveTo(x(body[0].t), PAD_Y + plotH);
-      else target.moveTo(x(body[0].t), y(body[0].p));
-      for (const point of body) target.lineTo(x(point.t), y(point.p));
-      target.lineTo(x(head.t), y(head.p));
-    };
-
-    const area = new Path2D();
-    trace(area, true);
-    area.lineTo(x(head.t), PAD_Y + plotH);
-    area.closePath();
 
     const gradient = ctx.createLinearGradient(0, PAD_Y, 0, PAD_Y + plotH);
     gradient.addColorStop(0, `${lineColor}33`);
     gradient.addColorStop(1, `${lineColor}00`);
     ctx.fillStyle = gradient;
-    ctx.fill(area);
+    ctx.fill(state.area);
 
-    ctx.beginPath();
-    trace(ctx, false);
     ctx.strokeStyle = lineColor;
     ctx.lineWidth = 3;
     ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.stroke(state.line);
+
+    // The one moving segment, drawn separately so the cached path never has to be rebuilt
+    // mid-tick. Round caps make the join invisible.
+    const headX = x(head.t);
+    const headY = y(head.p);
+    ctx.beginPath();
+    ctx.moveTo(state.tailX, state.tailY);
+    ctx.lineTo(headX, headY);
     ctx.stroke();
 
     ctx.fillStyle = lineColor;
     ctx.beginPath();
-    ctx.arc(x(head.t), y(head.p), 4.5, 0, Math.PI * 2);
+    ctx.arc(headX, headY, 4.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -249,12 +286,27 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
   const canvasRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
-  // The draw loop reads the world from here, so a price landing ten times a second does
-  // not tear the loop down and build it again.
+  // The draw loop reads the world from here, so a price landing ten times a second does not
+  // tear the loop down and build it again.
   const liveRef = useRef({ series, roundMillis, position, startPrice, arrivedAt: 0 });
   const sizeRef = useRef(size);
   const frameRef = useRef(0);
   const runningRef = useRef(false);
+
+  // Stable for the component's life: it reads everything it needs from refs at call time,
+  // so it never needs rebuilding and never goes stale.
+  const start = useCallback(() => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+    const loop = () => {
+      if (draw(canvasRef.current, sizeRef.current, liveRef.current)) {
+        runningRef.current = false;
+        return;
+      }
+      frameRef.current = requestAnimationFrame(loop);
+    };
+    frameRef.current = requestAnimationFrame(loop);
+  }, []);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -273,27 +325,26 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
     live.startPrice = startPrice;
     sizeRef.current = size;
 
-    // A new point restarts the easing, and with it the loop — which parks itself as soon
-    // as the head has caught up, so a paused or finished round costs nothing.
+    // A new point restarts the easing, and with it the loop — which parks itself as soon as
+    // the head catches up, so a paused or finished round costs nothing.
     if (live.series !== series) {
       live.series = series;
       live.arrivedAt = performance.now();
     }
-
-    if (runningRef.current) return undefined;
-    runningRef.current = true;
-
-    const loop = () => {
-      if (draw(canvasRef.current, sizeRef.current, liveRef.current)) {
-        runningRef.current = false;
-        return;
-      }
-      frameRef.current = requestAnimationFrame(loop);
-    };
-    frameRef.current = requestAnimationFrame(loop);
-
+    start();
     return undefined;
-  }, [series, size, position, startPrice, roundMillis]);
+  }, [series, size, position, startPrice, roundMillis, start]);
+
+  // requestAnimationFrame does not fire while the tab is hidden, so a player who comes back
+  // from another window would otherwise be looking at whatever was on screen when they
+  // left, until the next price arrives.
+  useEffect(() => {
+    const wake = () => {
+      if (!document.hidden) start();
+    };
+    document.addEventListener("visibilitychange", wake);
+    return () => document.removeEventListener("visibilitychange", wake);
+  }, [start]);
 
   useEffect(
     () => () => {
