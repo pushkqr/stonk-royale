@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 /**
  * The speech acts that matter: claim a tip, state a position, accuse.
@@ -21,8 +21,12 @@ const QUICK_LINES = [
 /**
  * News, chat and carnage share one stream on purpose. A headline and a player's lie
  * arrive looking equally credible, which is exactly the position the game wants you in.
+ *
+ * Memoised because it hangs off the trading screen, which re-renders on every price tick —
+ * and re-rendering a text input the player may be mid-sentence in, ten times a second, to
+ * show a feed that has not changed, is pure cost.
  */
-export default function Wire({ feed, onSay, disabled, className = "" }) {
+function Wire({ feed, onSay, disabled, className = "" }) {
   const [draft, setDraft] = useState("");
   const endRef = useRef(null);
 
@@ -95,3 +99,5 @@ export default function Wire({ feed, onSay, disabled, className = "" }) {
     </section>
   );
 }
+
+export default memo(Wire);

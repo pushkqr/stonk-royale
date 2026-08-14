@@ -1,6 +1,12 @@
+import { memo } from "react";
 import { money, pct, toneOf } from "../lib/format";
 
-export default function Standings({ rows, meId }) {
+/**
+ * Memoised because it hangs off the trading screen, which re-renders on every price tick.
+ * The board behind it only lands twice a second, so most of those renders would redraw an
+ * identical table.
+ */
+function Standings({ rows, meId }) {
   return (
     <section className="panel stack rail">
       <header className="panel-head">
@@ -39,3 +45,5 @@ export default function Standings({ rows, meId }) {
     </section>
   );
 }
+
+export default memo(Standings);

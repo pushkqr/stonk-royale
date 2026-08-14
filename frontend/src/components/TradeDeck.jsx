@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { money, price as fmtPrice, signedMoney, toneOf } from "../lib/format";
 
 /**
  * Four controls, and no more. Direction, leverage, size, and the nerve to close — those
  * are the decisions the game is about, so an order type or a limit price would only get
  * in their way.
+ *
+ * Memoised because it hangs off the trading screen, which re-renders on every price tick,
+ * while everything shown here moves with the board instead — five times slower.
  */
-export default function TradeDeck({ me, livePrice, onOpen, onClose, disabled }) {
+function TradeDeck({ me, livePrice, onOpen, onClose, disabled }) {
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
 
@@ -95,3 +98,5 @@ export default function TradeDeck({ me, livePrice, onOpen, onClose, disabled }) 
     </div>
   );
 }
+
+export default memo(TradeDeck);

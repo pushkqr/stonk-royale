@@ -5,21 +5,32 @@ import { clearSeat } from "../lib/session";
 import { sound } from "../lib/sound";
 
 const MatchContext = createContext(null);
+const PriceContext = createContext(null);
 
 export const useMatch = () => useContext(MatchContext);
+
+/**
+ * The live price, kept apart from everything else because it moves ten times a second.
+ * Only the trading screen reads it; anything else subscribing would repaint at that rate
+ * for a number it never shows.
+ */
+export const usePrice = () => useContext(PriceContext);
 
 const FEED_LIMIT = 60;
 
 /**
  * Owns the socket and every piece of match state.
  *
- * Two things here are less obvious than they look:
+ * Three things here are less obvious than they look:
  *
  * - The countdown runs on a server-clock offset, not the browser clock, which can be
  *   minutes out and would otherwise show the wrong time left.
  * - A settled round and the next round's rumour arrive milliseconds apart, so the card
  *   just played is copied into `lastRumor` before the new one lands. Without that the
  *   TRUE/LIE stamp would be overwritten before anyone saw it.
+ * - Price sits in its own context. With it in the main one, every consumer re-rendered on
+ *   every tick — the whole tree, ten times a second, including the corner tabs and the
+ *   wire, none of which show a price.
  */
 export function MatchProvider({ session, children }) {
   const [connected, setConnected] = useState(false);
@@ -187,10 +198,8 @@ export function MatchProvider({ session, children }) {
       session,
       connected,
       phase,
-      tick,
       board,
       feed,
-      series,
       rumor,
       lastRumor,
       settled,
@@ -217,9 +226,15 @@ export function MatchProvider({ session, children }) {
       say: (text, claim) => publish("chat", { text, claim }),
       quit,
     }),
-    [session, connected, phase, tick, board, feed, series, rumor, lastRumor, settled,
+    [session, connected, phase, board, feed, rumor, lastRumor, settled,
       standings, lobby, error, me, publish, serverNow, dismissError, quit, readyState],
   );
 
-  return <MatchContext.Provider value={value}>{children}</MatchContext.Provider>;
+  const priceValue = useMemo(() => ({ tick, series }), [tick, series]);
+
+  return (
+    <MatchContext.Provider value={value}>
+      <PriceContext.Provider value={priceValue}>{children}</PriceContext.Provider>
+    </MatchContext.Provider>
+  );
 }

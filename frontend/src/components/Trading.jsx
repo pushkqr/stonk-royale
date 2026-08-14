@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMatch } from "../state/MatchProvider";
+import { useMatch, usePrice } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, price as fmtPrice, toneOf } from "../lib/format";
@@ -9,8 +9,8 @@ import TradeDeck from "./TradeDeck";
 import Wire from "./Wire";
 
 export default function Trading() {
-  const { phase, tick, series, board, feed, me, session, lobby, open, close, say, serverNow } =
-    useMatch();
+  const { phase, board, feed, me, session, lobby, open, close, say, serverNow } = useMatch();
+  const { tick, series } = usePrice();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
   // Sets the chart's opening window, before enough of the round has elapsed to fill it.
