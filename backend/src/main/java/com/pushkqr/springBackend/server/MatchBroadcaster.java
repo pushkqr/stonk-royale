@@ -80,7 +80,8 @@ public class MatchBroadcaster {
             Rumor rumor = match.rumorFor(player.id());
             if (rumor != null) {
                 template.convertAndSendToUser(
-                        player.id(), "/queue/rumor", new Views.Rumor(rumor.text()));
+                        player.id(), "/queue/rumor",
+                        new Views.Rumor(rumor.text(), rumor.claimedRegime().name()));
             }
         }
     }

@@ -46,8 +46,14 @@ public final class Views {
     public record Feed(String kind, String text, String playerId, String nickname) {
     }
 
-    /** The private tip. Truthfulness is withheld until the round settles. */
-    public record Rumor(String text) {
+    /**
+     * The private tip. Truthfulness is withheld until the round settles.
+     *
+     * {@code claimedRegime} is the regime the tip asserts, as a {@code Regime} name. It is
+     * already readable off the text, so naming it leaks nothing — it saves the player
+     * decoding flavour prose into a trading stance while the market moves.
+     */
+    public record Rumor(String text, String claimedRegime) {
     }
 
     /**
