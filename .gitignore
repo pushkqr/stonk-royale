@@ -47,3 +47,6 @@ scratch/
 
 # Built frontend, folded in at package time by the Dockerfile
 backend/src/main/resources/static/
+
+# Admin panel's STATS_FILE, written wherever the app is run from
+backend/data/

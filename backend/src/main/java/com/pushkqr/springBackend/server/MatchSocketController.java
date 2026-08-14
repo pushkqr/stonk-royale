@@ -105,6 +105,9 @@ public class MatchSocketController {
         broadcaster.ready(match);
         if (match.round() != null) {
             broadcaster.phase(match);
+            // The tip is dealt once, on the intermission it belongs to. Without this a
+            // reload leaves the dossier's tip empty for the rest of the round.
+            broadcaster.rumor(match, session(principal).playerId());
         }
     }
 

@@ -77,12 +77,20 @@ public class MatchBroadcaster {
      */
     public void rumors(Match match) {
         for (MatchPlayer player : match.players()) {
-            Rumor rumor = match.rumorFor(player.id());
-            if (rumor != null) {
-                template.convertAndSendToUser(
-                        player.id(), "/queue/rumor",
-                        new Views.Rumor(rumor.text(), rumor.claimedRegime().name()));
-            }
+            rumor(match, player.id());
+        }
+    }
+
+    /**
+     * One player's tip, for a resync. Deliberately not the whole room: a reconnect that
+     * re-dealt everyone would cue the deal sound for players who never left.
+     */
+    public void rumor(Match match, String playerId) {
+        Rumor rumor = match.rumorFor(playerId);
+        if (rumor != null) {
+            template.convertAndSendToUser(
+                    playerId, "/queue/rumor",
+                    new Views.Rumor(rumor.text(), rumor.claimedRegime().name()));
         }
     }
 
