@@ -52,6 +52,12 @@ account to create, and no market data feed to depend on.
   round holds **at least one** true tip — a round with none gives the table nothing to check
   a claim against, and decays into a coin flip.
 
+- **What you know stays on screen.** The tip, the true-tip count and every headline that has
+  fired sit in a dossier beside the chart for the whole round. Exactly one headline per round
+  is true and one is false, so a single one is a coin flip — pinning them is what lets you
+  read them as a contradicting pair. A tip also names the regime it claims, because decoding
+  flavour prose into a trading stance is not the interesting part of the decision.
+
 - **Lying goes on the record.** Quick-chat lines carry a structured claim, and at the settle
   each one is shown next to the tip that player was actually dealt. That mismatch is the only
   dishonesty a server can prove; free text stays unparsed and unscored. Catching someone
@@ -106,9 +112,12 @@ Each round cycles through three beats:
    can talk without a moving market to watch.
 2. **Trading.** Long or short, 1x–10x leverage, adjustable size. One position at a time.
    Your liquidation price is drawn on the chart, because leverage should be a legible
-   decision rather than a hidden trapdoor.
+   decision rather than a hidden trapdoor. The dossier keeps your tip, the true-tip count
+   and the round's headlines beside it, so the information you were dealt is still there
+   when you act on it.
 3. **Settle.** Open positions force-close at the buzzer, scores are added to the running
-   total, and the regime is revealed.
+   total, and the regime is revealed — next to what your tip claimed, so you find out
+   whether trusting it was the right call.
 
 Highest cumulative score across all rounds wins, ties broken on best single round. The final
 round has no intermission behind it, so its ledger appears on the results screen instead.
@@ -375,7 +384,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-95 tests, all passing. They assert **design targets rather than implementation details**:
+106 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
