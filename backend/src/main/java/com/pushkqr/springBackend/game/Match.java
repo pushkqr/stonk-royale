@@ -41,6 +41,12 @@ public final class Match {
      */
     public static final long BRIEFING_FAILSAFE_MILLIS = 90_000;
 
+    /** Half of MarketImpact's cap — a push worth telling the room about, not just noise. */
+    private static final double FLOW_SURGE_THRESHOLD = 0.03;
+
+    /** Keeps a value oscillating right at the threshold from spamming the wire. */
+    private static final long FLOW_SURGE_COOLDOWN_MILLIS = 5_000;
+
     private final String code;
     private final MatchConfig config;
     private final Map<String, MatchPlayer> players = new LinkedHashMap<>();
@@ -196,6 +202,7 @@ public final class Match {
                 double price = currentPrice(now);
                 fireDueNews(elapsed, events);
                 checkLiquidations(price, now, events);
+                checkFlowSurge(now, events);
                 if (now >= phaseEndsAtMillis) {
                     settleRound(price, now, events);
                 }
@@ -228,6 +235,16 @@ public final class Match {
                         player.id(), player.nickname(), margin * Position.MAINTENANCE));
             }
         }
+    }
+
+    private void checkFlowSurge(long now, List<GameEvent> events) {
+        double value = impact.valueAt(now);
+        boolean above = Math.abs(value) >= FLOW_SURGE_THRESHOLD;
+        if (above && !flowSurging && now >= lastFlowEventMillis + FLOW_SURGE_COOLDOWN_MILLIS) {
+            events.add(new GameEvent.FlowSurge(value > 0));
+            lastFlowEventMillis = now;
+        }
+        flowSurging = above;
     }
 
     private void settleRound(double finalPrice, long now, List<GameEvent> events) {

@@ -18,6 +18,14 @@ public sealed interface GameEvent {
     record NewsBroken(String headline) implements GameEvent {
     }
 
+    /**
+     * The room's own trading has pushed the price hard enough to be worth telling
+     * everyone. {@code roomIsBuying} is true for a net-buying push, false for net-selling.
+     * Always true — unlike a headline, this is never a lie the server is telling.
+     */
+    record FlowSurge(boolean roomIsBuying) implements GameEvent {
+    }
+
     record PlayerLiquidated(String playerId, String nickname, double marginLost) implements GameEvent {
     }
 

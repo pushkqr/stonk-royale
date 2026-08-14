@@ -450,6 +450,68 @@ class MatchTest {
     }
 
     @Test
+    void heavyOneSidedFlowFiresASurgeEventOnce() {
+        Match match = lobbyOf("FLOWX", 3);
+        startPlaying(match, 0);
+        step(match, 0, 1_000);
+
+        // Three full-stack max-leverage longs at once is well past the surge threshold —
+        // one alone (1.5%) is not, which is deliberate: a surge should mean the room, not
+        // one player.
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+        match.openPosition("p2", Side.LONG, 1.0, 10, 1_000);
+        match.openPosition("p3", Side.LONG, 1.0, 10, 1_000);
+        List<GameEvent> events = match.tick(1_000);
+
+        List<GameEvent.FlowSurge> surges = only(events, GameEvent.FlowSurge.class);
+        assertEquals(1, surges.size());
+        assertTrue(surges.get(0).roomIsBuying());
+    }
+
+    @Test
+    void stayingAboveTheThresholdDoesNotRefireEveryTick() {
+        Match match = lobbyOf("FLOWZ", 3);
+        startPlaying(match, 0);
+        step(match, 0, 1_000);
+
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+        match.openPosition("p2", Side.LONG, 1.0, 10, 1_000);
+        match.openPosition("p3", Side.LONG, 1.0, 10, 1_000);
+        assertEquals(1, only(match.tick(1_000), GameEvent.FlowSurge.class).size());
+
+        // Immediately re-ticking at the same instant, with impact still above threshold,
+        // must not double-count the same surge.
+        assertEquals(0, only(match.tick(1_000), GameEvent.FlowSurge.class).size());
+    }
+
+    @Test
+    void flowSurgeCanFireAgainNextRoundEvenRightAfterOneFiredInTheLast() {
+        Match match = lobbyOf("FLOWY", 3);
+        startPlaying(match, 0);
+        step(match, 0, 1_000);
+
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+        match.openPosition("p2", Side.LONG, 1.0, 10, 1_000);
+        match.openPosition("p3", Side.LONG, 1.0, 10, 1_000);
+        assertEquals(1, only(match.tick(1_000), GameEvent.FlowSurge.class).size());
+
+        // Ride the rest of round 0 out and into round 1's trading phase.
+        step(match, 1_100, 12_000);
+        assertEquals(MatchPhase.TRADING, match.phase());
+        assertEquals(1, match.roundIndex());
+
+        // Derived from the match itself rather than hand-computed, so this does not
+        // silently drift if intermission or round-length defaults ever change: during
+        // TRADING, phaseEndsAtMillis is always roundStartedAtMillis + roundMillis.
+        long round1Start = match.phaseEndsAtMillis() - CONFIG.roundMillis();
+
+        match.openPosition("p1", Side.LONG, 1.0, 10, round1Start);
+        match.openPosition("p2", Side.LONG, 1.0, 10, round1Start);
+        match.openPosition("p3", Side.LONG, 1.0, 10, round1Start);
+        assertEquals(1, only(match.tick(round1Start), GameEvent.FlowSurge.class).size());
+    }
+
+    @Test
     void aForcedLiquidationPushesPriceFurtherInTheDirectionOfTheForcedSell() {
         Match match = lobbyOfTwo(codeWithRegime(Regime.RUG));
         startPlaying(match, 0);

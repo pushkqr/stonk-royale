@@ -91,6 +91,10 @@ public class MatchEngine {
             }
             case GameEvent.NewsBroken news ->
                 broadcaster.feed(match, "NEWS", news.headline(), null, null);
+            case GameEvent.FlowSurge surge ->
+                broadcaster.feed(match, "FLOW",
+                        surge.roomIsBuying() ? "THE ROOM IS PILING IN" : "THE ROOM IS BAILING OUT",
+                        null, null);
             case GameEvent.PlayerLiquidated liquidation -> {
                 broadcaster.feed(match, "LIQUIDATION",
                         String.format("%s got LIQUIDATED for $%,.0f", liquidation.nickname(), liquidation.marginLost()),

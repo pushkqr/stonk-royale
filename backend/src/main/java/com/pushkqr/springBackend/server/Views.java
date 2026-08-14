@@ -42,7 +42,7 @@ public final class Views {
             double totalScore, Position position) {
     }
 
-    /** kind is one of NEWS, LIQUIDATION, TRADE, CHAT. */
+    /** kind is one of NEWS, LIQUIDATION, TRADE, CHAT, FLOW. */
     public record Feed(String kind, String text, String playerId, String nickname) {
     }
 
