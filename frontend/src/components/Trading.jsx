@@ -76,7 +76,12 @@ export default function Trading() {
 
       <Standings rows={board} meId={session.playerId} />
 
-      <Dossier rumor={rumor} truthfulTips={phase?.truthfulTips} feed={feed} />
+      <Dossier
+        rumor={rumor}
+        truthfulTips={phase?.truthfulTips}
+        feed={feed}
+        roundIndex={phase?.roundIndex}
+      />
 
       <section className="panel stack floor">
         <div className="floor-price">

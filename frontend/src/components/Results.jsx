@@ -8,6 +8,7 @@ export default function Results() {
   const winner = standings[0];
   const iWon = winner?.playerId === session.playerId;
   const solo = standings.length < 2;
+  const myResult = settled?.results.find((r) => r.playerId === session.playerId);
 
   return (
     <main className="center-page">
@@ -43,7 +44,17 @@ export default function Results() {
       </ol>
 
       {/* The last round has no intermission behind it, so this is the only place its lies
-          ever surface — and it is the round people lie hardest in. */}
+          ever surface — and it is the round people lie hardest in. Same reason this is also
+          the only place that round's tip-lesson sentence runs: Intermission never gets a
+          turn to show it. */}
+      {settled && myResult && (
+        <p className="tip-lesson mono" role="status">
+          Your tip said <strong>{myResult.rumorClaimed}</strong>. The round was{" "}
+          <strong>{settled.regime}</strong>.{" "}
+          {myResult.rumorWasTrue ? "Trusting it was the right call." : "Trusting it cost you."}
+        </p>
+      )}
+
       <Ledger results={settled?.results} meId={session.playerId} />
 
       {/* The room stays open, so the group never has to regroup from the home page. */}

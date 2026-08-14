@@ -23,9 +23,7 @@ export default function RumorCard({ text, stamp, claimedRegime, compact = false 
       {claimedRegime ? (
         <p className="rumor-claim mono">
           <span className="rumor-claim-regime">Claims: {claimedRegime}</span>
-          {REGIME_PRIMER[claimedRegime] && (
-            <span className="rumor-claim-primer"> — {REGIME_PRIMER[claimedRegime]}</span>
-          )}
+          {REGIME_PRIMER[claimedRegime] && <> — {REGIME_PRIMER[claimedRegime]}</>}
         </p>
       ) : (
         <p className="rumor-source mono">— someone who probably knows</p>

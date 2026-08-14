@@ -19,9 +19,13 @@ import { tipCountLine } from "../lib/regime";
  *
  * Memoised because it hangs off the trading screen, which re-renders on every price tick.
  * Its own inputs change at most twice a second.
+ *
+ * The feed is never cleared between rounds — it is also the wire's chat backlog, which is
+ * meant to persist. So headlines are tagged with the round they fired in at ingest, and
+ * `roundIndex` scopes the list to the round on screen rather than the whole match.
  */
-function Dossier({ rumor, truthfulTips, feed }) {
-  const news = feed.filter((item) => item.kind === "NEWS");
+function Dossier({ rumor, truthfulTips, feed, roundIndex }) {
+  const news = feed.filter((item) => item.kind === "NEWS" && item.round === roundIndex);
 
   return (
     <section className="panel stack dossier">
@@ -43,7 +47,6 @@ function Dossier({ rumor, truthfulTips, feed }) {
           <ul className="dossier-news-list">
             {/* Newest first: the most recent headline is the one still worth acting on. */}
             {news
-              .slice()
               .reverse()
               .map((item) => (
                 <li key={item.id} className="dossier-headline">

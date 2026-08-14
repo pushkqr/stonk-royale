@@ -138,7 +138,10 @@ export function MatchProvider({ session, children }) {
 
       on(topic("feed"), (item) => {
         feedId.current += 1;
-        setFeed((prev) => [...prev.slice(-FEED_LIMIT), { ...item, id: feedId.current }]);
+        setFeed((prev) => [
+          ...prev.slice(-FEED_LIMIT),
+          { ...item, id: feedId.current, round: roundRef.current },
+        ]);
         if (item.kind === "LIQUIDATION") sound.liquidation(item.playerId === playerId);
         else if (item.kind === "NEWS") sound.news();
         // Your own line needs no announcing — you just typed it.
