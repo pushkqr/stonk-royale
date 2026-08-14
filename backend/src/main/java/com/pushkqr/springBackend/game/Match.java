@@ -341,10 +341,25 @@ public final class Match {
 
     public Position openPosition(String playerId, Side side, double sizeFraction, int leverage, long now) {
         PlayerRound playerRound = tradingRound(playerId);
+        if (playerRound.hasPosition()) {
+            throw new IllegalStateException("A position is already open");
+        }
+        if (sizeFraction <= 0 || sizeFraction > 1) {
+            throw new IllegalArgumentException("sizeFraction must be in (0, 1]");
+        }
+        if (leverage < 1 || leverage > Position.MAX_LEVERAGE) {
+            throw new IllegalArgumentException("leverage must be between 1 and " + Position.MAX_LEVERAGE);
+        }
+        if (playerRound.cash() <= 0) {
+            throw new IllegalStateException("No cash left to trade");
+        }
         // Notional is known before the fill: margin is cash * sizeFraction, exactly what
         // open() is about to post. Recording the kick here, before currentPrice(now) is
         // read below, is what makes the trader's own push land in their own fill price —
         // the thing that rules out opening, watching your own kick, and closing for free.
+        // The four checks above run first so a call that WOULD be rejected records no kick
+        // at all — otherwise a duplicate or malformed /open could push the price for free,
+        // since PlayerRound.open()'s own rejection doesn't roll back a kick already recorded.
         double notional = playerRound.cash() * sizeFraction * leverage;
         impact.record(notional, side.direction(), referenceNotional, now);
         return playerRound.open(side, sizeFraction, leverage, currentPrice(now), now);

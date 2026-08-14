@@ -403,7 +403,7 @@ cd backend && ./mvnw test
 - Rumour wording is **identical** for truths and lies, so phrasing can never leak which you got
 - A lie can land in the same time window as a shock warning, so timing can't leak it either
 - Cash really does reset between rounds, and a liquidated player can trade again
-- The same match code replays an identical market
+- The same match code replays an identical seeded path
 - Every round holds at least one true tip, across 500 seeds — and the count still varies,
   because a number that never changes would stop being information
 - The announced count always matches the tips actually dealt

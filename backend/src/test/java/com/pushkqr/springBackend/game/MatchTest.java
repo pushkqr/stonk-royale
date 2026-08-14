@@ -429,6 +429,23 @@ class MatchTest {
     }
 
     @Test
+    void aRejectedOpenLeavesThePriceUntouched() {
+        Match match = lobbyOfTwo("REJECT1");
+        startPlaying(match, 0);
+        step(match, 0, 1_000);
+
+        match.openPosition("p1", Side.LONG, 1.0, 10, 1_000);
+        double afterFirstOpen = match.currentPrice(1_000);
+
+        // A second open must be rejected — and must not push the price further while
+        // being rejected.
+        assertThrows(IllegalStateException.class,
+                () -> match.openPosition("p1", Side.LONG, 1.0, 10, 1_000));
+        assertEquals(afterFirstOpen, match.currentPrice(1_000), 1e-9,
+                "a rejected open must not move the price at all");
+    }
+
+    @Test
     void sixPlayersPilingInMovesPriceFourToSixPercent() {
         Match match = lobbyOf("SIXUP", 6);
         startPlaying(match, 0);
