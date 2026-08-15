@@ -883,6 +883,25 @@
   cursor: not-allowed;
 }
 
+.icon-reactions-row {
+  margin-top: -0.1rem;
+}
+
+.quick-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  color: var(--haze);
+  transition: all 0.12s ease;
+}
+
+.quick-icon-btn:hover:not(:disabled) {
+  color: var(--scream);
+  border-color: var(--scream);
+  background: var(--void-wash);
+}
+
 /* Read aloud to invite people, so it needs to be legible at a glance. */
 .room-code {
   font-size: 1rem;
@@ -969,6 +988,99 @@
   gap: 0.6rem;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   align-items: end;
+}
+
+.deck-presets {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+  margin-bottom: 0.1rem;
+}
+
+.preset-row {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.preset-btn {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: var(--void);
+  color: var(--haze);
+  font-family: var(--data);
+  font-size: 0.68rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.12s ease;
+}
+
+.preset-btn:hover:not(:disabled) {
+  border-color: var(--scream);
+  color: var(--paper);
+}
+
+.preset-btn.is-active {
+  border-color: var(--scream);
+  background: var(--void-wash);
+  color: var(--scream);
+  font-weight: 700;
+}
+
+.preset-meta {
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+.deck-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.6rem;
+  background: var(--void-deep);
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  grid-column: 1 / -1;
+  font-size: 0.68rem;
+}
+
+.deck-preview-text {
+  color: var(--haze);
+}
+
+.deck-preview-text strong {
+  color: var(--paper);
+}
+
+.risk-tag {
+  font-family: var(--data);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+
+.risk-safe {
+  background: rgba(33, 224, 122, 0.15);
+  color: var(--pump);
+  border: 1px solid rgba(33, 224, 122, 0.3);
+}
+
+.risk-mod {
+  background: rgba(255, 232, 26, 0.15);
+  color: var(--scream);
+  border: 1px solid rgba(255, 232, 26, 0.3);
+}
+
+.risk-high {
+  background: rgba(255, 59, 84, 0.15);
+  color: var(--dump);
+  border: 1px solid rgba(255, 59, 84, 0.3);
 }
 
 .deck-dials {

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { telemetry } from "../lib/telemetry";
+import { unrealisedPnl } from "../lib/pnl";
+import { signedMoney } from "../lib/format";
 
 const PAD_RIGHT = 54;
 const PAD_Y = 14;
@@ -295,6 +297,18 @@ function draw(canvas, size, state) {
   if (position) {
     hLine(position.entryPrice, paint.paper, [5, 3], "entry");
     hLine(position.liquidationPrice, paint.dump, [7, 3], "LIQ", true);
+
+    if (head) {
+      const livePnlVal = unrealisedPnl(position, head.p);
+      const pnlColor = livePnlVal >= 0 ? paint.pump : paint.dump;
+      const pnlLabel = signedMoney(livePnlVal);
+      const headY = y(head.p);
+
+      ctx.fillStyle = pnlColor;
+      ctx.font = "700 9px 'Space Mono', monospace";
+      ctx.textBaseline = "top";
+      ctx.fillText(pnlLabel, plotW + 6, Math.min(PAD_Y + plotH - 12, headY + 8));
+    }
   }
 
   return alpha >= 1;

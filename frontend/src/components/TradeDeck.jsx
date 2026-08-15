@@ -3,6 +3,12 @@ import { money, price as fmtPrice } from "../lib/format";
 import LivePnl from "./LivePnl";
 import FillEstimate from "./FillEstimate";
 
+const PRESETS = [
+  { label: "Safe", lev: 2, sz: 25 },
+  { label: "Standard", lev: 4, sz: 50 },
+  { label: "YOLO", lev: 10, sz: 100 },
+];
+
 /**
  * Four controls, and no more. Direction, leverage, size, and the nerve to close — those
  * are the decisions the game is about, so an order type or a limit price would only get
@@ -46,9 +52,41 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 
   const margin = ((me?.cash ?? me?.equity ?? 0) * size) / 100;
   const notional = margin * leverage;
+  const liqMovePct = (0.9 / leverage) * 100;
+  const maxLoss = margin * 0.9;
+
+  let riskTier = "Low Risk";
+  let riskClass = "risk-safe";
+  if (leverage >= 6) {
+    riskTier = "High Risk / Scalp";
+    riskClass = "risk-high";
+  } else if (leverage >= 3) {
+    riskTier = "Moderate Risk";
+    riskClass = "risk-mod";
+  }
 
   return (
     <div className="deck">
+      <div className="deck-presets">
+        <span className="eyebrow">Presets</span>
+        <div className="preset-row">
+          {PRESETS.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              className={`preset-btn ${leverage === p.lev && size === p.sz ? "is-active" : ""}`}
+              onClick={() => {
+                setLeverage(p.lev);
+                setSize(p.sz);
+              }}
+              disabled={disabled}
+            >
+              {p.label} <span className="preset-meta">{p.lev}x · {p.sz}%</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="deck-dials">
         <label className="dial">
           <span className="eyebrow">
@@ -78,6 +116,13 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
             disabled={disabled}
           />
         </label>
+      </div>
+
+      <div className="deck-preview">
+        <span className="deck-preview-text mono">
+          Liq at <strong>±{liqMovePct.toFixed(0)}%</strong> · Max loss <strong>{money(maxLoss)}</strong>
+        </span>
+        <span className={`risk-tag ${riskClass}`}>{riskTier}</span>
       </div>
 
       <div className="deck-sides">

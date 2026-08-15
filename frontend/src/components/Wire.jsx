@@ -1,4 +1,14 @@
 import { memo, useEffect, useRef, useState } from "react";
+import {
+  Rocket,
+  TrendingDown,
+  Skull,
+  Laugh,
+  Droplets,
+  EyeOff,
+  Gem,
+  Drama,
+} from "lucide-react";
 
 /**
  * The speech acts that matter: claim a tip, state a position, accuse.
@@ -16,6 +26,17 @@ const QUICK_LINES = [
   { text: "i'm long" },
   { text: "i'm short" },
   { text: "liar" },
+];
+
+const QUICK_ICONS = [
+  { icon: Rocket, label: "🚀 PUMP", title: "Pump (Rocket)" },
+  { icon: TrendingDown, label: "📉 DUMP", title: "Dump (Trending Down)" },
+  { icon: Skull, label: "💀 REKT", title: "Rekt (Skull)" },
+  { icon: Laugh, label: "🤣 LMAO", title: "Laugh (LMAO)" },
+  { icon: Droplets, label: "💦 SWEAT", title: "Sweat (Droplets)" },
+  { icon: Drama, label: "🤡 CLOWN", title: "Clown (Drama)" },
+  { icon: EyeOff, label: "🤥 LIAR", title: "Liar (Eye Off)" },
+  { icon: Gem, label: "💎 HODL", title: "Diamond Hands" },
 ];
 
 /**
@@ -82,6 +103,22 @@ function Wire({ feed, onSay, disabled, className = "" }) {
             disabled={disabled}
           >
             {text}
+          </button>
+        ))}
+      </div>
+
+      <div className="quick-row icon-reactions-row">
+        {QUICK_ICONS.map(({ icon: Icon, label, title }) => (
+          <button
+            key={label}
+            type="button"
+            className="quick quick-icon-btn"
+            onClick={() => onSay(label)}
+            disabled={disabled}
+            title={title}
+            aria-label={title}
+          >
+            <Icon size={13} strokeWidth={2.2} />
           </button>
         ))}
       </div>
