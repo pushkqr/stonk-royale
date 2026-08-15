@@ -57,8 +57,7 @@ function Dossier({
         ) : (
           <ul className="dossier-news-list">
             {/* Newest first: the most recent headline is the one still worth acting on. */}
-            {news
-              .slice()
+            {[...news]
               .reverse()
               .map((item) => (
                 <li key={item.id} className="dossier-headline">

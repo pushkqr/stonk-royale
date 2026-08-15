@@ -108,8 +108,14 @@
 
 .preset-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.4rem;
+}
+
+@media (max-width: 480px) {
+  .preset-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .preset {
@@ -536,8 +542,7 @@
   display: grid;
   gap: var(--gap);
   grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr) minmax(17rem, 21rem);
-  /* The dossier row is `auto` so it sizes to its content and the standings keep the slack. */
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     "strip   strip strip"
     "rail    floor wire"
@@ -634,6 +639,9 @@
    and a grid-area drops every element using it into the same cell. */
 .rail {
   grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -644,6 +652,9 @@
 
 .dossier {
   grid-area: dossier;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -705,6 +716,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  max-height: 8rem;
+  overflow-y: auto;
 }
 
 .suspect-row {
@@ -1309,6 +1322,23 @@
   letter-spacing: 0;
   text-transform: none;
   opacity: 0.75;
+}
+
+.btn:active:not(:disabled),
+.preset-btn:active:not(:disabled),
+.quick:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+  transition: transform 0.05s ease;
+}
+
+.btn-pump:active:not(:disabled) {
+  background: #1cb864;
+  box-shadow: 0 0 10px rgba(33, 224, 122, 0.4);
+}
+
+.btn-dump:active:not(:disabled) {
+  background: #d92d42;
+  box-shadow: 0 0 10px rgba(255, 59, 84, 0.4);
 }
 
 .deck-open {

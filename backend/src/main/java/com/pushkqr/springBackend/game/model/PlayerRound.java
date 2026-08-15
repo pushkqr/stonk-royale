@@ -49,7 +49,7 @@ public final class PlayerRound {
             throw new IllegalStateException("No position is open");
         }
         double pnl = position.unrealisedPnl(price);
-        cash += pnl;
+        cash = Math.max(0, cash + pnl);
         position = null;
         return pnl;
     }
@@ -65,14 +65,14 @@ public final class PlayerRound {
         if (position == null || !position.isLiquidatedAt(price)) {
             return false;
         }
-        cash -= Position.MAINTENANCE * position.margin();
+        cash = Math.max(0, cash - Position.MAINTENANCE * position.margin());
         position = null;
         liquidations++;
         return true;
     }
 
     public double equity(double price) {
-        return position == null ? cash : cash + position.unrealisedPnl(price);
+        return position == null ? Math.max(0, cash) : Math.max(0, cash + position.unrealisedPnl(price));
     }
 
     /** Round score, as a percentage of the cash this round started with. */

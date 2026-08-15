@@ -32,7 +32,7 @@ export function unrealisedPnl(position, price) {
 /** Cash plus whatever the open position is currently worth. */
 export function liveEquity(row, price) {
   if (!row) return 0;
-  return row.cash + unrealisedPnl(row.position, price);
+  return Math.max(0, (row.cash ?? 0) + unrealisedPnl(row.position, price));
 }
 
 /** The round's score as a percentage of the stack it started with. */

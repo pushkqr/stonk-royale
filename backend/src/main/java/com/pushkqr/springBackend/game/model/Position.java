@@ -32,7 +32,8 @@ public record Position(Side side, double margin, int leverage, double entryPrice
     }
 
     public double unrealisedPnl(double price) {
-        return units() * (price - entryPrice) * side.direction();
+        double rawPnl = units() * (price - entryPrice) * side.direction();
+        return Math.max(-MAINTENANCE * margin, rawPnl);
     }
 
     /**

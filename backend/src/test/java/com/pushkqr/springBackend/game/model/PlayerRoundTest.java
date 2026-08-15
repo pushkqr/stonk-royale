@@ -112,15 +112,13 @@ class PlayerRoundTest {
     }
 
     @Test
-    void rejectsTradingWithoutCash() {
-        // A short's loss is unbounded, so cash can go negative if the position is closed
-        // without a liquidation check ever running. The engine ticks liquidation every
-        // price update, but PlayerRound guards the case on its own.
+    void clampsUnrealisedLossAtMaintenanceMargin() {
+        // A short's loss is clamped to maintenance margin even if closed at an extreme price
+        // without a liquidation check ever running. Cash never goes negative.
         PlayerRound r = round();
         r.open(Side.SHORT, 1.0, 1, 100, 0);
-        r.close(250);   // 100 units against a +150 move = -$15,000
+        r.close(250);   // 100 units against a +150 move clamped to -90% of margin
 
-        assertEquals(-5000, r.cash(), TOL);
-        assertThrows(IllegalStateException.class, () -> r.open(Side.LONG, 1.0, 1, 100, 0));
+        assertEquals(1000, r.cash(), TOL);
     }
 }

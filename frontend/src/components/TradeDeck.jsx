@@ -123,7 +123,8 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
     );
   }
 
-  const margin = ((me?.cash ?? me?.equity ?? 0) * size) / 100;
+  const availableCash = Math.max(0, me?.cash ?? me?.equity ?? 0);
+  const margin = (availableCash * size) / 100;
   const notional = margin * leverage;
   const liqMovePct = (0.9 / leverage) * 100;
   const maxLoss = margin * 0.9;
@@ -205,7 +206,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         <button
           className="btn btn-big btn-pump"
           onClick={() => handleOpen("LONG")}
-          disabled={disabled || pending}
+          disabled={disabled || pending || availableCash <= 0}
         >
           {pending ? (
             "Filling…"
@@ -219,7 +220,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         <button
           className="btn btn-big btn-dump"
           onClick={() => handleOpen("SHORT")}
-          disabled={disabled || pending}
+          disabled={disabled || pending || availableCash <= 0}
         >
           {pending ? (
             "Filling…"
