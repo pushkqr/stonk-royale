@@ -11,6 +11,8 @@ export default function Results() {
   // actually playing against you.
   const solo = standings.filter((row) => !row.bot).length < 2;
   const myResult = settled?.results.find((r) => r.playerId === session.playerId);
+  const mySeat = lobby?.players?.find((player) => player.playerId === session.playerId);
+  const isHost = mySeat?.host ?? session.host;
 
   return (
     <main className="center-page">
@@ -63,7 +65,7 @@ export default function Results() {
       <Ledger results={settled?.results} meId={session.playerId} />
 
       {/* The room stays open, so the group never has to regroup from the home page. */}
-      {session.host ? (
+      {isHost ? (
         <div className="stack sheet" style={{ gap: "0.5rem" }}>
           <button className="btn btn-big btn-scream" onClick={() => rematch(false)}>
             {solo ? "Play with friends" : "Play again"}

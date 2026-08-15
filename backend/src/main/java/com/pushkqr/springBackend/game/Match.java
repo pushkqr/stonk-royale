@@ -136,6 +136,18 @@ public final class Match {
         if (activePlayerIds().size() >= config.maxPlayers()) {
             throw new IllegalStateException("Match is full");
         }
+
+        // Standings and accusations rely on names being distinguishable. Two "Alice" rows
+        // make the standings unreadable and every accusation ambiguous, so the room rejects
+        // a name that is already occupied. Case-insensitive because "alice" reads the same
+        // on screen. Players who have left do not count — their seat is retired.
+        boolean taken = players.values().stream()
+                .filter(p -> !p.hasLeft())
+                .anyMatch(p -> p.nickname().equalsIgnoreCase(nickname));
+        if (taken) {
+            throw new IllegalStateException("Someone in this room is already called " + nickname);
+        }
+
         MatchPlayer player = new MatchPlayer(playerId, nickname, players.isEmpty());
         players.put(playerId, player);
         return player;

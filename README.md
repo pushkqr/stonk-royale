@@ -19,8 +19,10 @@ account to create, and no market data feed to depend on.
 
 - **Nobody signs up.** A player types a nickname and is in. Joining returns a session token
   that authenticates every later socket message, so guests get real identity without an
-  account. Firebase sign-in exists, is entirely optional, and is absent from the UI unless
-  configured — a login wall is the single biggest reason someone never tries a browser game.
+  account. Rooms enforce unique nicknames case-insensitively among active players because standings,
+  chat and deception accusations rely on names being clearly distinguishable. Firebase sign-in exists,
+  is entirely optional, and is absent from the UI unless configured — a login wall is the single
+  biggest reason someone never tries a browser game.
 
 - **Public rooms and quick match.** A room is code-only by default and private by obscurity.
   A host can open the room to strangers via a public toggle. Quick match drops players straight
@@ -175,8 +177,10 @@ round has no intermission behind it, so its ledger appears on the results screen
 When it's over the room stays open. **Play again** keeps every seat, code and setting on a
 fresh market; **Rerun the same market** replays the identical seeded price paths — the tide
 is the same, so whatever's different the second time is down to how the table traded it, not
-the market getting lucky or unlucky again. Returning to the lobby rather than straight into
-a round is also the only window in which someone new can join.
+the market getting lucky or unlucky again. The results screen continuously tracks host
+promotions, ensuring that if the original host departed, the promoted host can immediately
+start a rematch. Returning to the lobby rather than straight into a round is also the only
+window in which someone new can join.
 
 Arriving alone is not a dead end: **Practice mode** starts a three-round match against three
 scripted opponents immediately, so an unaccompanied visitor sees the whole game — order flow,
@@ -445,7 +449,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-186 tests, all passing. They assert **design targets rather than implementation details**:
+190 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
@@ -465,6 +469,8 @@ cd backend && ./mvnw test
 - Disconnected seats in the lobby or results screen survive 45 seconds of grace before freeing,
   preserving seat tokens through page reloads and network blips
 - Dropped and reconnected socket state transitions notify the lobby roster immediately so away indicators render in real time
+- Duplicate player names are rejected case-insensitively across active players, while leavers and reconnecting players do not block names
+- Results screen continuously synchronises host promotion so a promoted host can always start a rematch
 - Unseated or disconnected rooms are reaped after two minutes, while bot-only rooms never hold
   reaping back
 - Host migration promotes connected human players first, never assigns the host badge to a bot, and leaves bot-only rooms hostless

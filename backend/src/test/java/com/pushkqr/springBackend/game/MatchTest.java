@@ -12,6 +12,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MatchTest {
@@ -1074,5 +1075,48 @@ class MatchTest {
         // Correct rather than unfortunate: there is nobody left who could press start, and
         // the abandonment clock is already running on this room.
         assertThat(match.players().stream().anyMatch(MatchPlayer::isHost)).isFalse();
+    }
+
+    @Test
+    void twoPlayersCannotShareTheSameNameInARoom() {
+        Match match = new Match("AAAAA", MatchConfig.standard());
+        match.join("player-1", "Alice");
+
+        assertThatThrownBy(() -> match.join("player-2", "Alice"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void theNameCheckIsCaseInsensitive() {
+        Match match = new Match("AAAAA", MatchConfig.standard());
+        match.join("player-1", "Alice");
+
+        // "alice" reads the same on screen and an accusation of "alice is lying" is just
+        // as ambiguous as "Alice is lying". If a player gets past this by capitalising
+        // differently, the check is not doing its job.
+        assertThatThrownBy(() -> match.join("player-2", "alice"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void theNameCheckDoesNotBlockAReconnectingPlayer() {
+        Match match = new Match("AAAAA", MatchConfig.standard());
+        match.join("player-1", "Alice");
+
+        // A page reload re-joins with the same playerId and name. The idempotent path
+        // returns the existing seat; the duplicate name check must not fire.
+        assertThat(match.join("player-1", "Alice").id()).isEqualTo("player-1");
+    }
+
+    @Test
+    void aPlayerWhoLeftDoesNotBlockTheirOwnName() {
+        Match match = new Match("AAAAA", MatchConfig.standard());
+        match.join("player-1", "Alice");
+        match.join("player-2", "Bob");
+        match.leave("player-1", 1_000);
+
+        // "Alice" left the lobby. A newcomer choosing the same name should not be told
+        // it is taken — the original Alice is gone.
+        assertThat(match.join("player-3", "Alice").nickname()).isEqualTo("Alice");
     }
 }
