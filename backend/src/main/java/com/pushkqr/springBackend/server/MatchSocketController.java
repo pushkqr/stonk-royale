@@ -3,6 +3,7 @@ package com.pushkqr.springBackend.server;
 import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
+import com.pushkqr.springBackend.game.MatchPlayer;
 import com.pushkqr.springBackend.game.model.MatchConfig;
 import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.model.Side;

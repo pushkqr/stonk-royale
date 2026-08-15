@@ -60,22 +60,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/api/ws")
-                .setAllowedOriginPatterns(allowedOrigins.split(","))
-                .setErrorHandler(new StompSubProtocolErrorHandler() {
-                    @Override
-                    public Message<byte[]> handleClientMessageProcessingError(
-                            Message<byte[]> clientMessage, Throwable ex) {
-                        Throwable root = ex;
-                        while (root.getCause() != null && root.getCause() != root) {
-                            root = root.getCause();
-                        }
-                        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.ERROR);
-                        String msg = root.getMessage() != null ? root.getMessage() : "Connection error";
-                        accessor.setMessage(msg);
-                        accessor.setLeaveMutable(true);
-                        return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
-                    }
-                });
+                .setAllowedOriginPatterns(allowedOrigins.split(","));
+        registry.setErrorHandler(new StompSubProtocolErrorHandler() {
+            @Override
+            public Message<byte[]> handleClientMessageProcessingError(
+                    Message<byte[]> clientMessage, Throwable ex) {
+                Throwable root = ex;
+                while (root.getCause() != null && root.getCause() != root) {
+                    root = root.getCause();
+                }
+                StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.ERROR);
+                String msg = root.getMessage() != null ? root.getMessage() : "Connection error";
+                accessor.setMessage(msg);
+                accessor.setLeaveMutable(true);
+                return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+            }
+        });
     }
 
     /**
