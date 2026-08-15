@@ -64,9 +64,11 @@ public class MatchController {
         seatBots(match, seat.nickname());
         long now = System.currentTimeMillis();
         match.start(now);
+        // Ready, but deliberately not advanced: the engine owns every phase transition and
+        // will pick this up within 100ms, well before the client's socket has connected. A
+        // tick from this thread would race the engine's own and drop the events it returns.
         if (Boolean.TRUE.equals(request.skipBriefing())) {
             match.markReady(seat.playerId());
-            match.tick(now);
         }
         broadcaster.phase(match);
         return seat;

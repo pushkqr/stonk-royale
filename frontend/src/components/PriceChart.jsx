@@ -22,6 +22,13 @@ const MAX_DPR = 2;
  */
 const MAX_POINTS = 350;
 
+/**
+ * Prices arrive ten times a second, so drawing faster than this only re-interpolates one
+ * short head segment. On a 120Hz or 180Hz panel the uncapped loop did two to three times the
+ * work for no visible gain, and those were the machines reporting the worst stalls.
+ */
+const MIN_FRAME_MS = 15;
+
 /** Falls back to the server's tick spacing if a round somehow starts with one point. */
 const DEFAULT_GAP_MS = 100;
 
@@ -90,7 +97,9 @@ function decimate(series, count, span) {
  */
 function draw(canvas, size, state) {
   const { series, position, startPrice, roundMillis } = state;
-  if (!canvas || size.w === 0 || size.h === 0) return true;
+  const points = series.points;
+  const count = series.count;
+  if (!canvas || size.w === 0 || size.h === 0 || count === 0) return true;
 
   const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
   const backingW = Math.round(size.w * dpr);
@@ -101,6 +110,10 @@ function draw(canvas, size, state) {
   if (canvas.width !== backingW || canvas.height !== backingH) {
     canvas.width = backingW;
     canvas.height = backingH;
+    // Reallocating the bitmap resets the context, and a gradient made by the old one is not
+    // valid against the new.
+    state.gradient = null;
+    state.gradientColor = null;
   }
 
   const ctx = canvas.getContext("2d");
@@ -119,9 +132,12 @@ function draw(canvas, size, state) {
   // exactly when it starts to matter.
   let min = Infinity;
   let max = -Infinity;
-  for (const point of series) {
-    if (point.p < min) min = point.p;
-    if (point.p > max) max = point.p;
+  // Bounded by count, not by the array's length: count is the authority on how much of the
+  // buffer is live, and reading it keeps that true however the points came to be there.
+  for (let i = 0; i < count; i += 1) {
+    const p = points[i].p;
+    if (p < min) min = p;
+    if (p > max) max = p;
   }
   for (const anchor of [startPrice, position?.entryPrice]) {
     if (!anchor) continue;
@@ -136,7 +152,7 @@ function draw(canvas, size, state) {
 
   // The window grows with the round rather than reserving width for time that has not
   // happened yet. The floor stops the first few ticks being stretched across the panel.
-  const elapsed = series.at(-1)?.t ?? 0;
+  const elapsed = points[count - 1]?.t ?? 0;
   const span = Math.max(elapsed, roundMillis * 0.12);
 
   const x = (t) => (t / span) * plotW;
@@ -145,8 +161,8 @@ function draw(canvas, size, state) {
   // Prices land ten times a second while the screen refreshes sixty, so the head eases from
   // the previous point to the newest across the gap between them. It costs one tick of lag
   // and buys motion that does not visibly step.
-  const last = series.at(-1);
-  const prev = series.length > 1 ? series[series.length - 2] : null;
+  const last = points[count - 1];
+  const prev = count > 1 ? points[count - 2] : null;
   let alpha = 1;
   let head = last;
 
@@ -194,7 +210,7 @@ function draw(canvas, size, state) {
     hLine(startPrice, paint.haze, [2, 4], "open");
   }
 
-  if (series.length > 1) {
+  if (count > 1) {
     /*
       Everything behind the head is fixed for the whole tick, so its geometry is built once
       per tick and replayed for the six or so frames that follow. Rebuilding a Path2D of
@@ -206,14 +222,14 @@ function draw(canvas, size, state) {
       rather than on the series alone.
     */
     if (
-      state.keyCount !== series.length ||
+      state.keyCount !== count ||
       state.keyMin !== min ||
       state.keyMax !== max ||
       state.keySpan !== span ||
       state.keyW !== plotW ||
       state.keyH !== plotH
     ) {
-      const body = decimate(series, series.length - 1, span);
+      const body = decimate(points, count - 1, span);
       const line = new Path2D();
       const area = new Path2D();
 
@@ -234,7 +250,7 @@ function draw(canvas, size, state) {
       state.area = area;
       state.tailX = x(tail.t);
       state.tailY = y(tail.p);
-      state.keyCount = series.length;
+      state.keyCount = count;
       state.keyMin = min;
       state.keyMax = max;
       state.keySpan = span;
@@ -242,10 +258,18 @@ function draw(canvas, size, state) {
       state.keyH = plotH;
     }
 
-    const gradient = ctx.createLinearGradient(0, PAD_Y, 0, PAD_Y + plotH);
-    gradient.addColorStop(0, `${lineColor}33`);
-    gradient.addColorStop(1, `${lineColor}00`);
-    ctx.fillStyle = gradient;
+    // Cached on the same terms as the paths above. It was being rebuilt on every frame —
+    // sixty to a hundred and eighty times a second — for something that only changes when
+    // the line flips colour or the panel is resized.
+    if (state.gradientColor !== lineColor || state.gradientH !== plotH) {
+      const gradient = ctx.createLinearGradient(0, PAD_Y, 0, PAD_Y + plotH);
+      gradient.addColorStop(0, `${lineColor}33`);
+      gradient.addColorStop(1, `${lineColor}00`);
+      state.gradient = gradient;
+      state.gradientColor = lineColor;
+      state.gradientH = plotH;
+    }
+    ctx.fillStyle = state.gradient;
     ctx.fill(state.area);
 
     ctx.strokeStyle = lineColor;
@@ -293,6 +317,7 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
   const sizeRef = useRef(size);
   const frameRef = useRef(0);
   const runningRef = useRef(false);
+  const lastDrawRef = useRef(0);
 
   // Stable for the component's life: it reads everything it needs from refs at call time,
   // so it never needs rebuilding and never goes stale.
@@ -300,9 +325,16 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
     if (runningRef.current) return;
     runningRef.current = true;
     const loop = () => {
+      const now = performance.now();
+      if (now - lastDrawRef.current < MIN_FRAME_MS) {
+        frameRef.current = requestAnimationFrame(loop);
+        return;
+      }
+      lastDrawRef.current = now;
+
       // Timed here rather than in a separate rAF, so the measurement is of the frames this
       // chart actually drew — the ones a stutter would show up in.
-      telemetry.frame(liveRef.current.series.length);
+      telemetry.frame(liveRef.current.series.count);
       if (draw(canvasRef.current, sizeRef.current, liveRef.current)) {
         runningRef.current = false;
         return;
@@ -364,7 +396,7 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
         ref={canvasRef}
         style={{ width: "100%", height: "100%", display: "block" }}
         role="img"
-        aria-label={`Price chart. Now ${fmtPrice(series.at(-1)?.p ?? startPrice)}, opened at ${fmtPrice(startPrice)}.`}
+        aria-label={`Price chart. Now ${fmtPrice(series.points[series.count - 1]?.p ?? startPrice)}, opened at ${fmtPrice(startPrice)}.`}
       />
     </div>
   );

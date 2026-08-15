@@ -51,6 +51,33 @@ export default function RulesContent() {
       </section>
 
       <section className="rules-block">
+        <h3 className="display rules-head">Tips lie</h3>
+        <p>
+          Your tip is yours alone, and most tips are false. At least one in the room is
+          always real, and before the market opens everyone is told how many that is — which
+          is what makes talking worth anything. Three people claiming PUMP against a count of
+          one means two of them are lying to you right now.
+        </p>
+        <p className="muted">
+          You find out whether yours was true when the round settles, alongside what everyone
+          claimed theirs said.
+        </p>
+      </section>
+
+      <section className="rules-block">
+        <h3 className="display rules-head">Headlines are not proof</h3>
+        <p>
+          Two headlines break on the wire every round, to everybody at once. One is true and
+          one is not, every time — so a headline landing is never itself a signal, and the
+          work is deciding which of the pair you believe.
+        </p>
+        <p className="muted">
+          When a round is about to lurch, the true one lands a beat before it does. That beat
+          is the only warning anybody gets.
+        </p>
+      </section>
+
+      <section className="rules-block">
         <h3 className="display rules-head">Leverage</h3>
         <p>
           One position at a time, 1x to 10x. Higher leverage multiplies the move both ways

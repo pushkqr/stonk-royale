@@ -15,10 +15,14 @@ public final class MatchPlayer {
     private boolean host;
 
     /**
-     * Whether this player's socket is currently up. Starts true — a seat is only ever
-     * created by a join that is about to open one.
+     * Whether this player's socket is currently up.
+     *
+     * Starts false, because a seat is created over HTTP and the socket opens afterwards.
+     * It used to start true on the assumption the two were the same moment — which made a
+     * visitor who took a code and closed the tab indistinguishable from one who is sitting
+     * in the room, and left the match unreapable forever.
      */
-    private boolean connected = true;
+    private boolean connected;
 
     private PlayerRound round;
 

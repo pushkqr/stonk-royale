@@ -15,6 +15,42 @@ const FLUSH_MS = 15_000;
 /** Past this, a frame is not a dropped frame — it is a visible hitch. */
 const LONG_FRAME_MS = 50;
 
+/**
+ * A ceiling on the sample buffer. Fifteen seconds on a 180Hz panel is ~2,700 frames, and
+ * flush copies the lot to sort it — measurement should not be adding to the churn it exists
+ * to measure. Sampling the most recent frames loses nothing: a stall lands in the window
+ * either way.
+ */
+const MAX_SAMPLES = 600;
+
+/** Frames to time when working out the panel's refresh interval. */
+const PROBE_FRAMES = 10;
+
+let refreshMs = 0;
+
+/**
+ * Times a short burst of raw animation frames to learn the display's interval.
+ *
+ * Deliberately not derived from the chart's own frame deltas: that loop is capped at
+ * MIN_FRAME_MS, so its shortest frame is the cap rather than the panel. Without this the
+ * median is unreadable — 16.7ms means "perfect" on a 60Hz screen and "dropping half its
+ * frames" on a 120Hz one, and after the cap every machine reports it regardless.
+ */
+function probeRefresh() {
+  let seen = 0;
+  let first = 0;
+  const step = (at) => {
+    if (!first) first = at;
+    seen += 1;
+    if (seen <= PROBE_FRAMES) {
+      requestAnimationFrame(step);
+      return;
+    }
+    refreshMs = (at - first) / PROBE_FRAMES;
+  };
+  requestAnimationFrame(step);
+}
+
 const frames = [];
 let lastFrameAt = 0;
 let context = null;
@@ -38,6 +74,7 @@ function flush() {
     viewportWidth: window.innerWidth,
     dpr: window.devicePixelRatio || 1,
     medianFrameMs: median,
+    refreshMs,
     worstFrameMs: worst,
     longFrames,
     points: context.points,
@@ -53,7 +90,10 @@ export const telemetry = {
     if (lastFrameAt) {
       const delta = now - lastFrameAt;
       // A tab that was hidden produces one enormous gap that is not a stall.
-      if (delta < 2000) frames.push(delta);
+      if (delta < 2000) {
+        if (frames.length >= MAX_SAMPLES) frames.shift();
+        frames.push(delta);
+      }
       if (context) context.points = points;
     }
     lastFrameAt = now;
@@ -62,6 +102,7 @@ export const telemetry = {
   start(matchCode) {
     context = { matchCode, points: 0 };
     lastFrameAt = 0;
+    probeRefresh();
     clearInterval(timer);
     timer = setInterval(flush, FLUSH_MS);
   },
@@ -72,5 +113,6 @@ export const telemetry = {
     context = null;
     frames.length = 0;
     lastFrameAt = 0;
+    refreshMs = 0;
   },
 };

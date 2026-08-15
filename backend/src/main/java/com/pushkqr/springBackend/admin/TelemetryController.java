@@ -37,6 +37,7 @@ public class TelemetryController {
                 (int) clamp(request.viewportWidth(), 0, 10_000),
                 clamp(request.dpr(), 0, 8),
                 clamp(request.medianFrameMs(), 0, 10_000),
+                clamp(request.refreshMs(), 0, 10_000),
                 clamp(request.worstFrameMs(), 0, 60_000),
                 (int) clamp(request.longFrames(), 0, 100_000),
                 (int) clamp(request.points(), 0, 100_000)));
@@ -59,6 +60,6 @@ public class TelemetryController {
 
     /** Every field optional: a client that cannot measure something sends nothing. */
     public record Request(String matchCode, String platform, Double viewportWidth, Double dpr,
-            Double medianFrameMs, Double worstFrameMs, Double longFrames, Double points) {
+            Double medianFrameMs, Double refreshMs, Double worstFrameMs, Double longFrames, Double points) {
     }
 }

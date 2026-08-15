@@ -74,6 +74,9 @@ public final class Match {
     private boolean flowSurging;
     private long lastFlowEventMillis = Long.MIN_VALUE;
 
+    /** When the last human socket went away, or 0 while somebody is still here. */
+    private long abandonedSinceMillis;
+
     /**
      * What each player has told the room their tip says, this round only.
      *
@@ -237,6 +240,7 @@ public final class Match {
     // --- the loop ------------------------------------------------------------
 
     public List<GameEvent> tick(long now) {
+        trackAbandonment(now);
         List<GameEvent> events = new ArrayList<>();
         switch (phase) {
             case LOBBY, FINISHED -> {
@@ -524,6 +528,32 @@ public final class Match {
                 .map(MatchPlayer::id)
                 .toList();
         return !present.isEmpty() && readyIds.containsAll(present);
+    }
+
+    /**
+     * Marks when the room emptied out, so something above can reap it.
+     *
+     * Tracked in every phase rather than only the lobby: a room whose players all vanish
+     * during the briefing would otherwise wait out the failsafe and then play every round of
+     * the match to nobody before any timer could touch it.
+     *
+     * Bots are not watchers. A practice room keeps its three opponents after its one human
+     * closes the tab, and counting them would make exactly the rooms this exists for
+     * immortal.
+     */
+    private void trackAbandonment(long now) {
+        boolean watched = players.values().stream()
+                .anyMatch(player -> !player.isBot() && player.isConnected());
+        if (watched) {
+            abandonedSinceMillis = 0;
+        } else if (abandonedSinceMillis == 0) {
+            abandonedSinceMillis = now;
+        }
+    }
+
+    /** When the last human socket went away, or 0 while somebody is still here. */
+    public long abandonedSinceMillis() {
+        return abandonedSinceMillis;
     }
 
     public int readyCount() {

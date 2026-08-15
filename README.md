@@ -121,7 +121,9 @@ A dropped socket is treated differently depending on when it happens. In the lob
 the seat immediately, so someone who closes their window and comes back does not leave a
 ghost behind holding a slot. Mid-match the seat is kept — phones lock their screens
 constantly and the client reconnects — but a player whose socket is down no longer holds the
-briefing gate shut for everyone else.
+briefing gate shut for everyone else. The broker negotiates 10-second heartbeats in both
+directions so a socket that dies silently is noticed, and any room where nobody has been
+connected for two minutes is reaped automatically.
 
 Each round cycles through three beats:
 
@@ -409,7 +411,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-148 tests, all passing. They assert **design targets rather than implementation details**:
+153 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias

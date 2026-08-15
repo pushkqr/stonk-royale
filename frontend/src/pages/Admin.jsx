@@ -144,7 +144,7 @@ export default function Admin() {
                       {r.platform} · {r.viewportWidth}px @{r.dpr}x
                     </span>
                     <span className="mono">
-                      {r.medianFrameMs.toFixed(1)}ms median
+                      {r.medianFrameMs.toFixed(1)}ms median of {r.refreshMs.toFixed(1)}ms
                     </span>
                     <span className={`mono ${r.worstFrameMs > 100 ? "dump" : "muted"}`}>
                       worst {r.worstFrameMs.toFixed(0)}ms · {r.longFrames} hitches ·{" "}

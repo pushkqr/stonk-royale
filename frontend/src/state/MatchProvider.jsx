@@ -38,7 +38,7 @@ export function MatchProvider({ session, children }) {
   const [tick, setTick] = useState(null);
   const [board, setBoard] = useState([]);
   const [feed, setFeed] = useState([]);
-  const [series, setSeries] = useState([]);
+  const [series, setSeries] = useState({ points: [], count: 0 });
   const [rumor, setRumor] = useState(null);
   const [lastRumor, setLastRumor] = useState(null);
   const [settled, setSettled] = useState(null);
@@ -85,7 +85,7 @@ export function MatchProvider({ session, children }) {
         // phase to everyone, which would otherwise wipe the round in progress.
         if (next.phase === "TRADING" && roundRef.current !== next.roundIndex) {
           roundRef.current = next.roundIndex;
-          setSeries([]);
+          setSeries({ points: [], count: 0 });
           setTick(null);
           sound.roundStart();
         }
@@ -110,7 +110,7 @@ export function MatchProvider({ session, children }) {
           setSettled(null);
           setLastRumor(null);
           setRumor(null);
-          setSeries([]);
+          setSeries({ points: [], count: 0 });
           setTick(null);
           setBoard([]);
           setFeed([]);
@@ -120,7 +120,16 @@ export function MatchProvider({ session, children }) {
 
       on(topic("price"), (next) => {
         setTick(next);
-        setSeries((prev) => [...prev, { t: next.elapsedMillis, p: next.price }]);
+        // Mutate the array in place and bump the count so React notices.
+        //
+        // Copying a growing array ten times a second allocates ~405,000 objects across a
+        // single 90s round. Nothing else reads the old array snapshot, so the copies were
+        // pure garbage churn — and on a 180Hz screen the GC pauses regularly swallowed
+        // three or four frames in a row.
+        setSeries((prev) => {
+          prev.points[prev.count] = { t: next.elapsedMillis, p: next.price };
+          return { points: prev.points, count: prev.count + 1 };
+        });
       });
 
       on(topic("board"), setBoard);

@@ -30,6 +30,13 @@ public class MatchEngine {
     /** How long a finished match stays around so players can read the final standings. */
     private static final long FINISHED_TTL_MILLIS = 5 * 60_000;
 
+    /**
+     * How long a room with nobody connected is kept before it is thrown away. Long enough to
+     * survive a locked phone or a wifi handover, short enough that an abandoned room is gone
+     * before anyone finds it in the admin panel.
+     */
+    private static final long ABANDONED_TTL_MILLIS = 120_000;
+
     private final MatchRegistry matches;
     private final SessionRegistry sessions;
     private final MatchBroadcaster broadcaster;
@@ -69,12 +76,30 @@ public class MatchEngine {
             if (ticks % BOARD_EVERY_N_TICKS == 0) {
                 broadcaster.board(match, now);
             }
-        } else if (match.phase() == MatchPhase.FINISHED
-                && now - match.phaseEndsAtMillis() > FINISHED_TTL_MILLIS) {
+        }
+
+        if (reapable(match, now)) {
             matches.remove(match.code());
             sessions.removeForMatch(match.code());
-            logger.info("Reaped finished match {}", match.code());
+            logger.info("Reaped match {} in {}", match.code(), match.phase());
         }
+    }
+
+    /**
+     * Two ways a room stops being worth keeping: everybody has gone, or the podium has been
+     * up long enough that anyone still reading it has finished.
+     *
+     * Until the first of these existed the registry had exactly one eviction path — the
+     * finished timer — so a room that never finished was never removed, and a visitor who
+     * took a code and closed the tab left one behind for the life of the process.
+     */
+    private boolean reapable(Match match, long now) {
+        long abandonedSince = match.abandonedSinceMillis();
+        if (abandonedSince != 0 && now - abandonedSince > ABANDONED_TTL_MILLIS) {
+            return true;
+        }
+        return match.phase() == MatchPhase.FINISHED
+                && now - match.phaseEndsAtMillis() > FINISHED_TTL_MILLIS;
     }
 
     private void publish(Match match, GameEvent event) {

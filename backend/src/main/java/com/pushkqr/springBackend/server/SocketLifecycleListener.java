@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
@@ -33,6 +34,25 @@ public class SocketLifecycleListener {
         this.matches = matches;
         this.sessions = sessions;
         this.broadcaster = broadcaster;
+    }
+
+    /**
+     * A socket finished its STOMP handshake.
+     *
+     * Seats are handed out over HTTP and the socket opens some time later, so this is the
+     * first moment the server knows somebody is really there. Without it a seat stays marked
+     * absent and the reaper would eventually clear a room with people sitting in it.
+     */
+    @EventListener
+    public void onConnected(SessionConnectedEvent event) {
+        Principal user = StompHeaderAccessor.wrap(event.getMessage()).getUser();
+        if (!(user instanceof PlayerSession session)) {
+            return;
+        }
+        Match match = matches.get(session.matchCode());
+        if (match != null) {
+            match.markConnected(session.playerId(), true);
+        }
     }
 
     @EventListener
