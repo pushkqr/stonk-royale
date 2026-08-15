@@ -1,0 +1,49 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+# Prevent concurrent deployments from stepping on each other
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute remote deployment commands over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            TARGET_DIR="${{ secrets.DEPLOY_PATH || '~/stonk-royale' }}"
+            echo "--> Navigating to deployment directory: $TARGET_DIR"
+            cd "$TARGET_DIR"
+
+            echo "--> Fetching latest code from origin..."
+            git fetch origin
+            CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            git reset --hard origin/$CURRENT_BRANCH
+
+            echo "--> Rebuilding and starting containers..."
+            docker compose up -d --build --remove-orphans
+
+            echo "--> Cleaning up dangling Docker images..."
+            docker image prune -f
+
+            echo "--> Deployment finished successfully!"

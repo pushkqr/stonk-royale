@@ -16,7 +16,8 @@ backend/src/main/resources/serviceAccount.json
 .env
 .env.local
 frontend/.env
-
+*.pem
+deploy/
 
 # Logs
 logs

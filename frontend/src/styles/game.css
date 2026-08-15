@@ -922,8 +922,22 @@
   border-radius: 0 0 0 var(--radius);
 }
 
+/* Wide enough for the armed label, always — and the rules tab is positioned from the same
+   value below, so the two cannot drift apart when either label changes.
+
+   Reserved rather than fitted to the content: the tab is a fixed element sitting a few
+   pixels from the rules tab, so growing when armed both collided with it and moved a
+   control under a thumb already travelling toward it. Costs a slightly roomy LEAVE at
+   rest, which is the cheaper of the two. */
+:root {
+  --leave-tab: 6.8rem;
+}
+
 .leave-tab {
   left: 0;
+  width: var(--leave-tab);
+  text-align: center;
+  white-space: nowrap;
   border-left: 0;
   border-radius: 0 0 var(--radius) 0;
 }
@@ -1133,7 +1147,7 @@
 }
 
 .rules-tab {
-  left: 5.9rem;
+  left: calc(var(--leave-tab) + 0.4rem);
   border-radius: 0 0 var(--radius) var(--radius);
 }
 
@@ -1221,13 +1235,17 @@
     font-size: 0.72rem;
   }
 
+  :root {
+    --leave-tab: 6.2rem;
+  }
+
   .corner-tab {
     padding: 0.5rem 0.8rem 0.55rem;
     font-size: 0.66rem;
   }
 
   .rules-tab {
-    left: 5.5rem;
+    left: calc(var(--leave-tab) + 0.35rem);
   }
 
   .table {
