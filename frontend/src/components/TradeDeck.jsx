@@ -26,25 +26,27 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   if (position) {
     return (
       <div className="deck deck-open">
-        <div className="deck-open-info">
-          <span className="eyebrow">Your position</span>
-          <span className="display deck-open-side">
-            <span className={position.side === "LONG" ? "pump" : "dump"}>
-              {position.leverage}x {position.side}
+        <div className="deck-open-header">
+          <div className="deck-open-info">
+            <span className="eyebrow">Your position</span>
+            <span className="display deck-open-side">
+              <span className={position.side === "LONG" ? "pump" : "dump"}>
+                {position.leverage}x {position.side}
+              </span>
             </span>
-          </span>
-          <span className="mono muted">
-            in at {fmtPrice(position.entryPrice)} · liquidated at {fmtPrice(position.liquidationPrice)}
-          </span>
-        </div>
+            <span className="mono muted">
+              in at {fmtPrice(position.entryPrice)} · liquidated at {fmtPrice(position.liquidationPrice)}
+            </span>
+          </div>
 
-        <div className="deck-open-pnl">
-          <span className="eyebrow">Unrealised</span>
-          <LivePnl position={position} />
+          <div className="deck-open-pnl">
+            <span className="eyebrow">Unrealised</span>
+            <LivePnl position={position} />
+          </div>
         </div>
 
         <button className="btn btn-big btn-scream deck-close" onClick={onClose} disabled={disabled}>
-          Close
+          Close Position
         </button>
       </div>
     );

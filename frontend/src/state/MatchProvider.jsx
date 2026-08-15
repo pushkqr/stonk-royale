@@ -187,16 +187,26 @@ export function MatchProvider({ session, children }) {
 
     client.onWebSocketClose = () => setConnected(false);
     client.onStompError = (frame) => {
-      const message = frame.headers?.message ?? "Lost the connection to the game.";
-      // The server no longer knows this token — the seat was given up while the socket was
-      // down. Retrying can never succeed, so drop the dead seat and let the join screen
-      // ask for a name again instead of looping on "Reconnecting…" forever.
-      if (message.toLowerCase().includes("token")) {
+      const raw = frame.headers?.message ?? "";
+      const body = frame.body ?? "";
+      const full = `${raw} ${body}`.toLowerCase();
+
+      // The server no longer knows this token, or the room/session has expired while the socket was down.
+      // Retrying can never succeed, so drop the dead seat and reload cleanly into the JoinGate
+      // instead of exposing internal channel errors or looping forever.
+      if (
+        full.includes("token") ||
+        full.includes("session") ||
+        full.includes("expired") ||
+        full.includes("unknown") ||
+        full.includes("channel") ||
+        full.includes("executorsubscribable")
+      ) {
         clearSeat(code);
         window.location.reload();
         return;
       }
-      setError(message);
+      setError("Lost connection to the room. Retrying…");
     };
 
     client.activate();

@@ -984,18 +984,15 @@
 /* --- trade deck ---------------------------------------------------------- */
 
 .deck {
-  display: grid;
-  gap: 0.6rem;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .deck-presets {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  grid-column: 1 / -1;
-  margin-bottom: 0.1rem;
 }
 
 .deck-preset-row {
@@ -1035,6 +1032,22 @@
   opacity: 0.7;
 }
 
+.deck-dials {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.dial {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dial b {
+  font-size: 0.8rem;
+}
+
 .deck-preview {
   display: flex;
   align-items: center;
@@ -1043,7 +1056,6 @@
   background: var(--void-deep);
   border: 1px solid var(--edge);
   border-radius: 4px;
-  grid-column: 1 / -1;
   font-size: 0.68rem;
 }
 
@@ -1083,26 +1095,11 @@
   border: 1px solid rgba(255, 59, 84, 0.3);
 }
 
-.deck-dials {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.dial {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.dial b {
-  font-size: 0.8rem;
-}
-
 .deck-sides {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
+  width: 100%;
 }
 
 /* Each side button now carries its label and the price it would fill at, stacked. .btn is a
@@ -1122,23 +1119,35 @@
 }
 
 .deck-open {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deck-open-header {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--void-deep);
+  border: 1px solid var(--edge);
+  border-radius: 4px;
   gap: 1rem;
 }
 
 .deck-open-info {
   display: flex;
   flex-direction: column;
+  gap: 0.1rem;
 }
 
 .deck-open-side {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   line-height: 1.1;
 }
 
 .deck-open-info .mono {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 .deck-open-pnl {
@@ -1147,8 +1156,12 @@
 
 .deck-pnl {
   display: block;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   line-height: 1;
+}
+
+.deck-close {
+  width: 100%;
 }
 
 /* --- results ------------------------------------------------------------- */
@@ -1329,13 +1342,8 @@
 }
 
 @media (max-width: 560px) {
-  .deck,
-  .deck-open {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .deck-open-pnl {
-    text-align: left;
+  .deck-dials {
+    grid-template-columns: 1fr;
   }
 }
 
