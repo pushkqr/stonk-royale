@@ -69,7 +69,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
     <div className="deck">
       <div className="deck-presets">
         <span className="eyebrow">Presets</span>
-        <div className="preset-row">
+        <div className="deck-preset-row">
           {PRESETS.map((p) => (
             <button
               key={p.label}
