@@ -24,8 +24,8 @@ class MatchTest {
         Match match = new Match(code, CONFIG);
         match.join("p1", "alice");
         match.join("p2", "bob");
-        match.markConnected("p1", true);
-        match.markConnected("p2", true);
+        match.markConnected("p1", true, 0);
+        match.markConnected("p2", true, 0);
         return match;
     }
 
@@ -45,7 +45,7 @@ class MatchTest {
     private List<GameEvent> startPlaying(Match match, long now) {
         List<GameEvent> events = new ArrayList<>(match.start(now));
         match.players().forEach(player -> {
-            match.markConnected(player.id(), true);
+            match.markConnected(player.id(), true, now);
             match.markReady(player.id());
         });
         events.addAll(match.tick(now));
@@ -63,8 +63,8 @@ class MatchTest {
             Match match = new Match(code, CONFIG);
             match.join("p1", "alice");
             match.join("p2", "bob");
-            match.markConnected("p1", true);
-            match.markConnected("p2", true);
+            match.markConnected("p1", true, 0);
+            match.markConnected("p2", true, 0);
             match.start(0);
             if (match.round().regime() == target) {
                 return code;
@@ -99,11 +99,13 @@ class MatchTest {
     }
 
     @Test
-    void rejectsJoiningAfterStart() {
+    void allowsJoiningAfterStart() {
         Match match = lobbyOfTwo("ABCDE");
         match.start(0);
 
-        assertThrows(IllegalStateException.class, () -> match.join("p3", "carol"));
+        MatchPlayer joined = match.join("p3", "carol");
+        assertNotNull(joined);
+        assertEquals("carol", joined.nickname());
     }
 
     @Test
@@ -226,7 +228,7 @@ class MatchTest {
         match.tick(100);
         assertEquals(MatchPhase.BRIEFING, match.phase(), "still waiting on p2");
 
-        match.markConnected("p2", false);
+        match.markConnected("p2", false, 150);
         match.tick(200);
         assertEquals(MatchPhase.INTERMISSION, match.phase(),
                 "a disconnected player must not block the gate");
@@ -237,8 +239,8 @@ class MatchTest {
         Match match = lobbyOfTwo("GHOST2");
         match.start(0);
         match.markReady("p1");
-        match.markConnected("p2", false);
-        match.markConnected("p2", true);
+        match.markConnected("p2", false, 50);
+        match.markConnected("p2", true, 80);
 
         match.tick(100);
         assertEquals(MatchPhase.BRIEFING, match.phase(),
@@ -249,8 +251,8 @@ class MatchTest {
     void theGateDoesNotOpenWhenEverybodyHasVanished() {
         Match match = lobbyOfTwo("GHOST3");
         match.start(0);
-        match.markConnected("p1", false);
-        match.markConnected("p2", false);
+        match.markConnected("p1", false, 50);
+        match.markConnected("p2", false, 50);
 
         match.tick(100);
         assertEquals(MatchPhase.BRIEFING, match.phase(),
@@ -261,7 +263,7 @@ class MatchTest {
     void botsDoNotHoldTheBriefingGateShut() {
         Match match = new Match("TEST1", new MatchConfig(1, 60, 8, 10_000, 12));
         match.join("human", "You");
-        match.markConnected("human", true);
+        match.markConnected("human", true, 0);
         match.addBot("bot:1", "Vega");
         match.addBot("bot:2", "Kite");
 
@@ -300,7 +302,7 @@ class MatchTest {
     private Match practiceLikeMatch(String code) {
         Match match = new Match(code, new MatchConfig(1, 60, 20, 10_000, 12));
         match.join("human", "You");
-        match.markConnected("human", true);
+        match.markConnected("human", true, 0);
         match.addBot("bot:1", "Vega");
         match.addBot("bot:2", "Kite");
         match.addBot("bot:3", "Moss");
@@ -968,7 +970,7 @@ class MatchTest {
     void aSinglePlayerCanStartAPracticeMatch() {
         Match match = new Match("SOLO1", new MatchConfig(1, 10, 1, 10_000, 12));
         match.join("p1", "alice");
-        match.markConnected("p1", true);
+        match.markConnected("p1", true, 0);
 
         assertDoesNotThrow(() -> match.start(0));
         match.markReady("p1");
@@ -981,7 +983,7 @@ class MatchTest {
     void markingHumanReadyAdvancesDirectlyToIntermissionInPracticeWithBots() {
         Match match = new Match("PRACTICE", new MatchConfig(3, 10, 1, 10_000, 12));
         match.join("p1", "alice");
-        match.markConnected("p1", true);
+        match.markConnected("p1", true, 0);
         match.addBot("bot:0", "Vega");
         match.addBot("bot:1", "Kite");
         match.addBot("bot:2", "Moss");

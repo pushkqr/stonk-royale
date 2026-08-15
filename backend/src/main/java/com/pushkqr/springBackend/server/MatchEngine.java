@@ -143,6 +143,12 @@ public class MatchEngine {
                         closed.playerId(), closed.nickname());
             case GameEvent.BotSaid said ->
                 broadcaster.feed(match, "CHAT", said.text(), said.playerId(), said.nickname());
+            case GameEvent.SeatVacated vacated -> {
+                // The token has to go with the seat, or a stale client could reconnect onto
+                // a slot that is no longer theirs.
+                sessions.remove(sessions.tokenFor(vacated.playerId()));
+                broadcaster.lobby(match);
+            }
         }
     }
 }

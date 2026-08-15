@@ -24,6 +24,15 @@ public final class MatchPlayer {
      */
     private boolean connected;
 
+    /**
+     * When this player's socket went away, or 0 while it is up.
+     *
+     * A seat is not freed the instant a socket drops — a refresh, a tunnel or a wifi
+     * handover all look identical to a closed tab from here, and treating them the same is
+     * what used to throw people out of the lobby for reloading the page.
+     */
+    private long disconnectedSinceMillis;
+
     private PlayerRound round;
 
     /**
@@ -71,8 +80,28 @@ public final class MatchPlayer {
         return connected;
     }
 
-    void setConnected(boolean value) {
+    /**
+     * @param atMillis when this happened, so a grace period can be measured from it
+     */
+    void setConnected(boolean value, long atMillis) {
+        if (value) {
+            disconnectedSinceMillis = 0;
+        } else if (disconnectedSinceMillis == 0) {
+            // Started once and never pushed out: a repeated disconnect notification must not
+            // extend the deadline, or a seat that keeps being re-noticed is never given up.
+            //
+            // Keyed on the clock rather than on the previous state, so that a seat which was
+            // never connected in the first place still gets one. A code taken over HTTP whose
+            // socket never opens has no transition to trigger on, and without a clock it
+            // would be held for the life of the process.
+            disconnectedSinceMillis = atMillis;
+        }
         connected = value;
+    }
+
+    /** When this player's socket went away, or 0 while it is up. */
+    public long disconnectedSinceMillis() {
+        return disconnectedSinceMillis;
     }
 
     /** Current round state, or null outside a round. */

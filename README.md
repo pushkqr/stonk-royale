@@ -24,6 +24,17 @@ account to create, and no market data feed to depend on.
   account. Firebase sign-in exists, is entirely optional, and is absent from the UI unless
   configured — a login wall is the single biggest reason someone never tries a browser game.
 
+- **Seats survive reloads, and abandoned rooms are reaped.** A disconnected socket in the
+  lobby or results screen enters a 45-second grace window before the seat and token are freed,
+  because a page reload, a cellular tunnel, or a wifi handover look identical to a closed
+  window at the moment they happen. Mid-match seats are kept permanently so standings stay
+  consistent. Empty or abandoned rooms are reaped after two minutes of inactivity.
+
+- **Latecomers can take a seat while the match is running.** Turning up after the match has
+  started seats you immediately instead of bouncing you to the home page. The latecomer sits out
+  the round in progress, watches the live price action and room wire, and starts trading and
+  scoring from the next round when fresh tips and stacks are dealt.
+
 - **The market is simulated, not live.** Prices come from seeded geometric Brownian motion
   under a hidden per-round regime, tuned so ninety seconds covers a **30–50% range**. Real
   crypto moves well under 1% in that window, which would cluster every final score within a
@@ -411,7 +422,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-153 tests, all passing. They assert **design targets rather than implementation details**:
+162 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
@@ -428,6 +439,12 @@ cd backend && ./mvnw test
 - Bots trade on deterministic timelines, react to live market events, and one bot per round lies
   on the record about its tip
 - All bot actions are authored once per round from the seeded random, keeping runs fully reproducible
+- Disconnected seats in the lobby or results screen survive 45 seconds of grace before freeing,
+  preserving seat tokens through page reloads and network blips
+- Unseated or disconnected rooms are reaped after two minutes, while bot-only rooms never hold
+  reaping back
+- Latecomers can take a seat mid-match, safely sit out the round in progress without crashing
+  round settlement or taking score damage, and enter trading from the next round
 
 > **The socket layer has no automated tests.** `MatchEngine`, `MatchBroadcaster`,
 > `MatchSocketController` and `StompAuthInterceptor` were verified by driving a real headless

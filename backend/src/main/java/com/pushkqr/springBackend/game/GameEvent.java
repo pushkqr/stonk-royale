@@ -47,4 +47,14 @@ public sealed interface GameEvent {
 
     record BotSaid(String playerId, String nickname, String text) implements GameEvent {
     }
+
+    /**
+     * A seat was given up because its socket never came back.
+     *
+     * Its own event because the token behind it lives in Spring's SessionRegistry, which
+     * {@code Match} deliberately cannot reach — the id has to travel out to something that
+     * can drop it.
+     */
+    record SeatVacated(String playerId, String nickname) implements GameEvent {
+    }
 }

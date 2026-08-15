@@ -23,6 +23,9 @@ export default function Trading() {
   const move = startPrice ? ((live - startPrice) / startPrice) * 100 : 0;
   const urgent = left > 0 && left <= 10_000;
 
+  // A latecomer holds a seat but no stack: the round was dealt before they arrived.
+  const waiting = !!me && !me.inRound;
+
   // Only measured while a round is live, which is the only time the chart is animating and
   // the only time a stutter costs anybody anything.
   useEffect(() => {
@@ -98,7 +101,13 @@ export default function Trading() {
           startPrice={startPrice}
         />
 
-        <TradeDeck me={me} onOpen={open} onClose={close} disabled={!me} />
+        {waiting && (
+          <p className="notice muted" role="status">
+            You're in from the next round — this one was dealt before you arrived.
+          </p>
+        )}
+
+        <TradeDeck me={me} onOpen={open} onClose={close} disabled={!me || waiting} />
       </section>
 
       <Wire feed={feed} onSay={say} disabled={false} />

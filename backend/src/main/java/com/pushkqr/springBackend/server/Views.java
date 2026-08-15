@@ -38,8 +38,12 @@ public final class Views {
             double liquidationPrice, double unrealisedPnl) {
     }
 
+    /**
+     * @param inRound false for somebody who joined after this round was planned — they hold
+     *                no stack and no tip until the next one deals
+     */
     public record BoardRow(String playerId, String nickname, double equity, double roundScore,
-            double totalScore, Position position, boolean bot) {
+            double totalScore, Position position, boolean bot, boolean inRound) {
     }
 
     /** kind is one of NEWS, LIQUIDATION, TRADE, CHAT, FLOW. */

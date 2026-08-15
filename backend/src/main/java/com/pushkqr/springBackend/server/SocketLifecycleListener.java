@@ -1,7 +1,6 @@
 package com.pushkqr.springBackend.server;
 
 import com.pushkqr.springBackend.game.Match;
-import com.pushkqr.springBackend.game.MatchPhase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -26,14 +25,9 @@ public class SocketLifecycleListener {
     private static final Logger logger = LoggerFactory.getLogger(SocketLifecycleListener.class);
 
     private final MatchRegistry matches;
-    private final SessionRegistry sessions;
-    private final MatchBroadcaster broadcaster;
 
-    public SocketLifecycleListener(MatchRegistry matches, SessionRegistry sessions,
-            MatchBroadcaster broadcaster) {
+    public SocketLifecycleListener(MatchRegistry matches) {
         this.matches = matches;
-        this.sessions = sessions;
-        this.broadcaster = broadcaster;
     }
 
     /**
@@ -51,7 +45,7 @@ public class SocketLifecycleListener {
         }
         Match match = matches.get(session.matchCode());
         if (match != null) {
-            match.markConnected(session.playerId(), true);
+            match.markConnected(session.playerId(), true, System.currentTimeMillis());
         }
     }
 
@@ -67,23 +61,12 @@ public class SocketLifecycleListener {
             return;
         }
 
-        // Before a match starts — or once it is over — a dropped socket really is a
-        // departure, and holding the seat only strands it. Mid-match the seat is kept on
-        // purpose; see Match.leave's javadoc.
-        if (match.phase() == MatchPhase.LOBBY || match.phase() == MatchPhase.FINISHED) {
-            if (match.leave(session.playerId())) {
-                sessions.remove(session.token());
-                if (match.hasNoHumans()) {
-                    matches.remove(match.code());
-                    return;
-                }
-                broadcaster.lobby(match);
-            }
-            return;
-        }
-
-        // Mid-match: keep the seat, but stop them holding the briefing gate shut.
-        match.markConnected(session.playerId(), false);
+        // Every phase treated alike now. A dropped socket is not a departure in any of them:
+        // a refresh, a tunnel and a closed tab are indistinguishable from here, and freeing
+        // the seat immediately meant reloading the lobby page threw you out of the room —
+        // taking your token with it, so the reconnect could not even be authenticated.
+        // Task 3's grace timer is what eventually clears a seat nobody comes back to.
+        match.markConnected(session.playerId(), false, System.currentTimeMillis());
         logger.debug("{} dropped in match {}", session.playerId(), match.code());
     }
 }

@@ -156,7 +156,7 @@ public class MatchSocketController {
         Match match = require(code, principal);
         // Resyncing means their socket is back up — clears any disconnect recorded while
         // they were away, so they count against the briefing gate again.
-        match.markConnected(session(principal).playerId(), true);
+        match.markConnected(session(principal).playerId(), true, System.currentTimeMillis());
         broadcaster.lobby(match);
         broadcaster.standings(match);
         broadcaster.ready(match);

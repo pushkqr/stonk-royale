@@ -28,7 +28,7 @@ class MatchAbandonmentTest {
     @Test
     void aConnectedPlayerKeepsTheRoomAlive() {
         Match match = lobbyWith("human");
-        match.markConnected("human", true);
+        match.markConnected("human", true, 0);
         match.tick(1_000);
 
         assertThat(match.abandonedSinceMillis()).isZero();
@@ -37,10 +37,10 @@ class MatchAbandonmentTest {
     @Test
     void theClockStartsWhenTheLastSocketGoesAndResetsWhenOneComesBack() {
         Match match = lobbyWith("human");
-        match.markConnected("human", true);
+        match.markConnected("human", true, 0);
         match.tick(1_000);
 
-        match.markConnected("human", false);
+        match.markConnected("human", false, 1_500);
         match.tick(2_000);
         assertThat(match.abandonedSinceMillis()).isEqualTo(2_000);
 
@@ -48,7 +48,7 @@ class MatchAbandonmentTest {
         match.tick(3_000);
         assertThat(match.abandonedSinceMillis()).isEqualTo(2_000);
 
-        match.markConnected("human", true);
+        match.markConnected("human", true, 3_500);
         match.tick(4_000);
         assertThat(match.abandonedSinceMillis()).isZero();
     }
@@ -58,7 +58,7 @@ class MatchAbandonmentTest {
         Match match = new Match("ABAND2", new MatchConfig(1, 60, 8, 10_000, 12));
         match.join("human", "You");
         match.addBot("bot:1", "Vega");
-        match.markConnected("bot:1", true);
+        match.markConnected("bot:1", true, 0);
         match.tick(1_000);
 
         // The human never connected; three bots must not hold a practice room open.

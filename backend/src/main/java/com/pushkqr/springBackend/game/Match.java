@@ -43,6 +43,15 @@ public final class Match {
      */
     public static final long BRIEFING_FAILSAFE_MILLIS = 90_000;
 
+    /**
+     * How long a seat is held for a socket that has gone quiet.
+     *
+     * Long enough to cover a page reload, a tunnel, or a wifi handover — all of which are
+     * indistinguishable from a closed tab at the moment they happen. Short enough that a
+     * genuinely abandoned seat is gone before the room fills up around it.
+     */
+    public static final long SEAT_GRACE_MILLIS = 45_000;
+
     /** Half of MarketImpact's cap — a push worth telling the room about, not just noise. */
     private static final double FLOW_SURGE_THRESHOLD = 0.03;
 
@@ -98,12 +107,16 @@ public final class Match {
         this.referenceNotional = config.startingCash() * Position.MAX_LEVERAGE;
     }
 
-    // --- lobby ---------------------------------------------------------------
-
+    /**
+     * Seats a player.
+     *
+     * Any phase, not just the lobby. Somebody who arrives five minutes into the evening used
+     * to bounce off "Match has already started" and wait out the whole match for a rematch,
+     * which for a game people wander into is the friction that costs the most. The round in
+     * progress was planned for the roster that existed when it was planned, so a latecomer
+     * sits it out and starts scoring from the next one — see {@link #beginTrading}.
+     */
     public MatchPlayer join(String playerId, String nickname) {
-        if (phase != MatchPhase.LOBBY) {
-            throw new IllegalStateException("Match has already started");
-        }
         if (players.containsKey(playerId)) {
             return players.get(playerId);
         }
@@ -160,6 +173,44 @@ public final class Match {
             players.values().stream().findFirst().ifPresent(MatchPlayer::promoteToHost);
         }
         return true;
+    }
+
+    /**
+     * Gives up seats whose sockets have been gone longer than the grace period.
+     *
+     * Lobby and results only. Mid-match a seat is kept however long its owner is away; see
+     * {@link #leave}. Bots are skipped — they never have a socket to lose, and clearing them
+     * would empty a practice room the moment it started.
+     */
+    private void vacateExpiredSeats(long now, List<GameEvent> events) {
+        List<String> expired = new ArrayList<>();
+
+        for (MatchPlayer player : players.values()) {
+            if (player.isBot() || player.isConnected()) {
+                continue;
+            }
+            if (player.disconnectedSinceMillis() == 0) {
+                // A seat handed out over HTTP whose socket never opened. Nothing ever
+                // disconnected, so nothing started its clock — and a seat with no clock is
+                // held for the life of the process, which is exactly the ghost this grace
+                // period exists to clear. Start it the first time the loop notices.
+                player.setConnected(false, now);
+                continue;
+            }
+            if (now - player.disconnectedSinceMillis() > SEAT_GRACE_MILLIS) {
+                expired.add(player.id());
+            }
+        }
+
+        // Collected before removing any: leave() mutates the map the loop above walks.
+        for (String playerId : expired) {
+            MatchPlayer player = players.get(playerId);
+            // Reuses leave() so the host badge moves the same way a deliberate departure
+            // moves it, rather than stranding a room with no host.
+            if (player != null && leave(playerId)) {
+                events.add(new GameEvent.SeatVacated(playerId, player.nickname()));
+            }
+        }
     }
 
     /**
@@ -243,8 +294,7 @@ public final class Match {
         trackAbandonment(now);
         List<GameEvent> events = new ArrayList<>();
         switch (phase) {
-            case LOBBY, FINISHED -> {
-            }
+            case LOBBY, FINISHED -> vacateExpiredSeats(now, events);
             case BRIEFING -> {
                 if (everyPresentPlayerIsReady() || now >= phaseEndsAtMillis) {
                     enterIntermission(now, events);
@@ -405,6 +455,12 @@ public final class Match {
 
         for (MatchPlayer player : players.values()) {
             PlayerRound playerRound = player.round();
+            // Somebody who joined after this round was planned is not in it. No stack, no
+            // tip, no result — and deliberately no recorded score, because a zero would read
+            // as having played the round and broken even.
+            if (playerRound == null) {
+                continue;
+            }
             if (playerRound.hasPosition()) {
                 playerRound.close(finalPrice);
             }
@@ -469,7 +525,12 @@ public final class Match {
     }
 
     private void beginTrading(long now, List<GameEvent> events) {
-        players.values().forEach(player -> player.beginRound(config.startingCash()));
+        // Only the roster the round was planned for. A latecomer has no tip — tips are dealt
+        // in planRound — and giving them a stack without one would put somebody in a round
+        // holding none of the information it is played with.
+        players.values().stream()
+                .filter(player -> round.rumorFor(player.id()) != null)
+                .forEach(player -> player.beginRound(config.startingCash()));
         phase = MatchPhase.TRADING;
         roundStartedAtMillis = now;
         phaseEndsAtMillis = now + config.roundMillis();
@@ -505,10 +566,10 @@ public final class Match {
      * client reconnects — so this never frees the seat. It exists so a player who has
      * vanished cannot hold the briefing gate shut for everybody else.
      */
-    public void markConnected(String playerId, boolean connected) {
+    public void markConnected(String playerId, boolean connected, long now) {
         MatchPlayer player = players.get(playerId);
         if (player != null) {
-            player.setConnected(connected);
+            player.setConnected(connected, now);
         }
     }
 
@@ -620,7 +681,11 @@ public final class Match {
         if (player == null) {
             throw new IllegalArgumentException("Not in this match");
         }
-        return player.round();
+        PlayerRound playerRound = player.round();
+        if (playerRound == null) {
+            throw new IllegalStateException("You joined mid-round — you're in from the next round");
+        }
+        return playerRound;
     }
 
     // --- reads ---------------------------------------------------------------
