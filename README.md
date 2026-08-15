@@ -4,7 +4,7 @@
 
 # Stonk Royale
 
-Stonk Royale is a **nine-minute multiplayer trading game built around deception rather than
+Stonk Royale is a **ten-minute multiplayer trading game built around deception rather than
 finance**. Five rounds, one fictional asset per round, and every player is privately dealt a
 rumour about it — roughly 40% of which are true. You are never told which kind you got. The
 room is told how many true ones are out there.
@@ -359,7 +359,7 @@ Two things that bite on a second run:
 - `cp -r dist static` only creates `static/` the first time. Run it again without the `rm`
   and you get `static/dist/`, which serves nothing. Hence the `rm -rf`.
 - **Stop any running instance before repackaging.** On Windows the running JVM locks the
-  JAR, `spring-boot:repackage` cannot rename it, and the build leaves a *plain* jar in
+  JAR, `spring-boot:repackage` cannot rename it, and the build leaves a _plain_ jar in
   `target/` that `java -jar` will refuse to start.
 
 The frontend calls `/api` relatively, so the same build serves both from one origin with no
