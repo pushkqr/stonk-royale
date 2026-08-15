@@ -1,6 +1,7 @@
 package com.pushkqr.springBackend.server;
 
 import com.pushkqr.springBackend.admin.Stats;
+import com.pushkqr.springBackend.admin.TickMeter;
 import com.pushkqr.springBackend.game.GameEvent;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
@@ -41,20 +42,23 @@ public class MatchEngine {
     private final SessionRegistry sessions;
     private final MatchBroadcaster broadcaster;
     private final Stats stats;
+    private final TickMeter tickMeter;
 
     private long ticks;
 
     public MatchEngine(MatchRegistry matches, SessionRegistry sessions, MatchBroadcaster broadcaster,
-            Stats stats) {
+            Stats stats, TickMeter tickMeter) {
         this.matches = matches;
         this.sessions = sessions;
         this.broadcaster = broadcaster;
         this.stats = stats;
+        this.tickMeter = tickMeter;
     }
 
     @Scheduled(fixedRate = MatchConfig.STEP_MILLIS)
     public void tick() {
-        long now = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
+        long now = startedAt;
         ticks++;
 
         for (Match match : matches.all()) {
@@ -65,15 +69,17 @@ public class MatchEngine {
                 logger.error("Match {} failed to tick", match.code(), e);
             }
         }
+
+        tickMeter.record(System.currentTimeMillis() - startedAt);
     }
 
     private void advance(Match match, long now) {
         List<GameEvent> events = match.tick(now);
         events.forEach(event -> publish(match, event));
 
-        if (match.phase() == MatchPhase.TRADING) {
+        if (match.phase() == MatchPhase.TRADING && worthBroadcasting(match.abandonedSinceMillis())) {
             broadcaster.price(match, now);
-            if (ticks % BOARD_EVERY_N_TICKS == 0) {
+            if (boardDue(ticks, match.code())) {
                 broadcaster.board(match, now);
             }
         }
@@ -83,6 +89,37 @@ public class MatchEngine {
             sessions.removeForMatch(match.code());
             logger.info("Reaped match {} in {}", match.code(), match.phase());
         }
+    }
+
+    /**
+     * Whether anyone is actually there to receive a frame.
+     *
+     * A room with no connected human still has to tick — rounds settle, seats expire, the
+     * reaper needs its clock — but there is nobody to send the result to. Until this
+     * existed, an all-bot room whose player had closed the tab kept emitting twelve frames
+     * a second per seat for the full two minutes before it was reaped.
+     *
+     * @param abandonedSinceMillis Match.abandonedSinceMillis(): zero while a human is
+     *                             connected, otherwise when the last one left
+     */
+    static boolean worthBroadcasting(long abandonedSinceMillis) {
+        return abandonedSinceMillis == 0;
+    }
+
+    /**
+     * Whether this room's board is due on this tick.
+     *
+     * Offset by the room code, because the counter is the engine's and not the match's:
+     * with a bare {@code ticks % 5} every room on the server serialises and flushes its
+     * board on the same tick, turning steady traffic into one spike every fifth tick. The
+     * spike is what overruns the budget, not the total.
+     *
+     * floorMod rather than abs: abs(Integer.MIN_VALUE) is still negative, and a negative
+     * offset here would misbehave on some room codes and not others.
+     */
+    static boolean boardDue(long ticks, String code) {
+        int offset = Math.floorMod(code.hashCode(), BOARD_EVERY_N_TICKS);
+        return Math.floorMod(ticks - offset, (long) BOARD_EVERY_N_TICKS) == 0;
     }
 
     /**

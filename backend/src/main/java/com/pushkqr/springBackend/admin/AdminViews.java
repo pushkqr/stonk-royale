@@ -16,7 +16,17 @@ public final class AdminViews {
             long firstSeenEpochMillis) {
     }
 
-    public record Server(long uptimeMillis, long heapUsedMb, long heapMaxMb, int threads) {
+    /**
+     * @param tickWorstMillis  the slowest full pass over every match in the last minute
+     * @param tickMedianMillis the typical one
+     * @param tickBudgetMillis what a pass has before it is late for every room at once
+     * @param tickOverruns     passes over budget since boot — counted for the life of the
+     *                         process, because a burst an hour ago still tells you the
+     *                         box is at its limit
+     */
+    public record Server(long uptimeMillis, long heapUsedMb, long heapMaxMb, int threads,
+            long tickWorstMillis, long tickMedianMillis, long tickBudgetMillis,
+            long tickOverruns) {
     }
 
     public record Snapshot(List<Room> rooms, int playersNow, Lifetime lifetime, Server server,

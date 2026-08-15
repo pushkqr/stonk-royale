@@ -141,7 +141,11 @@ ghost behind holding a slot. Mid-match the seat is kept — phones lock their sc
 constantly and the client reconnects — but a player whose socket is down no longer holds the
 briefing gate shut for everyone else. The broker negotiates 10-second heartbeats in both
 directions so a socket that dies silently is noticed, and any room where nobody has been
-connected for two minutes is reaped automatically.
+connected for two minutes is reaped automatically. A room with no human watching stops
+broadcasting outbound frames entirely until someone returns, and board flushes are staggered
+across the window per room code to prevent traffic spikes. Sockets too slow to drain their
+send buffer (over 256KB or 10s stalled) are closed and recover via seat reconnection,
+protecting the shared executor.
 
 Each round cycles through three beats:
 
@@ -255,6 +259,14 @@ flowchart LR
 The `game` package has no Spring annotations and no persistence anywhere in it. `Match.tick(now)`
 takes a timestamp and returns what happened, so an entire five-round match runs in a unit
 test in a fraction of a second by passing invented timestamps — no waiting out real rounds.
+
+The whole game advances on one scheduled thread (`MatchEngine.tick()`) every 100ms. CPU and
+outbound frames (10 price + 2 board per second per seated player) define the ceiling:
+roughly 100 rooms run comfortably and 150 is the ceiling on 2 vCPU. Memory is not a
+constraint (~100–150KB per match). When capacity is reached, `MatchRegistry` caps creation
+at `MAX_LIVE_MATCHES = 150` with an honest busy message rather than letting new rooms
+degrade existing games mid-round. The ceiling is monitored and retuned using `tickWorstMillis`
+on the admin panel.
 
 ---
 
@@ -429,7 +441,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-165 tests, all passing. They assert **design targets rather than implementation details**:
+175 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
@@ -453,6 +465,10 @@ cd backend && ./mvnw test
 - Latecomers can take a seat mid-match, safely sit out the round in progress without crashing
   round settlement or taking score damage, and enter trading from the next round
 - Rooms default to private and can be made public to allow quick matchmaking without compromising game phase rules
+- Rooms with no connected human stop broadcasting outbound frames to conserve CPU and bandwidth
+- Leaderboard flushes are desynchronised across the window based on room code hash to prevent traffic spikes
+- `TickMeter` measures rolling worst-case and median pass durations against the 100ms budget
+- `MAX_LIVE_MATCHES = 150` caps room creation and fails gracefully with a 409 when the server is full
 
 > **The socket layer has no automated tests.** `MatchEngine`, `MatchBroadcaster`,
 > `MatchSocketController` and `StompAuthInterceptor` were verified by driving a real headless

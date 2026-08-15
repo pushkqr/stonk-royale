@@ -37,15 +37,17 @@ public class Stats {
 
     private final MatchRegistry matches;
     private final StatsStore store;
+    private final TickMeter tickMeter;
     private final Totals totals;
     private final Deque<Telemetry> reports = new ArrayDeque<>();
 
     private final long startedAtMillis = System.currentTimeMillis();
     private boolean dirty;
 
-    public Stats(MatchRegistry matches, StatsStore store) {
+    public Stats(MatchRegistry matches, StatsStore store, TickMeter tickMeter) {
         this.matches = matches;
         this.store = store;
+        this.tickMeter = tickMeter;
         this.totals = store.load();
         if (totals.firstSeenEpochMillis == 0) {
             totals.firstSeenEpochMillis = System.currentTimeMillis();
@@ -128,7 +130,11 @@ public class Stats {
                         System.currentTimeMillis() - startedAtMillis,
                         usedMb,
                         runtime.maxMemory() / (1024 * 1024),
-                        Thread.activeCount()),
+                        Thread.activeCount(),
+                        tickMeter.worstMillis(),
+                        tickMeter.medianMillis(),
+                        tickMeter.budgetMillis(),
+                        tickMeter.overruns()),
                 new ArrayList<>(reports));
     }
 

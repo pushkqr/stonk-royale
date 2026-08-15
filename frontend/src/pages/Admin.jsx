@@ -159,7 +159,8 @@ export default function Admin() {
 
       <p className="footnote muted">
         Up {duration(server.uptimeMillis)} · heap {server.heapUsedMb}/{server.heapMaxMb}MB ·{" "}
-        {server.threads} threads · counting since{" "}
+        {server.threads} threads · tick {server.tickWorstMillis}/{server.tickBudgetMillis}ms worst ·{" "}
+        {server.tickOverruns} over · counting since{" "}
         {new Date(lifetime.firstSeenEpochMillis).toLocaleDateString()}
       </p>
     </main>
