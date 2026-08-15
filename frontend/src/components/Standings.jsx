@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useState } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { money, pct, toneOf } from "../lib/format";
 
 /**
@@ -7,6 +8,28 @@ import { money, pct, toneOf } from "../lib/format";
  * identical table.
  */
 function Standings({ rows, meId }) {
+  const [prevRows, setPrevRows] = useState(rows);
+  const [deltas, setDeltas] = useState({});
+
+  if (rows !== prevRows) {
+    const nextDeltas = {};
+    const prevMap = new Map();
+    prevRows.forEach((r, idx) => prevMap.set(r.playerId, idx + 1));
+
+    rows.forEach((r, idx) => {
+      const currentRank = idx + 1;
+      if (prevMap.has(r.playerId)) {
+        const diff = prevMap.get(r.playerId) - currentRank;
+        if (diff !== 0) {
+          nextDeltas[r.playerId] = diff;
+        }
+      }
+    });
+
+    setPrevRows(rows);
+    setDeltas(nextDeltas);
+  }
+
   return (
     <section className="panel stack rail">
       <header className="panel-head">
@@ -19,7 +42,24 @@ function Standings({ rows, meId }) {
             key={row.playerId}
             className={`rank ${row.playerId === meId ? "rank-me" : ""} ${row.left ? "is-away" : ""}`}
           >
-            <span className="rank-no display">{i + 1}</span>
+            <div className="rank-num-col">
+              <span className="rank-no display">{i + 1}</span>
+              {deltas[row.playerId] != null && deltas[row.playerId] > 0 && (
+                <span className="rank-shift is-up" title={`Climbed ${deltas[row.playerId]} places`}>
+                  <ChevronUp size={10} strokeWidth={3} />
+                  {deltas[row.playerId] > 1 ? deltas[row.playerId] : ""}
+                </span>
+              )}
+              {deltas[row.playerId] != null && deltas[row.playerId] < 0 && (
+                <span
+                  className="rank-shift is-down"
+                  title={`Dropped ${Math.abs(deltas[row.playerId])} places`}
+                >
+                  <ChevronDown size={10} strokeWidth={3} />
+                  {Math.abs(deltas[row.playerId]) > 1 ? Math.abs(deltas[row.playerId]) : ""}
+                </span>
+              )}
+            </div>
 
             {/* The live round score leads, because it's the number that moves. The
                 cumulative total only appears once there's a previous round in it. */}

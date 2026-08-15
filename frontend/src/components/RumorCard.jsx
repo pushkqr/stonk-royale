@@ -14,7 +14,11 @@ export default function RumorCard({ text, stamp, claimedRegime, compact = false 
   if (!text) return null;
 
   return (
-    <figure className={`rumor ${stamp ? "rumor-stamped" : ""} ${compact ? "rumor-compact" : ""}`}>
+    <figure
+      className={`rumor ${stamp ? "rumor-stamped rumor-reveal-flip" : ""} ${
+        compact ? "rumor-compact" : ""
+      }`}
+    >
       <figcaption className="eyebrow rumor-eyebrow">Word on the street</figcaption>
       <blockquote className="rumor-text">{text}</blockquote>
 

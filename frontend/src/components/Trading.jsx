@@ -63,6 +63,20 @@ export default function Trading() {
     }
   }, [feed, session.playerId]);
 
+  const [surge, setSurge] = useState(null);
+  const seenSurge = useRef(0);
+  useEffect(() => {
+    const flows = feed.filter((f) => f.kind === "FLOW");
+    const latest = flows.at(-1);
+    if (latest && latest.id > seenSurge.current) {
+      seenSurge.current = latest.id;
+      const isBuying = latest.text?.includes("PILING IN");
+      setSurge(isBuying ? "pump" : "dump");
+      const timer = setTimeout(() => setSurge(null), 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [feed]);
+
   return (
     <div className="table">
       <header className="strip">
@@ -92,7 +106,7 @@ export default function Trading() {
         roundIndex={phase?.roundIndex}
       />
 
-      <section className="panel stack floor">
+      <section className={`panel stack floor ${surge ? `is-surging-${surge}` : ""}`}>
         <div className="floor-price">
           <span className={`display price-now ${move >= 0 ? "pump" : "dump"}`}>
             {fmtPrice(live)}

@@ -320,6 +320,26 @@
   }
 }
 
+.rumor-reveal-flip {
+  animation: cardRevealFlip 0.55s cubic-bezier(0.2, 1.2, 0.3, 1) both;
+  transform-origin: center center;
+}
+
+@keyframes cardRevealFlip {
+  0% {
+    opacity: 0.4;
+    transform: perspective(1000px) rotateY(-80deg) rotate(-1.6deg) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(1000px) rotateY(10deg) rotate(-1.6deg) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) rotateY(0deg) rotate(-1.6deg) scale(1);
+  }
+}
+
 .rumor-eyebrow {
   color: #8a5a2b;
   margin: 0 0 0.5rem;
@@ -688,6 +708,18 @@
   grid-area: floor;
 }
 
+.panel.floor.is-surging-pump {
+  border-color: var(--pump);
+  box-shadow: 0 0 16px rgba(33, 224, 122, 0.25), inset 0 0 12px rgba(33, 224, 122, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel.floor.is-surging-dump {
+  border-color: var(--dump);
+  box-shadow: 0 0 16px rgba(255, 59, 84, 0.25), inset 0 0 12px rgba(255, 59, 84, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 .floor-price {
   display: flex;
   align-items: baseline;
@@ -737,7 +769,32 @@
 .rank-no {
   font-size: 1.1rem;
   color: var(--haze);
-  min-width: 1.1rem;
+}
+
+.rank-num-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+}
+
+.rank-shift {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--data);
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: -0.1rem;
+}
+
+.rank-shift.is-up {
+  color: var(--pump);
+}
+
+.rank-shift.is-down {
+  color: var(--dump);
 }
 
 .rank-body {
