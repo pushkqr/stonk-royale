@@ -686,6 +686,113 @@
   font-style: italic;
 }
 
+.dossier-suspects {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--edge);
+  padding-top: 0.5rem;
+}
+
+.dossier-subhead {
+  margin: 0 0 0.4rem;
+  color: var(--haze);
+  font-size: 0.65rem;
+}
+
+.suspect-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.suspect-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.suspect-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suspect-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.suspect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-family: var(--data);
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  color: var(--haze);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.suspect-btn.btn-trust.is-active {
+  background: rgba(33, 224, 122, 0.18);
+  border-color: var(--pump);
+  color: var(--pump);
+}
+
+.suspect-btn.btn-sus.is-active {
+  background: rgba(255, 59, 84, 0.18);
+  border-color: var(--dump);
+  color: var(--dump);
+}
+
+.badge-suspect {
+  display: inline-block;
+  font-family: var(--data);
+  font-size: 0.52rem;
+  font-weight: 800;
+  padding: 0.05rem 0.25rem;
+  border-radius: 2px;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.badge-trust {
+  background: rgba(33, 224, 122, 0.15);
+  color: var(--pump);
+  border: 1px solid var(--pump);
+}
+
+.badge-sus {
+  background: rgba(255, 59, 84, 0.15);
+  color: var(--dump);
+  border: 1px solid var(--dump);
+}
+
+.badge-caught {
+  background: var(--dump);
+  color: var(--void-deep);
+  font-weight: 900;
+}
+
+.badge-betrayed {
+  background: #ff8800;
+  color: var(--void-deep);
+  font-weight: 900;
+}
+
 /* On the intermission the wire sits in a centred column instead of a grid rail, so it needs
    its own width and a ceiling on the backlog — otherwise a busy round pushes the tip card
    and the countdown off the screen. */

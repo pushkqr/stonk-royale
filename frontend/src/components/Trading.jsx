@@ -12,7 +12,21 @@ import TradeDeck from "./TradeDeck";
 import Wire from "./Wire";
 
 export default function Trading() {
-  const { phase, board, feed, me, session, lobby, rumor, open, close, say, serverNow } = useMatch();
+  const {
+    phase,
+    board,
+    feed,
+    me,
+    session,
+    lobby,
+    rumor,
+    open,
+    close,
+    say,
+    serverNow,
+    suspects,
+    toggleSuspect,
+  } = useMatch();
   const { tick, series } = usePrice();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
@@ -97,13 +111,17 @@ export default function Trading() {
         </div>
       </header>
 
-      <Standings rows={board} meId={session.playerId} />
+      <Standings rows={board} meId={session.playerId} suspects={suspects} />
 
       <Dossier
         rumor={rumor}
         truthfulTips={phase?.truthfulTips}
         feed={feed}
         roundIndex={phase?.roundIndex}
+        players={board}
+        meId={session.playerId}
+        suspects={suspects}
+        onToggleSuspect={toggleSuspect}
       />
 
       <section className={`panel stack floor ${surge ? `is-surging-${surge}` : ""}`}>
@@ -136,7 +154,7 @@ export default function Trading() {
         />
       </section>
 
-      <Wire feed={feed} onSay={say} disabled={false} />
+      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} />
 
       {jolt > 0 && <div className="jolt" key={jolt} aria-hidden="true" />}
     </div>

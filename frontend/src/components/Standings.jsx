@@ -7,7 +7,7 @@ import { money, pct, toneOf } from "../lib/format";
  * The board behind it only lands twice a second, so most of those renders would redraw an
  * identical table.
  */
-function Standings({ rows, meId }) {
+function Standings({ rows, meId, suspects = {} }) {
   const [prevRows, setPrevRows] = useState(rows);
   const [deltas, setDeltas] = useState({});
 
@@ -66,6 +66,12 @@ function Standings({ rows, meId }) {
             <span className="rank-body">
               <span className="rank-name">
                 {row.nickname}
+                {suspects[row.playerId] === "TRUSTED" && (
+                  <span className="badge-suspect badge-trust">TRUST</span>
+                )}
+                {suspects[row.playerId] === "SUS" && (
+                  <span className="badge-suspect badge-sus">SUS</span>
+                )}
                 {row.bot && <span className="tag tag-bot">BOT</span>}
                 {row.left && <span className="tag muted">left</span>}
               </span>

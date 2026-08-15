@@ -46,6 +46,7 @@ export function MatchProvider({ session, children }) {
   const [lobby, setLobby] = useState(null);
   const [error, setError] = useState(null);
   const [readyState, setReadyState] = useState(null);
+  const [suspects, setSuspects] = useState({});
 
   const clientRef = useRef(null);
   const offsetRef = useRef(0);
@@ -115,6 +116,7 @@ export function MatchProvider({ session, children }) {
           setBoard([]);
           setFeed([]);
           setReadyState(null);
+          setSuspects({});
         }
       });
 
@@ -297,6 +299,18 @@ export function MatchProvider({ session, children }) {
     publish("close");
   }, [publish]);
 
+  const toggleSuspect = useCallback((targetPlayerId, tag) => {
+    setSuspects((prev) => {
+      const current = prev[targetPlayerId];
+      if (current === tag) {
+        const next = { ...prev };
+        delete next[targetPlayerId];
+        return next;
+      }
+      return { ...prev, [targetPlayerId]: tag };
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       session,
@@ -324,10 +338,12 @@ export function MatchProvider({ session, children }) {
       addBot,
       configure,
       quit,
+      suspects,
+      toggleSuspect,
     }),
     [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, lobby,
       error, me, serverNow, dismissError, quit, readyState, ready, start, rematch, open,
-      close, say, kick, addBot, configure],
+      close, say, kick, addBot, configure, suspects, toggleSuspect],
   );
 
   const priceValue = useMemo(() => ({ tick, series }), [tick, series]);

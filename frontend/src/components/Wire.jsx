@@ -47,7 +47,7 @@ const QUICK_ICONS = [
  * and re-rendering a text input the player may be mid-sentence in, ten times a second, to
  * show a feed that has not changed, is pure cost.
  */
-function Wire({ feed, onSay, disabled, className = "" }) {
+function Wire({ feed, onSay, disabled, suspects = {}, className = "" }) {
   const [draft, setDraft] = useState("");
   const listRef = useRef(null);
 
@@ -81,7 +81,25 @@ function Wire({ feed, onSay, disabled, className = "" }) {
           <li key={item.id} className={`wire-item wire-${item.kind.toLowerCase()}`}>
             {item.kind === "CHAT" ? (
               <>
-                <span className="wire-name">{item.nickname}</span>
+                <span className="wire-name">
+                  {item.nickname}
+                  {suspects[item.playerId] === "TRUSTED" && (
+                    <span
+                      className="badge-suspect badge-trust"
+                      title="You marked this player as Trusted"
+                    >
+                      TRUST
+                    </span>
+                  )}
+                  {suspects[item.playerId] === "SUS" && (
+                    <span
+                      className="badge-suspect badge-sus"
+                      title="You marked this player as Suspect"
+                    >
+                      SUS
+                    </span>
+                  )}
+                </span>
                 <span className="wire-text">{item.text}</span>
               </>
             ) : (

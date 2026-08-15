@@ -5,7 +5,7 @@
  * Shown at the next intermission, and again on the results screen for the final round —
  * which has no intermission after it, and is the round people lie hardest in.
  */
-export default function Ledger({ results, meId }) {
+export default function Ledger({ results, meId, suspects = {} }) {
   // Not worth showing if nobody went on record: a table of dashes says nothing.
   if (!results || results.length < 2 || !results.some((r) => r.tipClaim)) return null;
 
@@ -26,6 +26,7 @@ export default function Ledger({ results, meId }) {
       <tbody>
         {results.map((row) => {
           const lied = !!row.tipClaim && row.tipClaim !== row.rumorClaimed;
+          const userTag = suspects[row.playerId];
           return (
             <tr
               key={row.playerId}
@@ -33,6 +34,16 @@ export default function Ledger({ results, meId }) {
             >
               <td className="ledger-name">
                 {row.nickname}
+                {userTag === "SUS" && (
+                  <span className={`badge-suspect ${lied ? "badge-caught" : "badge-sus"}`}>
+                    {lied ? "Caught!" : "Sus"}
+                  </span>
+                )}
+                {userTag === "TRUSTED" && (
+                  <span className={`badge-suspect ${lied ? "badge-betrayed" : "badge-trust"}`}>
+                    {lied ? "Betrayed!" : "Trusted"}
+                  </span>
+                )}
                 {row.bot && <span className="tag tag-bot">BOT</span>}
               </td>
               <td className="mono">{row.tipClaim ?? "—"}</td>

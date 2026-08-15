@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { ShieldCheck, EyeOff } from "lucide-react";
 import RumorCard from "./RumorCard";
 import { tipCountLine } from "../lib/regime";
 
@@ -24,8 +25,18 @@ import { tipCountLine } from "../lib/regime";
  * meant to persist. So headlines are tagged with the round they fired in at ingest, and
  * `roundIndex` scopes the list to the round on screen rather than the whole match.
  */
-function Dossier({ rumor, truthfulTips, feed, roundIndex }) {
+function Dossier({
+  rumor,
+  truthfulTips,
+  feed,
+  roundIndex,
+  players = [],
+  meId,
+  suspects = {},
+  onToggleSuspect,
+}) {
   const news = feed.filter((item) => item.kind === "NEWS" && item.round === roundIndex);
+  const opponents = players.filter((p) => p.playerId !== meId && !p.left);
 
   return (
     <section className="panel stack dossier">
@@ -47,6 +58,7 @@ function Dossier({ rumor, truthfulTips, feed, roundIndex }) {
           <ul className="dossier-news-list">
             {/* Newest first: the most recent headline is the one still worth acting on. */}
             {news
+              .slice()
               .reverse()
               .map((item) => (
                 <li key={item.id} className="dossier-headline">
@@ -56,8 +68,46 @@ function Dossier({ rumor, truthfulTips, feed, roundIndex }) {
           </ul>
         )}
       </div>
+
+      {opponents.length > 0 && (
+        <div className="dossier-suspects">
+          <p className="eyebrow dossier-subhead">Suspect Tracker</p>
+          <ul className="suspect-list">
+            {opponents.map((p) => {
+              const status = suspects[p.playerId];
+              return (
+                <li key={p.playerId} className="suspect-row">
+                  <span className="suspect-name">
+                    {p.nickname}
+                    {p.bot && <span className="tag tag-bot">BOT</span>}
+                  </span>
+                  <div className="suspect-actions">
+                    <button
+                      type="button"
+                      className={`suspect-btn btn-trust ${status === "TRUSTED" ? "is-active" : ""}`}
+                      onClick={() => onToggleSuspect?.(p.playerId, "TRUSTED")}
+                      title="Mark as Trusted"
+                    >
+                      <ShieldCheck size={11} strokeWidth={2.5} /> Trust
+                    </button>
+                    <button
+                      type="button"
+                      className={`suspect-btn btn-sus ${status === "SUS" ? "is-active" : ""}`}
+                      onClick={() => onToggleSuspect?.(p.playerId, "SUS")}
+                      title="Mark as Suspect"
+                    >
+                      <EyeOff size={11} strokeWidth={2.5} /> Sus
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
 
 export default memo(Dossier);
+

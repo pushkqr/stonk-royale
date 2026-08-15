@@ -11,7 +11,7 @@ import Wire from "./Wire";
 const HOLD_ON_REVEAL_MS = 5000;
 
 export default function Intermission() {
-  const { phase, rumor, lastRumor, settled, standings, session, serverNow, feed, say } =
+  const { phase, rumor, lastRumor, settled, standings, session, serverNow, feed, say, suspects } =
     useMatch();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
@@ -67,7 +67,7 @@ export default function Intermission() {
           )}
 
           {/* The count told the room how many tips were real. This is where it gets settled. */}
-          <Ledger results={settled.results} meId={session.playerId} />
+          <Ledger results={settled.results} meId={session.playerId} suspects={suspects} />
         </>
       ) : (
         <>
@@ -107,7 +107,7 @@ export default function Intermission() {
 
       {/* Outside the beat switch on purpose: it stays mounted across the reveal, so nobody
           loses a half-typed accusation the moment the ledger names them. */}
-      <Wire feed={feed} onSay={say} disabled={false} className="wire-talk" />
+      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} className="wire-talk" />
     </main>
   );
 }
