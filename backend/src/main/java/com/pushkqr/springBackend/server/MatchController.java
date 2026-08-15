@@ -2,12 +2,14 @@ package com.pushkqr.springBackend.server;
 
 import com.pushkqr.springBackend.admin.Stats;
 import com.pushkqr.springBackend.game.Match;
+import com.pushkqr.springBackend.game.MatchPhase;
 import com.pushkqr.springBackend.game.MatchPlayer;
 import com.pushkqr.springBackend.game.model.MatchConfig;
 import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -38,6 +40,7 @@ public class MatchController {
     public Views.JoinResult create(@RequestBody Requests.Create request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         Match match = matches.create(configFor(request));
+        match.setVisibility(Boolean.TRUE.equals(request.isPublic()));
         stats.matchCreated();
         return seat(match, request.nickname(), authorization, request.deviceId());
     }
@@ -72,6 +75,60 @@ public class MatchController {
         }
         broadcaster.phase(match);
         return seat;
+    }
+
+    /**
+     * Drops a player into a game without needing a code from anybody.
+     *
+     * Joins the fullest public room still waiting to start, or makes one if there is none.
+     * A new one is seated with bots on purpose: an empty lobby is a worse answer than no
+     * button at all, and because the room stays public and unstarted, the next person to
+     * press this lands in it rather than in a room of their own.
+     */
+    @PostMapping("/quick")
+    public Views.JoinResult quick(@RequestBody Requests.Join request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        Match waiting = openPublicRoom();
+        if (waiting != null) {
+            try {
+                Views.JoinResult seat = seat(waiting, request.nickname(), authorization,
+                        request.deviceId());
+                broadcaster.lobby(waiting);
+                return seat;
+            } catch (IllegalStateException full) {
+                // Somebody took the last chair between the scan and the sit. Rare, and not
+                // worth locking the registry over — fall through and make a fresh room.
+            }
+        }
+
+        Match match = matches.create(MatchConfig.standard());
+        match.setVisibility(true);
+        stats.matchCreated();
+        Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId());
+        seatBots(match, seat.nickname());
+        return seat;
+    }
+
+    /**
+     * The public room worth joining, or null.
+     *
+     * Lobby only — quick match never drops somebody into a round already running, even
+     * though joining mid-match is allowed generally. Fullest first, so a group pressing the
+     * button in the same minute converges on one room instead of scattering into several
+     * and each playing alone against bots.
+     */
+    private Match openPublicRoom() {
+        return matches.all().stream()
+                .filter(Match::isPublic)
+                .filter(match -> match.phase() == MatchPhase.LOBBY)
+                .filter(match -> match.players().size() < match.config().maxPlayers())
+                .max(Comparator.comparingLong(MatchController::humanCount))
+                .orElse(null);
+    }
+
+    /** Bots do not count towards how worth joining a room is — they are the filler. */
+    private static long humanCount(Match match) {
+        return match.players().stream().filter(player -> !player.isBot()).count();
     }
 
     /**

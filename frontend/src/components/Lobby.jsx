@@ -23,6 +23,7 @@ export default function Lobby() {
         intermissionSeconds: lobby.intermissionSeconds,
         maxPlayers: lobby.maxPlayers,
         startingCash: lobby.startingCash,
+        isPublic: lobby.isPublic,
       });
     }
   }
@@ -81,29 +82,35 @@ export default function Lobby() {
           <h2 className="display pane-title">
             In the room ({players.length}/{lobby?.maxPlayers ?? 12})
           </h2>
+          {lobby?.isPublic && <span className="tag">Public</span>}
         </div>
 
         <ul className="lobby-list">
-          {players.map((player) => (
-            <li key={player.playerId} className="lobby-player">
-              <span className="lobby-name">{player.nickname}</span>
-              {player.bot && <span className="tag tag-bot">BOT</span>}
-              {player.host && <span className="tag tag-scream">Host</span>}
-              {player.playerId === session.playerId && <span className="tag">You</span>}
-              {/* Host only, and never against themselves — Leave is how you remove you. */}
-              {isHost && player.playerId !== session.playerId && (
-                <button
-                  type="button"
-                  className="lobby-kick"
-                  onClick={() => kick(player.playerId)}
-                  title={`Remove ${player.nickname}`}
-                  aria-label={`Remove ${player.nickname}`}
-                >
-                  ✕
-                </button>
-              )}
-            </li>
-          ))}
+          {players.map((player) => {
+            // Bots have no socket to lose, so "away" is not a state they can be in.
+            const away = !player.connected && !player.bot;
+            return (
+              <li key={player.playerId} className={`lobby-player ${away ? "is-away" : ""}`}>
+                <span className="lobby-name">{player.nickname}</span>
+                {player.bot && <span className="tag tag-bot">BOT</span>}
+                {away && <span className="tag muted">away</span>}
+                {player.host && <span className="tag tag-scream">Host</span>}
+                {player.playerId === session.playerId && <span className="tag">You</span>}
+                {/* Host only, and never against themselves — Leave is how you remove you. */}
+                {isHost && player.playerId !== session.playerId && (
+                  <button
+                    type="button"
+                    className="lobby-kick"
+                    onClick={() => kick(player.playerId)}
+                    title={`Remove ${player.nickname}`}
+                    aria-label={`Remove ${player.nickname}`}
+                  >
+                    ✕
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         {isHost ? (

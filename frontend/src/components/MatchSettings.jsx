@@ -77,6 +77,22 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
               Cosmetic — scores are a percentage, so this only changes the numbers on screen.
             </span>
           </label>
+
+          <div className="setting">
+            <label className="setting-check">
+              <input
+                type="checkbox"
+                checked={settings.isPublic ?? false}
+                onChange={(e) => set({ isPublic: e.target.checked })}
+              />
+              <span className="eyebrow">Let strangers find this room</span>
+            </label>
+            {/* What "public" costs, said before they tick it rather than after. */}
+            <span className="setting-note muted">
+              Anyone pressing “Find me a game” can land here. Off means the code or the link,
+              and nothing else.
+            </span>
+          </div>
         </div>
       )}
     </div>

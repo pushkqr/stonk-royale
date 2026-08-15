@@ -10,6 +10,7 @@ export const DEFAULTS = {
   intermissionSeconds: 25,
   maxPlayers: 12,
   startingCash: 10_000,
+  isPublic: false,
 };
 
 export const LIMITS = {

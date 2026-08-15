@@ -12,10 +12,11 @@ public final class Requests {
      *
      * @param deviceId a value the browser generated and keeps, used only to count how many
      *                 distinct people have played. Never used to identify anyone in game.
+     * @param isPublic whether quick match may put strangers in this room. Null means no.
      */
     public record Create(String nickname, Integer rounds, Integer roundSeconds,
             Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
-            String deviceId) {
+            String deviceId, Boolean isPublic) {
     }
 
     public record Join(String nickname, String deviceId, Boolean skipBriefing) {
@@ -42,8 +43,8 @@ public final class Requests {
     public record Kick(String playerId) {
     }
 
-    /** Host-only, lobby-only retune. All five values are required — the client sends the full set. */
+    /** Host-only, lobby-only retune. All values are required — the client sends the full set. */
     public record Config(int rounds, int roundSeconds, int intermissionSeconds,
-            double startingCash, int maxPlayers) {
+            double startingCash, int maxPlayers, boolean isPublic) {
     }
 }

@@ -119,6 +119,26 @@ class MatchTest {
     }
 
     @Test
+    void aRoomIsPrivateUnlessItIsAskedNotToBe() {
+        Match match = new Match("VIS1", MatchConfig.standard());
+
+        // Code-only is the default, and the only way a room becomes discoverable is somebody
+        // deciding it should be.
+        assertThat(match.isPublic()).isFalse();
+    }
+
+    @Test
+    void aRoomCanBeOpenedUpAndClosedAgain() {
+        Match match = new Match("VIS2", MatchConfig.standard());
+
+        match.setVisibility(true);
+        assertThat(match.isPublic()).isTrue();
+
+        match.setVisibility(false);
+        assertThat(match.isPublic()).isFalse();
+    }
+
+    @Test
     void theHostCanRetuneTheMatchFromTheLobby() {
         Match match = lobbyOfTwo("CONFIG1");
         match.updateConfig(new MatchConfig(7, 120, 30, 50_000, 8));

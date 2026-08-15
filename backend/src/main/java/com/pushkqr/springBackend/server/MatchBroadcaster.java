@@ -122,8 +122,9 @@ public class MatchBroadcaster {
                 match.config().startingCash(),
                 match.config().maxPlayers(),
                 match.players().stream()
-                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot()))
-                        .toList());
+                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot(), p.isConnected()))
+                        .toList(),
+                match.isPublic());
     }
 
     /**

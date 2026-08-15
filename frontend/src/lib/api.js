@@ -37,6 +37,10 @@ export const practiceMatch = (nickname, token) =>
     token,
   );
 
+/** Joins a public room that is waiting, or opens one already populated with bots. */
+export const quickMatch = (nickname, token) =>
+  post("/match/quick", { nickname, deviceId: deviceId() }, token);
+
 /**
  * How the game is running on this device. Fire-and-forget: a failed report must never
  * surface to a player or interrupt a round, so every error is swallowed.

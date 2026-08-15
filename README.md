@@ -17,18 +17,23 @@ account to create, and no market data feed to depend on.
 
 ---
 
-## What it does
-
 - **Nobody signs up.** A player types a nickname and is in. Joining returns a session token
   that authenticates every later socket message, so guests get real identity without an
   account. Firebase sign-in exists, is entirely optional, and is absent from the UI unless
   configured — a login wall is the single biggest reason someone never tries a browser game.
 
+- **Public rooms and quick match.** A room is code-only by default and private by obscurity.
+  A host can open the room to strangers via a public toggle. Quick match drops players straight
+  into the fullest waiting public room, or creates a fresh public room populated with bots so
+  unaccompanied players are never stranded in an empty lobby. Arriving humans simply join the
+  table alongside bots without disruptive evictions.
+
 - **Seats survive reloads, and abandoned rooms are reaped.** A disconnected socket in the
   lobby or results screen enters a 45-second grace window before the seat and token are freed,
   because a page reload, a cellular tunnel, or a wifi handover look identical to a closed
-  window at the moment they happen. Mid-match seats are kept permanently so standings stay
-  consistent. Empty or abandoned rooms are reaped after two minutes of inactivity.
+  window at the moment they happen. Disconnected players are shown as away in the lobby. Mid-match
+  seats are kept permanently so standings stay consistent. Empty or abandoned rooms are reaped
+  after two minutes of inactivity.
 
 - **Latecomers can take a seat while the match is running.** Turning up after the match has
   started seats you immediately instead of bouncing you to the home page. The latecomer sits out
@@ -422,7 +427,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-162 tests, all passing. They assert **design targets rather than implementation details**:
+165 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
@@ -445,6 +450,7 @@ cd backend && ./mvnw test
   reaping back
 - Latecomers can take a seat mid-match, safely sit out the round in progress without crashing
   round settlement or taking score damage, and enter trading from the next round
+- Rooms default to private and can be made public to allow quick matchmaking without compromising game phase rules
 
 > **The socket layer has no automated tests.** `MatchEngine`, `MatchBroadcaster`,
 > `MatchSocketController` and `StompAuthInterceptor` were verified by driving a real headless

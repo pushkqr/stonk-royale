@@ -144,6 +144,7 @@ public class MatchSocketController {
         match.updateConfig(new MatchConfig(
                 request.rounds(), request.roundSeconds(), request.intermissionSeconds(),
                 request.startingCash(), request.maxPlayers()));
+        match.setVisibility(request.isPublic());
         broadcaster.lobby(match);
     }
 

@@ -72,6 +72,16 @@ public final class Match {
     private double referenceNotional;
 
     private MatchPhase phase = MatchPhase.LOBBY;
+
+    /**
+     * Whether this room can be found by somebody who does not have its code.
+     *
+     * False unless asked otherwise. A five-character code out of thirty-two symbols is
+     * already thirty-three million combinations, so a private room is private by not being
+     * listed anywhere — there is nothing else to enforce.
+     */
+    private boolean isPublic;
+
     private int roundIndex = -1;
     private long phaseEndsAtMillis;
     private long roundStartedAtMillis;
@@ -730,6 +740,18 @@ public final class Match {
 
     public MatchPhase phase() {
         return phase;
+    }
+
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    /**
+     * Deliberately allowed in any phase. It changes nothing about how a match plays — only
+     * whether quick match can see it — so there is no state it could contradict.
+     */
+    public void setVisibility(boolean value) {
+        isPublic = value;
     }
 
     public int roundIndex() {

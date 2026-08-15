@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createMatch, joinMatch, practiceMatch } from "../lib/api";
+import { createMatch, joinMatch, practiceMatch, quickMatch } from "../lib/api";
 import { authAvailable, signIn } from "../lib/auth";
 import { saveSeat } from "../lib/session";
 import { DEFAULTS } from "../lib/matchSettings";
@@ -99,6 +99,14 @@ export default function Home() {
           </button>
         </form>
 
+        <button
+          className="btn btn-big"
+          onClick={() => go(() => quickMatch(nickname.trim(), token))}
+          disabled={busy}
+        >
+          Find me a game
+        </button>
+
         {error && <p className="notice notice-bad">{error}</p>}
 
         {/* Without this, arriving with nobody else around is a dead end — the lobby needs
@@ -108,7 +116,7 @@ export default function Home() {
           onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
           disabled={busy}
         >
-          Or try one round on your own
+          Or play a few rounds on your own
         </button>
 
         {authAvailable && (

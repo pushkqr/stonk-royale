@@ -76,12 +76,18 @@ public final class Views {
             double bestRound, boolean bot) {
     }
 
-    public record LobbyPlayer(String playerId, String nickname, boolean host, boolean bot) {
+    /**
+     * @param connected false while this seat's socket is down. The seat is held for a grace
+     *                  period so a refresh does not lose it, and the room needs to say so —
+     *                  otherwise a player who reopened in a new tab looks like a duplicate.
+     */
+    public record LobbyPlayer(String playerId, String nickname, boolean host, boolean bot,
+            boolean connected) {
     }
 
     public record Lobby(String code, String phase, int totalRounds, int roundSeconds,
             int intermissionSeconds, double startingCash, int maxPlayers,
-            List<LobbyPlayer> players) {
+            List<LobbyPlayer> players, boolean isPublic) {
     }
 
     public record JoinResult(String code, String playerId, String nickname, String token, boolean host) {
