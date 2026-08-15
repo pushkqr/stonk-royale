@@ -18,13 +18,38 @@ const STORE_KEY = "stonk:muted";
 let ctx = null;
 let bus = null;
 let noiseBuffer = null;
-let muted = localStorage.getItem(STORE_KEY) === "1";
+let muted = typeof localStorage !== "undefined" ? localStorage.getItem(STORE_KEY) === "1" : false;
 
 export const isMuted = () => muted;
 
 export function setMuted(next) {
   muted = next;
-  localStorage.setItem(STORE_KEY, next ? "1" : "0");
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(STORE_KEY, next ? "1" : "0");
+  }
+}
+
+export function toggle() {
+  setMuted(!muted);
+  return muted;
+}
+
+// Auto-unlock AudioContext on first gesture anywhere on screen
+if (typeof window !== "undefined") {
+  const unlockAudio = () => {
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    } else if (!ctx && !muted) {
+      audio();
+    }
+    window.removeEventListener("click", unlockAudio);
+    window.removeEventListener("touchstart", unlockAudio);
+    window.removeEventListener("keydown", unlockAudio);
+  };
+
+  window.addEventListener("click", unlockAudio, { passive: true });
+  window.addEventListener("touchstart", unlockAudio, { passive: true });
+  window.addEventListener("keydown", unlockAudio, { passive: true });
 }
 
 /** Soft knee rather than a hard ceiling, so a stacked cue distorts instead of cracking. */
@@ -171,6 +196,27 @@ export const sound = {
     side === "SHORT"
       ? note({ from: 680, to: 300, duration: 0.14, gain: 0.05, detune: 9 })
       : note({ from: 300, to: 720, duration: 0.14, gain: 0.05, detune: 9 }),
+
+  /** Subtle pitch sweep on trade execution. */
+  trade: (isLong = true) => {
+    const a = audio();
+    if (!a) return;
+    const now = a.currentTime;
+    const osc = a.createOscillator();
+    const gain = a.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(isLong ? 320 : 440, now);
+    osc.frequency.exponentialRampToValueAtTime(isLong ? 580 : 220, now + 0.08);
+
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    osc.connect(gain);
+    gain.connect(bus);
+    osc.start(now);
+    osc.stop(now + 0.09);
+  },
 
   /** Closing green resolves upward; closing red drops away. */
   close: (profit = 0) =>

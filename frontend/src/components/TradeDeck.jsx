@@ -2,7 +2,8 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { money, price as fmtPrice } from "../lib/format";
 import LivePnl from "./LivePnl";
 import FillEstimate from "./FillEstimate";
-import { usePrice } from "../state/MatchProvider";
+import { getLivePrice } from "../state/livePrice";
+import { sound } from "../lib/sound";
 
 const PRESETS = [
   { label: "Safe", lev: 2, sz: 25 },
@@ -19,7 +20,6 @@ const PRESETS = [
  * while everything shown here moves with the board instead — five times slower.
  */
 function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
-  const { tick } = usePrice();
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
   const [pending, setPending] = useState(false);
@@ -44,7 +44,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 
   const handleOpen = useCallback(
     (side) => {
-      const livePrice = tick?.price || 1;
+      const livePrice = getLivePrice() || 1;
       const available = Math.max(0, me?.cash ?? me?.equity ?? 0);
       const margin = (available * size) / 100;
       const liqPrice = livePrice * (1 - ((side === "LONG" ? 1 : -1) * 0.90) / leverage);
@@ -58,14 +58,16 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         unrealisedPnl: 0,
       });
       setPending(true);
+      sound.trade(side === "LONG");
       onOpen(side, size / 100, leverage);
     },
-    [onOpen, size, leverage, tick?.price, me?.cash, me?.equity]
+    [onOpen, size, leverage, me?.cash, me?.equity]
   );
 
   const handleClose = useCallback(() => {
     setOptimisticPos(null);
     setPending(true);
+    sound.trade(false);
     onClose();
   }, [onClose]);
 

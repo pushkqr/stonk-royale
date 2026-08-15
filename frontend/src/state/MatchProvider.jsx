@@ -4,6 +4,8 @@ import { getLobby, socketUrl } from "../lib/api";
 import { clearSeat } from "../lib/session";
 import { sound } from "../lib/sound";
 
+import { setLivePrice } from "./livePrice";
+
 const MatchContext = createContext(null);
 const PriceContext = createContext(null);
 
@@ -134,6 +136,7 @@ export function MatchProvider({ session, children }) {
       });
 
       on(topic("price"), (next) => {
+        setLivePrice(next.price);
         setTick(next);
         // Mutate the array in place and bump the count so React notices.
         //
@@ -230,10 +233,28 @@ export function MatchProvider({ session, children }) {
       setError("Lost connection to the room. Retrying…");
     };
 
+    const handleWakeup = () => {
+      if (
+        document.visibilityState === "visible" &&
+        (typeof navigator === "undefined" || navigator.onLine !== false)
+      ) {
+        if (!client.active || !client.connected) {
+          client.activate();
+        } else {
+          client.publish({ destination: `/app/match/${code}/sync`, body: "{}" });
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleWakeup);
+    window.addEventListener("online", handleWakeup);
+
     client.activate();
     clientRef.current = client;
 
     return () => {
+      document.removeEventListener("visibilitychange", handleWakeup);
+      window.removeEventListener("online", handleWakeup);
       while (subscriptions.length > 0) {
         try {
           subscriptions.pop().unsubscribe();
