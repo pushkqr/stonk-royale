@@ -35,9 +35,7 @@ public class MatchSocketController {
     @MessageMapping("/match/{code}/start")
     public void start(@DestinationVariable String code, Principal principal) {
         Match match = require(code, principal);
-        if (!match.player(session(principal).playerId()).isHost()) {
-            throw new IllegalStateException("Only the host can start the match");
-        }
+        requireHost(match, session(principal).playerId(), "start the match");
 
         match.start(System.currentTimeMillis());
         broadcaster.phase(match);
@@ -64,9 +62,7 @@ public class MatchSocketController {
     public void rematch(@DestinationVariable String code, @Payload Requests.Rematch request,
             Principal principal) {
         Match match = require(code, principal);
-        if (!match.player(session(principal).playerId()).isHost()) {
-            throw new IllegalStateException("Only the host can start a rematch");
-        }
+        requireHost(match, session(principal).playerId(), "start a rematch");
 
         match.rematch(request.sameMarket(), System.currentTimeMillis());
         broadcaster.phase(match);
@@ -111,9 +107,7 @@ public class MatchSocketController {
         Match match = require(code, principal);
         PlayerSession actor = session(principal);
 
-        if (!match.player(actor.playerId()).isHost()) {
-            throw new IllegalStateException("Only the host can remove a player");
-        }
+        requireHost(match, actor.playerId(), "remove a player");
         if (match.phase() != MatchPhase.LOBBY) {
             throw new IllegalStateException("Players can only be removed before the match starts");
         }
@@ -139,10 +133,7 @@ public class MatchSocketController {
     @MessageMapping("/match/{code}/bot")
     public void bot(@DestinationVariable String code, Principal principal) {
         Match match = require(code, principal);
-
-        if (!match.player(session(principal).playerId()).isHost()) {
-            throw new IllegalStateException("Only the host can add a bot");
-        }
+        requireHost(match, session(principal).playerId(), "add a bot");
         if (match.phase() != MatchPhase.LOBBY) {
             throw new IllegalStateException("Bots can only be added before the match starts");
         }
@@ -159,9 +150,7 @@ public class MatchSocketController {
     public void config(@DestinationVariable String code, @Payload Requests.Config request,
             Principal principal) {
         Match match = require(code, principal);
-        if (!match.player(session(principal).playerId()).isHost()) {
-            throw new IllegalStateException("Only the host can change the settings");
-        }
+        requireHost(match, session(principal).playerId(), "change the settings");
 
         match.updateConfig(new MatchConfig(
                 request.rounds(), request.roundSeconds(), request.intermissionSeconds(),
@@ -274,6 +263,13 @@ public class MatchSocketController {
             return Side.valueOf(raw.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
             throw new IllegalArgumentException("Side must be LONG or SHORT");
+        }
+    }
+
+    private void requireHost(Match match, String playerId, String actionDescription) {
+        MatchPlayer player = match.player(playerId);
+        if (player == null || !player.isHost()) {
+            throw new IllegalStateException("Only the host can " + actionDescription);
         }
     }
 

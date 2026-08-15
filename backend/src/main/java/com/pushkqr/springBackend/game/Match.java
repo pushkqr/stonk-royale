@@ -129,7 +129,7 @@ public final class Match {
      * progress was planned for the roster that existed when it was planned, so a latecomer
      * sits it out and starts scoring from the next one — see {@link #beginTrading}.
      */
-    public MatchPlayer join(String playerId, String nickname) {
+    public synchronized MatchPlayer join(String playerId, String nickname) {
         if (players.containsKey(playerId)) {
             return players.get(playerId);
         }
@@ -163,7 +163,7 @@ public final class Match {
      * Never host, whatever the seating order: the host badge carries the right to start the
      * match and retune the room, and nothing can press those buttons on a bot's behalf.
      */
-    public MatchPlayer addBot(String id, String nickname) {
+    public synchronized MatchPlayer addBot(String id, String nickname) {
         if (phase != MatchPhase.LOBBY) {
             throw new IllegalStateException("Match has already started");
         }
@@ -187,7 +187,7 @@ public final class Match {
      *
      * @return whether the roster changed and the room needs telling
      */
-    public boolean leave(String playerId, long now) {
+    public synchronized boolean leave(String playerId, long now) {
         if (phase != MatchPhase.LOBBY && phase != MatchPhase.FINISHED) {
             MatchPlayer quitting = players.get(playerId);
             if (quitting == null || quitting.hasLeft()) {
@@ -281,7 +281,7 @@ public final class Match {
      * closes the tab, and a room that can never be reaped is a match that ticks forever
      * and a registry entry that lives until the process dies.
      */
-    public boolean hasNoHumans() {
+    public synchronized boolean hasNoHumans() {
         return players.values().stream().allMatch(player -> player.isBot() || player.hasLeft());
     }
 
@@ -289,7 +289,7 @@ public final class Match {
      * Starts the match into the briefing. The first round is planned here so the
      * intermission has an asset and a rumor ready the moment the gate opens.
      */
-    public List<GameEvent> start(long now) {
+    public synchronized List<GameEvent> start(long now) {
         if (phase != MatchPhase.LOBBY) {
             throw new IllegalStateException("Match has already started");
         }
@@ -309,7 +309,7 @@ public final class Match {
      * swapping it under a running match would leave the two disagreeing about how long a
      * round is and how many are left.
      */
-    public void updateConfig(MatchConfig next) {
+    public synchronized void updateConfig(MatchConfig next) {
         if (phase != MatchPhase.LOBBY) {
             throw new IllegalStateException("Settings are locked once the match has started");
         }
@@ -329,7 +329,7 @@ public final class Match {
      *
      * @param sameMarket replay the identical market, making the rematch a fair rerun
      */
-    public List<GameEvent> rematch(boolean sameMarket, long now) {
+    public synchronized List<GameEvent> rematch(boolean sameMarket, long now) {
         if (phase != MatchPhase.FINISHED) {
             throw new IllegalStateException("The match is still running");
         }
@@ -351,7 +351,7 @@ public final class Match {
 
     // --- the loop ------------------------------------------------------------
 
-    public List<GameEvent> tick(long now) {
+    public synchronized List<GameEvent> tick(long now) {
         trackAbandonment(now);
         List<GameEvent> events = new ArrayList<>();
         switch (phase) {
@@ -555,11 +555,11 @@ public final class Match {
     }
 
     /** Who the next round is for. A retired seat is skipped exactly as a latecomer's is. */
-    private Set<String> activePlayerIds() {
+    public synchronized Set<String> activePlayerIds() {
         return players.values().stream()
                 .filter(player -> !player.hasLeft())
                 .map(MatchPlayer::id)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /** Sorted downstream by the planner; this is just the subset of seats that are scripted. */
@@ -621,7 +621,7 @@ public final class Match {
      *
      * @return whether this changed anything and the room needs telling
      */
-    public boolean markReady(String playerId) {
+    public synchronized boolean markReady(String playerId) {
         if (phase != MatchPhase.BRIEFING || !players.containsKey(playerId)) {
             return false;
         }
@@ -637,7 +637,7 @@ public final class Match {
      *
      * @return whether the roster changed and the room needs telling
      */
-    public boolean markConnected(String playerId, boolean connected, long now) {
+    public synchronized boolean markConnected(String playerId, boolean connected, long now) {
         MatchPlayer player = players.get(playerId);
         return player != null && player.setConnected(connected, now);
     }
@@ -682,15 +682,15 @@ public final class Match {
     }
 
     /** When the last human socket went away, or 0 while somebody is still here. */
-    public long abandonedSinceMillis() {
+    public synchronized long abandonedSinceMillis() {
         return abandonedSinceMillis;
     }
 
-    public int readyCount() {
+    public synchronized int readyCount() {
         return readyIds.size();
     }
 
-    public Position openPosition(String playerId, Side side, double sizeFraction, int leverage, long now) {
+    public synchronized Position openPosition(String playerId, Side side, double sizeFraction, int leverage, long now) {
         PlayerRound playerRound = tradingRound(playerId);
         if (playerRound.hasPosition()) {
             throw new IllegalStateException("A position is already open");
@@ -716,7 +716,7 @@ public final class Match {
         return playerRound.open(side, sizeFraction, leverage, currentPrice(now), now);
     }
 
-    public double closePosition(String playerId, long now) {
+    public synchronized double closePosition(String playerId, long now) {
         PlayerRound playerRound = tradingRound(playerId);
         if (playerRound.hasPosition()) {
             Position position = playerRound.position();
@@ -735,7 +735,7 @@ public final class Match {
      * the room does most of its talking. A null claim leaves any earlier one standing, so
      * typing free text after using a quick-chat line does not quietly retract it.
      */
-    public void recordTipClaim(String playerId, Regime claimed) {
+    public synchronized void recordTipClaim(String playerId, Regime claimed) {
         boolean roundIsLive = phase == MatchPhase.INTERMISSION || phase == MatchPhase.TRADING;
         if (claimed != null && roundIsLive && players.containsKey(playerId)) {
             tipClaims.put(playerId, claimed);
@@ -760,7 +760,7 @@ public final class Match {
     // --- reads ---------------------------------------------------------------
 
     /** During an intermission this is the upcoming round's opening price. */
-    public double currentPrice(long now) {
+    public synchronized double currentPrice(long now) {
         if (round == null) {
             return 0;
         }
@@ -771,7 +771,11 @@ public final class Match {
         return base * (1 + impact.valueAt(now));
     }
 
-    public List<Standing> standings() {
+    public synchronized double currentImpact(long now) {
+        return impact == null ? 0.0 : impact.valueAt(now);
+    }
+
+    public synchronized List<Standing> standings() {
         List<MatchPlayer> ordered = new ArrayList<>(players.values());
         ordered.sort(Comparator.comparingDouble(MatchPlayer::totalScore)
                 .thenComparingDouble(MatchPlayer::bestRound).reversed());
@@ -785,7 +789,7 @@ public final class Match {
         return List.copyOf(standings);
     }
 
-    public Rumor rumorFor(String playerId) {
+    public synchronized Rumor rumorFor(String playerId) {
         return round == null ? null : round.rumorFor(playerId);
     }
 
@@ -793,20 +797,20 @@ public final class Match {
         return code;
     }
 
-    public MatchConfig config() {
+    public synchronized MatchConfig config() {
         return config;
     }
 
     /** One player's largest possible position — what a trade's impact is measured against. */
-    public double referenceNotional() {
+    public synchronized double referenceNotional() {
         return referenceNotional;
     }
 
-    public MatchPhase phase() {
+    public synchronized MatchPhase phase() {
         return phase;
     }
 
-    public boolean isPublic() {
+    public synchronized boolean isPublic() {
         return isPublic;
     }
 
@@ -814,28 +818,40 @@ public final class Match {
      * Deliberately allowed in any phase. It changes nothing about how a match plays — only
      * whether quick match can see it — so there is no state it could contradict.
      */
-    public void setVisibility(boolean value) {
+    public synchronized void setVisibility(boolean value) {
         isPublic = value;
     }
 
-    public int roundIndex() {
+    public synchronized int roundIndex() {
         return roundIndex;
     }
 
-    public long phaseEndsAtMillis() {
+    public synchronized long phaseEndsAtMillis() {
         return phaseEndsAtMillis;
     }
 
     /** The upcoming round during an intermission, the live one while trading. */
-    public RoundPlan round() {
+    public synchronized RoundPlan round() {
         return round;
     }
 
-    public Collection<MatchPlayer> players() {
+    public synchronized Collection<MatchPlayer> players() {
         return List.copyOf(players.values());
     }
 
-    public MatchPlayer player(String playerId) {
+    public synchronized MatchPlayer player(String playerId) {
         return players.get(playerId);
+    }
+
+    public synchronized boolean hasPlayer(String playerId) {
+        return players.containsKey(playerId);
+    }
+
+    public synchronized Map<String, Regime> tipClaims() {
+        return Map.copyOf(tipClaims);
+    }
+
+    public synchronized boolean isEmpty() {
+        return activePlayerIds().isEmpty();
     }
 }

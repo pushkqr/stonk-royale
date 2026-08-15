@@ -26,24 +26,39 @@ public class MatchBroadcaster {
     }
 
     public void phase(Match match) {
-        send(match, "phase", phaseView(match));
+        Views.Phase view;
+        synchronized (match) {
+            view = phaseView(match);
+        }
+        send(match, "phase", view);
     }
 
     public void ready(Match match) {
-        send(match, "ready", new Views.Ready(match.readyCount(), match.players().size()));
+        Views.Ready view;
+        synchronized (match) {
+            view = new Views.Ready(match.readyCount(), match.players().size());
+        }
+        send(match, "ready", view);
     }
 
     public void price(Match match, long now) {
-        send(match, "price", new Views.Price(
-                match.currentPrice(now), now - roundElapsedBase(match, now)));
+        Views.Price view;
+        synchronized (match) {
+            view = new Views.Price(
+                    match.currentPrice(now), now - roundElapsedBase(match, now));
+        }
+        send(match, "price", view);
     }
 
     public void board(Match match, long now) {
-        double price = match.currentPrice(now);
-        List<Views.BoardRow> rows = match.players().stream()
-                .map(player -> boardRow(player, price))
-                .sorted((a, b) -> Double.compare(b.equity(), a.equity()))
-                .toList();
+        List<Views.BoardRow> rows;
+        synchronized (match) {
+            double price = match.currentPrice(now);
+            rows = match.players().stream()
+                    .map(player -> boardRow(player, price))
+                    .sorted((a, b) -> Double.compare(b.equity(), a.equity()))
+                    .toList();
+        }
         send(match, "board", rows);
     }
 
@@ -77,7 +92,11 @@ public class MatchBroadcaster {
     }
 
     public void lobby(Match match) {
-        send(match, "lobby", lobbyView(match));
+        Views.Lobby view;
+        synchronized (match) {
+            view = lobbyView(match);
+        }
+        send(match, "lobby", view);
     }
 
     /**

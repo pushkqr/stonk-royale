@@ -28,6 +28,17 @@ No game logic calls `System.currentTimeMillis()` directly. Every state-advancing
 - **Instantaneous Unit Testing:** A complete 5-round, 10-minute match can be simulated in unit tests in **under 2 milliseconds** by advancing test timestamps in loop increments.
 - **Reproducibility:** A match with a specific room code and timestamp progression executes identically in development, production, and test suites.
 
+### Thread Safety & Intrinsic Monitor Synchronization
+Each `Match` instance is an independent, in-memory state engine accessed concurrently by:
+1. **The Scheduled Tick Thread:** `MatchEngine.tick()` advancing the game loop every 100ms.
+2. **STOMP Inbound Worker Threads:** User order placements (`/open`, `/close`), quick-chats (`/chat`), ready states (`/ready`), and rematches (`/rematch`).
+3. **HTTP Controller Threads:** Room creation, joins (`/join`), and quick match queries (`/quick`).
+4. **WebSocket Lifecycle Threads:** `SocketLifecycleListener` handling disconnects and seat grace timers.
+
+To guarantee zero race conditions and prevent `ConcurrentModificationException`:
+- **Instance Monitor Locks (`synchronized`):** All mutating methods and state accessors in `Match.java` synchronize on the match instance monitor (`this`). Because locks are per-room, operations across different matches execute concurrently with zero cross-room lock contention.
+- **Defensive Collection Snapshots:** Collection getters (`players()`, `activePlayerIds()`, `tipClaims()`, `standings()`) return immutable defensive snapshots (`List.copyOf`, `Set.copyOf`, `Map.copyOf`), ensuring outbound serialization and broadcast iterations in `MatchBroadcaster` never conflict with in-flight state mutations.
+
 ---
 
 ## 2. The 100ms Tick Loop (`MatchEngine.java`)

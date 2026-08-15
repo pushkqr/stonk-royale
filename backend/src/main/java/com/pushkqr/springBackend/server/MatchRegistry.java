@@ -38,10 +38,13 @@ public class MatchRegistry {
             throw new IllegalStateException(
                     "The server is busy — every room is in use. Try again in a minute.");
         }
-        String code = uniqueCode();
-        Match match = new Match(code, config);
-        matches.put(code, match);
-        return match;
+        while (true) {
+            String code = generateCandidateCode();
+            Match match = new Match(code, config);
+            if (matches.putIfAbsent(code, match) == null) {
+                return match;
+            }
+        }
     }
 
     public Match get(String code) {
@@ -60,16 +63,11 @@ public class MatchRegistry {
      * Ambiguous glyphs (I, O, 0, 1) are left out — codes get read aloud and typed in by
      * hand, so O-versus-0 is a real failure mode.
      */
-    private String uniqueCode() {
-        while (true) {
-            StringBuilder code = new StringBuilder(CODE_LENGTH);
-            for (int i = 0; i < CODE_LENGTH; i++) {
-                code.append(CODE_ALPHABET.charAt(random.nextInt(CODE_ALPHABET.length())));
-            }
-            String candidate = code.toString();
-            if (!matches.containsKey(candidate)) {
-                return candidate;
-            }
+    private String generateCandidateCode() {
+        StringBuilder code = new StringBuilder(CODE_LENGTH);
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            code.append(CODE_ALPHABET.charAt(random.nextInt(CODE_ALPHABET.length())));
         }
+        return code.toString();
     }
 }
