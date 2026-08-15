@@ -2,9 +2,10 @@ import { useMatch } from "../state/MatchProvider";
 import { pct, toneOf } from "../lib/format";
 import CountUp from "./CountUp";
 import Ledger from "./Ledger";
+import Accolades from "./Accolades";
 
 export default function Results() {
-  const { standings, session, rematch, lobby, settled, quit } = useMatch();
+  const { standings, session, rematch, lobby, settled, quit, feed, suspects } = useMatch();
   const winner = standings[0];
   const iWon = winner?.playerId === session.playerId;
   // Bots fill the practice room, so a headcount no longer tells you whether anyone was
@@ -50,6 +51,8 @@ export default function Results() {
         ))}
       </ol>
 
+      <Accolades standings={standings} settled={settled} feed={feed} />
+
       {/* The last round has no intermission behind it, so this is the only place its lies
           ever surface — and it is the round people lie hardest in. Same reason this is also
           the only place that round's tip-lesson sentence runs: Intermission never gets a
@@ -62,7 +65,7 @@ export default function Results() {
         </p>
       )}
 
-      <Ledger results={settled?.results} meId={session.playerId} />
+      <Ledger results={settled?.results} meId={session.playerId} suspects={suspects} />
 
       {/* The room stays open, so the group never has to regroup from the home page. */}
       {isHost ? (

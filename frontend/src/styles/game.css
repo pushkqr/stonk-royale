@@ -1390,6 +1390,78 @@
   line-height: 1;
 }
 
+/* --- match accolades ------------------------------------------------------ */
+
+.accolades-section {
+  width: min(30rem, 100%);
+  margin: 0.4rem 0;
+}
+
+.accolades-title {
+  text-align: center;
+  color: var(--haze);
+  margin-bottom: 0.5rem;
+}
+
+.accolades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.accolade-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  transition: border-color 0.2s ease;
+}
+
+.accolade-card:hover {
+  border-color: var(--scream);
+}
+
+.accolade-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--void);
+  border: 1px solid var(--edge);
+  color: var(--scream);
+  flex-shrink: 0;
+}
+
+.accolade-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.accolade-role {
+  font-size: 0.58rem;
+  color: var(--scream);
+  letter-spacing: 0.06em;
+}
+
+.accolade-player {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accolade-sub {
+  font-size: 0.65rem;
+  margin-top: 0.1rem;
+}
+
 /* --- rules panel ---------------------------------------------------------- */
 
 .rules-block + .rules-block {
