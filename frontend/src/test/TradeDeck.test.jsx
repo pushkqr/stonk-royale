@@ -62,4 +62,48 @@ describe("TradeDeck.jsx", () => {
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalled();
   });
+
+  it("triggers Long on L key press", () => {
+    const handleOpen = vi.fn();
+    render(<TradeDeck me={defaultMe} onOpen={handleOpen} onClose={vi.fn()} disabled={false} />);
+
+    fireEvent.keyDown(window, { key: "l" });
+    expect(handleOpen).toHaveBeenCalledWith("LONG", 0.5, 3);
+  });
+
+  it("triggers Short on S key press", () => {
+    const handleOpen = vi.fn();
+    render(<TradeDeck me={defaultMe} onOpen={handleOpen} onClose={vi.fn()} disabled={false} />);
+
+    fireEvent.keyDown(window, { key: "s" });
+    expect(handleOpen).toHaveBeenCalledWith("SHORT", 0.5, 3);
+  });
+
+  it("triggers Close on Space key press when position is open", () => {
+    const meWithPosition = {
+      cash: 5000,
+      equity: 5500,
+      position: { side: "LONG", leverage: 5, margin: 5000, entryPrice: 100, liquidationPrice: 82 },
+    };
+    const handleClose = vi.fn();
+    render(<TradeDeck me={meWithPosition} onOpen={vi.fn()} onClose={handleClose} disabled={false} />);
+
+    fireEvent.keyDown(window, { key: " " });
+    expect(handleClose).toHaveBeenCalled();
+  });
+
+  it("ignores keyboard shortcuts when focus is inside an input field", () => {
+    const handleOpen = vi.fn();
+    render(
+      <div>
+        <input data-testid="chat-input" />
+        <TradeDeck me={defaultMe} onOpen={handleOpen} onClose={vi.fn()} disabled={false} />
+      </div>
+    );
+
+    const input = screen.getByTestId("chat-input");
+    fireEvent.keyDown(input, { key: "l" });
+    expect(handleOpen).not.toHaveBeenCalled();
+  });
 });
+

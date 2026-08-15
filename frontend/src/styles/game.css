@@ -1196,6 +1196,35 @@
   opacity: 0.7;
 }
 
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--data);
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+  background: var(--void);
+  border: 1px solid var(--edge);
+  color: var(--haze);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  vertical-align: middle;
+  margin-left: 0.3rem;
+}
+
+.preset-btn .keycap {
+  margin-left: 0;
+  margin-right: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  .keycap {
+    display: none;
+  }
+}
+
 .deck-dials {
   display: grid;
   grid-template-columns: 1fr 1fr;

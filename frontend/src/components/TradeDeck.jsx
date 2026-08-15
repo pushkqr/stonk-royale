@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { money, price as fmtPrice } from "../lib/format";
 import LivePnl from "./LivePnl";
 import FillEstimate from "./FillEstimate";
@@ -30,15 +30,59 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
     setPending(false);
   }
 
-  const handleOpen = (side) => {
-    setPending(true);
-    onOpen(side, size / 100, leverage);
-  };
+  const handleOpen = useCallback(
+    (side) => {
+      setPending(true);
+      onOpen(side, size / 100, leverage);
+    },
+    [onOpen, size, leverage]
+  );
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setPending(true);
     onClose();
-  };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (disabled || pending) return;
+
+    const handleKeyDown = (e) => {
+      const tag = e.target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || e.target?.isContentEditable) {
+        return;
+      }
+
+      if (position) {
+        if (e.key === " " || e.key === "Spacebar" || e.key.toLowerCase() === "c") {
+          e.preventDefault();
+          handleClose();
+        }
+      } else {
+        if (e.key.toLowerCase() === "l" || e.key === "ArrowUp") {
+          e.preventDefault();
+          handleOpen("LONG");
+        } else if (e.key.toLowerCase() === "s" || e.key === "ArrowDown") {
+          e.preventDefault();
+          handleOpen("SHORT");
+        } else if (e.key === "1") {
+          e.preventDefault();
+          setLeverage(PRESETS[0].lev);
+          setSize(PRESETS[0].sz);
+        } else if (e.key === "2") {
+          e.preventDefault();
+          setLeverage(PRESETS[1].lev);
+          setSize(PRESETS[1].sz);
+        } else if (e.key === "3") {
+          e.preventDefault();
+          setLeverage(PRESETS[2].lev);
+          setSize(PRESETS[2].sz);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [disabled, pending, position, handleClose, handleOpen]);
 
   if (position) {
     return (
@@ -67,7 +111,13 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
           onClick={handleClose}
           disabled={disabled || pending}
         >
-          {pending ? "Closing…" : "Close Position"}
+          {pending ? (
+            "Closing…"
+          ) : (
+            <>
+              Close Position <kbd className="keycap">Space</kbd>
+            </>
+          )}
         </button>
       </div>
     );
@@ -93,7 +143,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
       <div className="deck-presets">
         <span className="eyebrow">Presets</span>
         <div className="deck-preset-row">
-          {PRESETS.map((p) => (
+          {PRESETS.map((p, idx) => (
             <button
               key={p.label}
               type="button"
@@ -104,7 +154,10 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
               }}
               disabled={disabled}
             >
-              {p.label} <span className="preset-meta">{p.lev}x · {p.sz}%</span>
+              <kbd className="keycap">{idx + 1}</kbd> {p.label}{" "}
+              <span className="preset-meta">
+                {p.lev}x · {p.sz}%
+              </span>
             </button>
           ))}
         </div>
@@ -154,7 +207,13 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
           onClick={() => handleOpen("LONG")}
           disabled={disabled || pending}
         >
-          {pending ? "Filling…" : "Long"}
+          {pending ? (
+            "Filling…"
+          ) : (
+            <>
+              Long <kbd className="keycap">L</kbd>
+            </>
+          )}
           <FillEstimate side="LONG" notional={notional} impact={impact} />
         </button>
         <button
@@ -162,7 +221,13 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
           onClick={() => handleOpen("SHORT")}
           disabled={disabled || pending}
         >
-          {pending ? "Filling…" : "Short"}
+          {pending ? (
+            "Filling…"
+          ) : (
+            <>
+              Short <kbd className="keycap">S</kbd>
+            </>
+          )}
           <FillEstimate side="SHORT" notional={notional} impact={impact} />
         </button>
       </div>
@@ -171,3 +236,4 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 }
 
 export default memo(TradeDeck);
+
