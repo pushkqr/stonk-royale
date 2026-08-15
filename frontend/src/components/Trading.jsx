@@ -3,13 +3,14 @@ import { useMatch, usePrice } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
-import { clock, pct, price as fmtPrice, toneOf } from "../lib/format";
-import { liveRoundScore } from "../lib/pnl";
+import { clock } from "../lib/format";
 import PriceChart from "./PriceChart";
 import Dossier from "./Dossier";
 import Standings from "./Standings";
 import TradeDeck from "./TradeDeck";
 import Wire from "./Wire";
+import LiveFloorPrice from "./LiveFloorPrice";
+import LiveRoundScore from "./LiveRoundScore";
 
 export default function Trading() {
   const {
@@ -27,21 +28,13 @@ export default function Trading() {
     suspects,
     toggleSuspect,
   } = useMatch();
-  const { tick, series } = usePrice();
+  const { series } = usePrice();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
   // Sets the chart's opening window, before enough of the round has elapsed to fill it.
   const roundMillis = (lobby?.roundSeconds ?? 90) * 1000;
-
   const startPrice = phase?.asset?.startPrice ?? 0;
-  const live = tick?.price ?? startPrice;
-  const move = startPrice ? ((live - startPrice) / startPrice) * 100 : 0;
   const urgent = left > 0 && left <= 10_000;
-
-  // Derived rather than read off the board, so it agrees with the chart and the deck. The
-  // board's own roundScore is half a second old by the time it lands. A latecomer sitting
-  // out the round has no stack to score against, hence the inRound guard.
-  const myScore = me?.inRound ? liveRoundScore(me, live, lobby?.startingCash ?? 0) : 0;
 
   // A latecomer holds a seat but no stack: the round was dealt before they arrived.
   const waiting = !!me && !me.inRound;
@@ -103,34 +96,30 @@ export default function Trading() {
 
         <div className={`strip-clock display ${urgent ? "is-urgent" : ""}`}>{clock(left)}</div>
 
-        <div className="strip-me">
-          <span className="eyebrow">This round</span>
-          <span className={`display strip-score ${toneOf(myScore)}`}>
-            {pct(myScore)}
-          </span>
-        </div>
+        <LiveRoundScore
+          me={me}
+          startingCash={lobby?.startingCash}
+          startPrice={startPrice}
+        />
       </header>
 
-      <Standings rows={board} meId={session.playerId} suspects={suspects} />
+      <div className="left-rail">
+        <Standings rows={board} meId={session.playerId} suspects={suspects} />
 
-      <Dossier
-        rumor={rumor}
-        truthfulTips={phase?.truthfulTips}
-        feed={feed}
-        roundIndex={phase?.roundIndex}
-        players={board}
-        meId={session.playerId}
-        suspects={suspects}
-        onToggleSuspect={toggleSuspect}
-      />
+        <Dossier
+          rumor={rumor}
+          truthfulTips={phase?.truthfulTips}
+          feed={feed}
+          roundIndex={phase?.roundIndex}
+          players={board}
+          meId={session.playerId}
+          suspects={suspects}
+          onToggleSuspect={toggleSuspect}
+        />
+      </div>
 
       <section className={`panel stack floor ${surge ? `is-surging-${surge}` : ""}`}>
-        <div className="floor-price">
-          <span className={`display price-now ${move >= 0 ? "pump" : "dump"}`}>
-            {fmtPrice(live)}
-          </span>
-          <span className={`mono price-move ${toneOf(move)}`}>{pct(move)}</span>
-        </div>
+        <LiveFloorPrice startPrice={startPrice} />
 
         <PriceChart
           series={series}

@@ -124,21 +124,35 @@ function draw(canvas, size, state) {
   // 30% away, and including it would squash the price action into a sliver. It gets pinned
   // to the edge instead when far off, and drawn in place once it is close — which is
   // exactly when it starts to matter.
-  let min = Infinity;
-  let max = -Infinity;
-  // Bounded by count, not by the array's length: count is the authority on how much of the
-  // buffer is live, and reading it keeps that true however the points came to be there.
-  for (let i = 0; i < count; i += 1) {
-    const p = points[i].p;
-    if (p < min) min = p;
-    if (p > max) max = p;
+  if (
+    state.keyCount !== count ||
+    state.keyStart !== startPrice ||
+    state.keyEntry !== position?.entryPrice
+  ) {
+    let min = Infinity;
+    let max = -Infinity;
+    // Bounded by count, not by the array's length: count is the authority on how much of the
+    // buffer is live, and reading it keeps that true however the points came to be there.
+    for (let i = 0; i < count; i += 1) {
+      const p = points[i].p;
+      if (p < min) min = p;
+      if (p > max) max = p;
+    }
+    for (const anchor of [startPrice, position?.entryPrice]) {
+      if (!anchor) continue;
+      if (anchor < min) min = anchor;
+      if (anchor > max) max = anchor;
+    }
+    state.cachedMin = min;
+    state.cachedMax = max;
+    state.keyCount = count;
+    state.keyStart = startPrice;
+    state.keyEntry = position?.entryPrice;
   }
-  for (const anchor of [startPrice, position?.entryPrice]) {
-    if (!anchor) continue;
-    if (anchor < min) min = anchor;
-    if (anchor > max) max = anchor;
-  }
-  if (min === Infinity) return true;
+
+  let min = state.cachedMin;
+  let max = state.cachedMax;
+  if (min == null || min === Infinity) return true;
 
   const pad = (max - min || max * 0.02) * 0.12;
   min -= pad;
@@ -219,7 +233,7 @@ function draw(canvas, size, state) {
       rather than on the series alone.
     */
     if (
-      state.keyCount !== count ||
+      state.pathCount !== count ||
       state.keyMin !== min ||
       state.keyMax !== max ||
       state.keySpan !== span ||
@@ -247,7 +261,7 @@ function draw(canvas, size, state) {
       state.area = area;
       state.tailX = x(tail.t);
       state.tailY = y(tail.p);
-      state.keyCount = count;
+      state.pathCount = count;
       state.keyMin = min;
       state.keyMax = max;
       state.keySpan = span;

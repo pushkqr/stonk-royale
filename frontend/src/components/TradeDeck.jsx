@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { money, price as fmtPrice } from "../lib/format";
 import LivePnl from "./LivePnl";
 import FillEstimate from "./FillEstimate";
+import { usePrice } from "../state/MatchProvider";
 
 const PRESETS = [
   { label: "Safe", lev: 2, sz: 25 },
@@ -18,27 +19,52 @@ const PRESETS = [
  * while everything shown here moves with the board instead — five times slower.
  */
 function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
+  const { tick } = usePrice();
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
   const [pending, setPending] = useState(false);
+  const [optimisticPos, setOptimisticPos] = useState(null);
+  const [prevPosition, setPrevPosition] = useState(me?.position);
 
-  const position = me?.position;
-  const [prevPosition, setPrevPosition] = useState(position);
-
-  if (position !== prevPosition) {
-    setPrevPosition(position);
+  if (me?.position !== prevPosition) {
+    setPrevPosition(me?.position);
+    setOptimisticPos(null);
     setPending(false);
   }
 
+  // Safety fallback: guarantee pending is never stuck for > 2000ms
+  useEffect(() => {
+    if (pending) {
+      const timer = setTimeout(() => setPending(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [pending]);
+
+  const position = optimisticPos || me?.position;
+
   const handleOpen = useCallback(
     (side) => {
+      const livePrice = tick?.price || 1;
+      const available = Math.max(0, me?.cash ?? me?.equity ?? 0);
+      const margin = (available * size) / 100;
+      const liqPrice = livePrice * (1 - ((side === "LONG" ? 1 : -1) * 0.90) / leverage);
+
+      setOptimisticPos({
+        side,
+        margin,
+        leverage,
+        entryPrice: livePrice,
+        liquidationPrice: liqPrice,
+        unrealisedPnl: 0,
+      });
       setPending(true);
       onOpen(side, size / 100, leverage);
     },
-    [onOpen, size, leverage]
+    [onOpen, size, leverage, tick?.price, me?.cash, me?.equity]
   );
 
   const handleClose = useCallback(() => {
+    setOptimisticPos(null);
     setPending(true);
     onClose();
   }, [onClose]);

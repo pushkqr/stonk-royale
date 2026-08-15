@@ -87,7 +87,19 @@ public class Stats {
         if (deviceId != null && !deviceId.isBlank() && totals.devices.size() < MAX_DEVICES) {
             totals.devices.add(deviceId);
         }
+        checkPeakConcurrent();
         dirty = true;
+    }
+
+    public synchronized void checkPeakConcurrent() {
+        int playersNow = (int) matches.all().stream()
+                .flatMap(m -> m.players().stream())
+                .filter(p -> !p.isBot() && !p.hasLeft())
+                .count();
+        if (playersNow > totals.peakConcurrentPlayers) {
+            totals.peakConcurrentPlayers = playersNow;
+            dirty = true;
+        }
     }
 
     public synchronized void report(Telemetry telemetry) {

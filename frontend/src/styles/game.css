@@ -377,18 +377,22 @@
   color: #1a1420;
 }
 
-/* The rail variant. A -1.6deg tilt and a 14px drop shadow are fine on a hero card in a
-   centred column; in a 14rem rail they overlap whatever sits above and below. */
 .rumor-compact {
   width: 100%;
-  padding: 0.9rem 0.85rem 0.75rem;
+  padding: 0.6rem 0.75rem 0.55rem;
   transform: none;
-  box-shadow: 0 6px 0 -3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 0 -2px rgba(0, 0, 0, 0.3);
   animation: none;
 }
 
 .rumor-compact .rumor-text {
-  font-size: 0.92rem;
+  font-size: 0.84rem;
+  line-height: 1.3;
+}
+
+.rumor-compact .rumor-claim {
+  font-size: 0.68rem;
+  margin-top: 0.3rem;
 }
 
 /* The public half of the round's information, and deliberately unlike the card above it:
@@ -541,12 +545,11 @@
   padding: calc(var(--gap) + 1.4rem) var(--gap) var(--gap);
   display: grid;
   gap: var(--gap);
-  grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr) minmax(17rem, 21rem);
-  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr) minmax(17rem, 21rem);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    "strip   strip strip"
-    "rail    floor wire"
-    "dossier floor wire";
+    "strip strip strip"
+    "left  floor wire";
 }
 
 .strip {
@@ -577,8 +580,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* A beat rather than a blink. The old on/off opacity flash read as a broken element; this
-   lands on the same second as the countdown cue, so the clock and the sound pulse together. */
 .strip-clock.is-urgent {
   color: var(--dump);
   animation: countbeat 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
@@ -595,7 +596,6 @@
   }
 }
 
-/* Your own liquidation, felt rather than read. Fires once and leaves nothing behind. */
 .jolt {
   position: fixed;
   inset: 0;
@@ -624,7 +624,6 @@
   line-height: 1;
 }
 
-/* Scores sit on yellow here, so they need the darker end of the palette. */
 .strip-score.pump {
   color: #0c6b3a;
 }
@@ -635,13 +634,21 @@
   color: var(--void-deep);
 }
 
-/* Grid placement stays off the shared surface classes. A class that carries both styling
-   and a grid-area drops every element using it into the same cell. */
-.rail {
-  grid-area: rail;
+.left-rail {
+  grid-area: left;
   display: flex;
   flex-direction: column;
+  gap: var(--gap);
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.rail {
+  flex: 1 1 50%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -651,11 +658,12 @@
 }
 
 .dossier {
-  grid-area: dossier;
+  flex: 1 1 50%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
   overflow: hidden;
+  overflow-y: auto;
 }
 
 .dossier-count {
@@ -867,6 +875,8 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1604,17 +1614,28 @@
     height: auto;
     min-height: 100%;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto auto auto;
+    grid-template-rows: auto auto auto auto;
     /* Wire above the chart, compressed to the last couple of messages: it is a ticker on a
        phone, not a chat window. The chart and deck then sit in the middle of the screen
-       where your thumbs are, with the dossier under them. Standings fall off the bottom —
-       accepted, there is no room for them and they are the least urgent thing here. */
+       where your thumbs are, with the left rail under them. */
     grid-template-areas:
       "strip"
       "wire"
       "floor"
-      "dossier"
-      "rail";
+      "left";
+  }
+
+  .left-rail {
+    height: auto;
+    overflow: visible;
+  }
+
+  .rail,
+  .dossier {
+    flex: none;
+    height: auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .chart-wrap {
