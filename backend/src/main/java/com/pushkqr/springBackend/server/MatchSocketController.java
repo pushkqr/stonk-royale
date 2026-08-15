@@ -186,27 +186,33 @@ public class MatchSocketController {
         Match match = require(code, principal);
         PlayerSession session = session(principal);
         Side side = parseSide(request.side());
+        long now = System.currentTimeMillis();
 
         Position position = match.openPosition(
                 session.playerId(), side, request.sizeFraction(), request.leverage(),
-                System.currentTimeMillis());
+                now);
 
         broadcaster.feed(match, "TRADE",
                 String.format("%s went %dx %s @ %s",
                         session.nickname(), position.leverage(), side, Text.price(position.entryPrice())),
                 session.playerId(), session.nickname());
+        broadcaster.price(match, now);
+        broadcaster.board(match, now);
     }
 
     @MessageMapping("/match/{code}/close")
     public void close(@DestinationVariable String code, Principal principal) {
         Match match = require(code, principal);
         PlayerSession session = session(principal);
+        long now = System.currentTimeMillis();
 
-        double pnl = match.closePosition(session.playerId(), System.currentTimeMillis());
+        double pnl = match.closePosition(session.playerId(), now);
 
         broadcaster.feed(match, "TRADE",
                 String.format("%s closed for %s$%,.0f", session.nickname(), pnl >= 0 ? "+" : "-", Math.abs(pnl)),
                 session.playerId(), session.nickname());
+        broadcaster.price(match, now);
+        broadcaster.board(match, now);
     }
 
     @MessageMapping("/match/{code}/chat")

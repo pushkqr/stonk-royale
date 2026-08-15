@@ -20,8 +20,25 @@ const PRESETS = [
 function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
+  const [pending, setPending] = useState(false);
 
   const position = me?.position;
+  const [prevPosition, setPrevPosition] = useState(position);
+
+  if (position !== prevPosition) {
+    setPrevPosition(position);
+    setPending(false);
+  }
+
+  const handleOpen = (side) => {
+    setPending(true);
+    onOpen(side, size / 100, leverage);
+  };
+
+  const handleClose = () => {
+    setPending(true);
+    onClose();
+  };
 
   if (position) {
     return (
@@ -45,8 +62,12 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
           </div>
         </div>
 
-        <button className="btn btn-big btn-scream deck-close" onClick={onClose} disabled={disabled}>
-          Close Position
+        <button
+          className="btn btn-big btn-scream deck-close"
+          onClick={handleClose}
+          disabled={disabled || pending}
+        >
+          {pending ? "Closing…" : "Close Position"}
         </button>
       </div>
     );
@@ -130,18 +151,18 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
       <div className="deck-sides">
         <button
           className="btn btn-big btn-pump"
-          onClick={() => onOpen("LONG", size / 100, leverage)}
-          disabled={disabled}
+          onClick={() => handleOpen("LONG")}
+          disabled={disabled || pending}
         >
-          Long
+          {pending ? "Filling…" : "Long"}
           <FillEstimate side="LONG" notional={notional} impact={impact} />
         </button>
         <button
           className="btn btn-big btn-dump"
-          onClick={() => onOpen("SHORT", size / 100, leverage)}
-          disabled={disabled}
+          onClick={() => handleOpen("SHORT")}
+          disabled={disabled || pending}
         >
-          Short
+          {pending ? "Filling…" : "Short"}
           <FillEstimate side="SHORT" notional={notional} impact={impact} />
         </button>
       </div>

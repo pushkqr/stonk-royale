@@ -79,7 +79,7 @@ public class MatchEngine {
 
         if (match.phase() == MatchPhase.TRADING && worthBroadcasting(match.abandonedSinceMillis())) {
             broadcaster.price(match, now);
-            if (boardDue(ticks, match.code())) {
+            if (boardDue(ticks, match.code()) || hasBoardAlteringEvent(events)) {
                 broadcaster.board(match, now);
             }
         }
@@ -89,6 +89,17 @@ public class MatchEngine {
             sessions.removeForMatch(match.code());
             logger.info("Reaped match {} in {}", match.code(), match.phase());
         }
+    }
+
+    private boolean hasBoardAlteringEvent(List<GameEvent> events) {
+        for (GameEvent event : events) {
+            if (event instanceof GameEvent.PlayerLiquidated
+                    || event instanceof GameEvent.BotOpened
+                    || event instanceof GameEvent.BotClosed) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
