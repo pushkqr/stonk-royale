@@ -11,6 +11,7 @@ export const DEFAULTS = {
   maxPlayers: 12,
   startingCash: 10_000,
   isPublic: false,
+  volatilityMultiplier: 1.0,
 };
 
 export const LIMITS = {
@@ -23,10 +24,18 @@ export const LIMITS = {
 /** Cosmetic, so a short list of round numbers beats a free-text field. */
 export const CASH_STEPS = [1_000, 10_000, 100_000, 1_000_000];
 
+export const VOLATILITY_OPTIONS = [
+  { value: 0.7, label: "Calm (0.7x)" },
+  { value: 1.0, label: "Standard (1.0x)" },
+  { value: 1.4, label: "Wild (1.4x)" },
+  { value: 1.8, label: "Chaos (1.8x)" },
+];
+
 export const PRESETS = [
-  { id: "quick", label: "Quick", rounds: 3, roundSeconds: 60 },
-  { id: "standard", label: "Standard", rounds: 5, roundSeconds: 90 },
-  { id: "long", label: "Long", rounds: 7, roundSeconds: 90 },
+  { id: "blitz", label: "Blitz", rounds: 3, roundSeconds: 30, intermissionSeconds: 15, volatilityMultiplier: 1.4 },
+  { id: "quick", label: "Quick", rounds: 3, roundSeconds: 60, intermissionSeconds: 20, volatilityMultiplier: 1.0 },
+  { id: "standard", label: "Standard", rounds: 5, roundSeconds: 90, intermissionSeconds: 25, volatilityMultiplier: 1.0 },
+  { id: "marathon", label: "Marathon", rounds: 7, roundSeconds: 120, intermissionSeconds: 30, volatilityMultiplier: 0.8 },
 ];
 
 export function estimateMinutes({ rounds, roundSeconds, intermissionSeconds }) {

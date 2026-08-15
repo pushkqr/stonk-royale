@@ -153,9 +153,10 @@ public class MatchSocketController {
         Match match = require(code, principal);
         requireHost(match, session(principal).playerId(), "change the settings");
 
+        double volatility = request.volatilityMultiplier() == null ? 1.0 : request.volatilityMultiplier();
         match.updateConfig(new MatchConfig(
                 request.rounds(), request.roundSeconds(), request.intermissionSeconds(),
-                request.startingCash(), request.maxPlayers()));
+                request.startingCash(), request.maxPlayers(), volatility));
         match.setVisibility(request.isPublic());
         broadcaster.lobby(match);
     }

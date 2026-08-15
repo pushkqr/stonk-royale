@@ -1,4 +1,4 @@
-import { CASH_STEPS, LIMITS, PRESETS, estimateMinutes, matchingPreset } from "../lib/matchSettings";
+import { CASH_STEPS, LIMITS, PRESETS, VOLATILITY_OPTIONS, estimateMinutes, matchingPreset } from "../lib/matchSettings";
 import { money } from "../lib/format";
 
 /**
@@ -25,6 +25,11 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
     </label>
   );
 
+  const volIndex = Math.max(
+    0,
+    VOLATILITY_OPTIONS.findIndex((v) => Math.abs(v.value - (settings.volatilityMultiplier ?? 1.0)) < 0.1)
+  );
+
   return (
     <div className="stack" style={{ gap: "0.6rem" }}>
       <div className="preset-row">
@@ -33,7 +38,14 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
             key={preset.id}
             type="button"
             className={`btn preset ${active?.id === preset.id ? "btn-scream" : ""}`}
-            onClick={() => set({ rounds: preset.rounds, roundSeconds: preset.roundSeconds })}
+            onClick={() =>
+              set({
+                rounds: preset.rounds,
+                roundSeconds: preset.roundSeconds,
+                intermissionSeconds: preset.intermissionSeconds,
+                volatilityMultiplier: preset.volatilityMultiplier,
+              })
+            }
             aria-pressed={active?.id === preset.id}
           >
             {preset.label}
@@ -59,6 +71,28 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
           {dial("Round length", "roundSeconds", (v) => `${v}s`)}
           {dial("Talk between rounds", "intermissionSeconds", (v) => `${v}s`)}
           {dial("Max players", "maxPlayers", (v) => v)}
+
+          <label className="setting">
+            <span className="eyebrow setting-label">
+              Market Volatility{" "}
+              <b className="mono scream">
+                {VOLATILITY_OPTIONS[volIndex >= 0 ? volIndex : 1].label}
+              </b>
+            </span>
+            <input
+              type="range"
+              min="0"
+              max={VOLATILITY_OPTIONS.length - 1}
+              step="1"
+              value={volIndex >= 0 ? volIndex : 1}
+              onChange={(e) =>
+                set({ volatilityMultiplier: VOLATILITY_OPTIONS[Number(e.target.value)].value })
+              }
+            />
+            <span className="setting-note muted">
+              Controls chart turbulence, wick sharpness, and swing speed.
+            </span>
+          </label>
 
           <label className="setting">
             <span className="eyebrow setting-label">

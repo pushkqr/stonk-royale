@@ -16,7 +16,12 @@ public final class Requests {
      */
     public record Create(String nickname, Integer rounds, Integer roundSeconds,
             Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
-            String deviceId, Boolean isPublic) {
+            String deviceId, Boolean isPublic, Double volatilityMultiplier) {
+        public Create(String nickname, Integer rounds, Integer roundSeconds,
+                Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
+                String deviceId, Boolean isPublic) {
+            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, 1.0);
+        }
     }
 
     public record Join(String nickname, String deviceId, Boolean skipBriefing) {
@@ -45,6 +50,10 @@ public final class Requests {
 
     /** Host-only, lobby-only retune. All values are required — the client sends the full set. */
     public record Config(int rounds, int roundSeconds, int intermissionSeconds,
-            double startingCash, int maxPlayers, boolean isPublic) {
+            double startingCash, int maxPlayers, boolean isPublic, Double volatilityMultiplier) {
+        public Config(int rounds, int roundSeconds, int intermissionSeconds,
+                double startingCash, int maxPlayers, boolean isPublic) {
+            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, 1.0);
+        }
     }
 }

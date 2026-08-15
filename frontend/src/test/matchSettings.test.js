@@ -4,6 +4,7 @@ import {
   LIMITS,
   CASH_STEPS,
   PRESETS,
+  VOLATILITY_OPTIONS,
   estimateMinutes,
   matchingPreset,
 } from "../lib/matchSettings";
@@ -14,6 +15,7 @@ describe("matchSettings.js", () => {
     expect(DEFAULTS.roundSeconds).toBe(90);
     expect(DEFAULTS.intermissionSeconds).toBe(25);
     expect(DEFAULTS.startingCash).toBe(10000);
+    expect(DEFAULTS.volatilityMultiplier).toBe(1.0);
   });
 
   it("defines safe boundary limits for match controls", () => {
@@ -24,9 +26,11 @@ describe("matchSettings.js", () => {
     expect(LIMITS.maxPlayers.max).toBe(12);
   });
 
-  it("defines cash steps and presets", () => {
+  it("defines cash steps and volatility options", () => {
     expect(CASH_STEPS).toContain(10000);
-    expect(PRESETS.length).toBeGreaterThanOrEqual(3);
+    expect(VOLATILITY_OPTIONS.length).toBe(4);
+    expect(VOLATILITY_OPTIONS.some((v) => v.value === 1.0)).toBe(true);
+    expect(PRESETS.length).toBe(4);
   });
 
   it("estimates match length in minutes correctly", () => {
@@ -36,9 +40,10 @@ describe("matchSettings.js", () => {
   });
 
   it("finds matching lobby presets", () => {
+    expect(matchingPreset({ rounds: 3, roundSeconds: 30 })?.id).toBe("blitz");
     expect(matchingPreset({ rounds: 3, roundSeconds: 60 })?.id).toBe("quick");
     expect(matchingPreset({ rounds: 5, roundSeconds: 90 })?.id).toBe("standard");
-    expect(matchingPreset({ rounds: 7, roundSeconds: 90 })?.id).toBe("long");
+    expect(matchingPreset({ rounds: 7, roundSeconds: 120 })?.id).toBe("marathon");
     expect(matchingPreset({ rounds: 4, roundSeconds: 50 })).toBeNull();
   });
 });

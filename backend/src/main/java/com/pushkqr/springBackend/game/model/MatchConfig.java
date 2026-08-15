@@ -7,7 +7,7 @@ package com.pushkqr.springBackend.game.model;
  * endpoint is public: without an upper bound a request could ask for a 24-hour round or a
  * hundred-thousand-player room and the server would happily allocate it.
  */
-public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers) {
+public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers, double volatilityMultiplier) {
 
     /** Price ticks per second. 10 is smooth on a chart without flooding the socket. */
     public static final int TICKS_PER_SECOND = 10;
@@ -25,6 +25,9 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
     /** Above a dozen the chat is unreadable, which is where the game actually happens. */
     public static final int MAX_PLAYERS = 12;
 
+    public static final double MIN_VOLATILITY = 0.5;
+    public static final double MAX_VOLATILITY = 3.0;
+
     public MatchConfig {
         // Rounds are capped by the catalogue because a match never repeats an asset.
         require(rounds >= 1 && rounds <= AssetCatalog.size(),
@@ -37,6 +40,13 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
                 "startingCash must be between " + (long) MIN_STARTING_CASH + " and " + (long) MAX_STARTING_CASH);
         require(maxPlayers >= MIN_PLAYERS && maxPlayers <= MAX_PLAYERS,
                 "maxPlayers must be between " + MIN_PLAYERS + " and " + MAX_PLAYERS);
+        require(volatilityMultiplier >= MIN_VOLATILITY && volatilityMultiplier <= MAX_VOLATILITY,
+                "volatilityMultiplier must be between " + MIN_VOLATILITY + " and " + MAX_VOLATILITY);
+    }
+
+    /** Backward-compatible 5-argument constructor defaulting volatilityMultiplier to 1.0. */
+    public MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers) {
+        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, 1.0);
     }
 
     private static void require(boolean condition, String message) {
@@ -46,7 +56,7 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
     }
 
     public static MatchConfig standard() {
-        return new MatchConfig(5, 90, 25, 10_000, MAX_PLAYERS);
+        return new MatchConfig(5, 90, 25, 10_000, MAX_PLAYERS, 1.0);
     }
 
     public long roundMillis() {

@@ -122,4 +122,14 @@ class MarketSimulatorTest {
         assertThrows(IllegalArgumentException.class,
                 () -> simulator.generate(START, Regime.PUMP, 1, STEP_MILLIS, 1L));
     }
+
+    @Test
+    void higherVolatilityMultiplierProducesWiderRange() {
+        PricePath calm = simulator.generate(START, Regime.CHOP, STEPS, STEP_MILLIS, 42L, 0.5);
+        PricePath wild = simulator.generate(START, Regime.CHOP, STEPS, STEP_MILLIS, 42L, 2.0);
+
+        assertNotNull(calm);
+        assertNotNull(wild);
+        assertFalse(Arrays.equals(calm.toArray(), wild.toArray()));
+    }
 }

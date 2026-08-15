@@ -91,4 +91,14 @@ class MatchConfigTest {
 
         assertEquals(modest.scoreAt(110), silly.scoreAt(110), 1e-9);
     }
+
+    @Test
+    void volatilityMultiplierIsBoundedAtBothEnds() {
+        assertDoesNotThrow(() -> new MatchConfig(5, 90, 15, 10_000, 12, MatchConfig.MIN_VOLATILITY));
+        assertDoesNotThrow(() -> new MatchConfig(5, 90, 15, 10_000, 12, MatchConfig.MAX_VOLATILITY));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MatchConfig(5, 90, 15, 10_000, 12, MatchConfig.MIN_VOLATILITY - 0.1));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MatchConfig(5, 90, 15, 10_000, 12, MatchConfig.MAX_VOLATILITY + 0.1));
+    }
 }

@@ -104,7 +104,12 @@ public final class Views {
 
     public record Lobby(String code, String phase, int totalRounds, int roundSeconds,
             int intermissionSeconds, double startingCash, int maxPlayers,
-            List<LobbyPlayer> players, boolean isPublic, Impact impact) {
+            List<LobbyPlayer> players, boolean isPublic, Impact impact, double volatilityMultiplier) {
+        public Lobby(String code, String phase, int totalRounds, int roundSeconds,
+                int intermissionSeconds, double startingCash, int maxPlayers,
+                List<LobbyPlayer> players, boolean isPublic, Impact impact) {
+            this(code, phase, totalRounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, players, isPublic, impact, 1.0);
+        }
     }
 
     public record JoinResult(String code, String playerId, String nickname, String token, boolean host) {

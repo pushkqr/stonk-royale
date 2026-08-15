@@ -37,7 +37,8 @@ public final class RoundPlanner {
         Regime regime = Regime.values()[random.nextInt(Regime.values().length)];
 
         PricePath path = simulator.generate(
-                asset.basePrice(), regime, config.priceSteps(), MatchConfig.STEP_MILLIS, random.nextLong());
+                asset.basePrice(), regime, config.priceSteps(), MatchConfig.STEP_MILLIS, random.nextLong(),
+                config.volatilityMultiplier());
 
         Map<String, Rumor> rumors = rumors(regime, asset, playerIds, random);
 

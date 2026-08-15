@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Copy, Check } from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import MatchSettings from "./MatchSettings";
 import { DEFAULTS } from "../lib/matchSettings";
@@ -24,6 +25,7 @@ export default function Lobby() {
         maxPlayers: lobby.maxPlayers,
         startingCash: lobby.startingCash,
         isPublic: lobby.isPublic,
+        volatilityMultiplier: lobby.volatilityMultiplier ?? 1.0,
       });
     }
   }
@@ -44,7 +46,8 @@ export default function Lobby() {
   const isHost = mySeat?.host ?? session.host;
 
   const copyLink = async () => {
-    const url = window.location.href;
+    const code = lobby?.code ?? session.code;
+    const url = `${window.location.origin}/m/${code}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
@@ -73,8 +76,16 @@ export default function Lobby() {
       <header className="hero">
         <p className="eyebrow">Get everyone in with</p>
         <h1 className="display hero-code">{lobby?.code ?? session.code}</h1>
-        <button className="btn" onClick={copyLink}>
-          {copied ? "Link copied" : "Copy invite link"}
+        <button className="btn btn-copy" onClick={copyLink} aria-label="Copy invite link">
+          {copied ? (
+            <>
+              <Check size={14} strokeWidth={2.5} /> Link copied
+            </>
+          ) : (
+            <>
+              <Copy size={14} strokeWidth={2.5} /> Copy invite link
+            </>
+          )}
         </button>
       </header>
 

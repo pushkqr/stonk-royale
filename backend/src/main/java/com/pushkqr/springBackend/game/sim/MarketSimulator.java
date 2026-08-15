@@ -11,7 +11,7 @@ import java.util.Random;
  */
 public final class MarketSimulator {
 
-    public PricePath generate(double startPrice, Regime regime, int steps, long stepMillis, long seed) {
+    public PricePath generate(double startPrice, Regime regime, int steps, long stepMillis, long seed, double volatilityMultiplier) {
         if (startPrice <= 0) {
             throw new IllegalArgumentException("startPrice must be positive");
         }
@@ -21,7 +21,7 @@ public final class MarketSimulator {
 
         Random random = new Random(seed);
         double dt = 1.0 / (steps - 1);
-        double sigma = regime.volatility();
+        double sigma = regime.volatility() * Math.max(0.1, volatilityMultiplier);
         double drift = (regime.drift() - 0.5 * sigma * sigma) * dt;
         double diffusion = sigma * Math.sqrt(dt);
 
@@ -33,6 +33,10 @@ public final class MarketSimulator {
 
         applyShock(prices, regime);
         return new PricePath(prices, stepMillis);
+    }
+
+    public PricePath generate(double startPrice, Regime regime, int steps, long stepMillis, long seed) {
+        return generate(startPrice, regime, steps, stepMillis, seed, 1.0);
     }
 
     /**
