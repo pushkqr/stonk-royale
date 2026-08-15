@@ -23,13 +23,6 @@ const MAX_DPR = 2;
  */
 const MAX_POINTS = 350;
 
-/**
- * Prices arrive ten times a second, so drawing faster than this only re-interpolates one
- * short head segment. On a 120Hz or 180Hz panel the uncapped loop did two to three times the
- * work for no visible gain, and those were the machines reporting the worst stalls.
- */
-const MIN_FRAME_MS = 15;
-
 /** Falls back to the server's tick spacing if a round somehow starts with one point. */
 const DEFAULT_GAP_MS = 100;
 
@@ -169,11 +162,14 @@ function draw(canvas, size, state) {
 
   if (prev && last) {
     const gap = last.t - prev.t || DEFAULT_GAP_MS;
-    alpha = Math.min(1, Math.max(0, (performance.now() - state.arrivedAt) / gap));
+    const rawAlpha = Math.min(1, Math.max(0, (performance.now() - state.arrivedAt) / gap));
+    // Gentle quad ease-out to round off direction changes across 100ms network intervals
+    const ease = rawAlpha * (2 - rawAlpha);
     head = {
-      t: prev.t + (last.t - prev.t) * alpha,
-      p: prev.p + (last.p - prev.p) * alpha,
+      t: prev.t + (last.t - prev.t) * ease,
+      p: prev.p + (last.p - prev.p) * ease,
     };
+    alpha = rawAlpha;
   }
 
   const lineColor = (head?.p ?? startPrice) >= startPrice ? paint.pump : paint.dump;
@@ -330,7 +326,6 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
   const sizeRef = useRef(size);
   const frameRef = useRef(0);
   const runningRef = useRef(false);
-  const lastDrawRef = useRef(0);
 
   // Stable for the component's life: it reads everything it needs from refs at call time,
   // so it never needs rebuilding and never goes stale.
@@ -338,13 +333,6 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
     if (runningRef.current) return;
     runningRef.current = true;
     const loop = () => {
-      const now = performance.now();
-      if (now - lastDrawRef.current < MIN_FRAME_MS) {
-        frameRef.current = requestAnimationFrame(loop);
-        return;
-      }
-      lastDrawRef.current = now;
-
       // Timed here rather than in a separate rAF, so the measurement is of the frames this
       // chart actually drew — the ones a stutter would show up in.
       telemetry.frame(liveRef.current.series.count);
