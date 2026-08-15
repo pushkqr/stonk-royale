@@ -45,6 +45,8 @@ public final class MatchPlayer {
      */
     private final boolean bot;
 
+    private boolean left;
+
     public MatchPlayer(String id, String nickname, boolean host) {
         this(id, nickname, host, false);
     }
@@ -54,6 +56,21 @@ public final class MatchPlayer {
         this.nickname = nickname;
         this.host = host;
         this.bot = bot;
+    }
+
+    /**
+     * Whether this player deliberately gave up their seat.
+     *
+     * Distinct from being disconnected, and deliberately so. A dropped socket might be a
+     * tunnel or a locked phone and must not cost anybody their seat; pressing Leave and
+     * confirming it is a decision, and acting on it is the whole point.
+     */
+    public boolean hasLeft() {
+        return left;
+    }
+
+    void retire() {
+        left = true;
     }
 
     public boolean isBot() {
@@ -82,8 +99,10 @@ public final class MatchPlayer {
 
     /**
      * @param atMillis when this happened, so a grace period can be measured from it
+     * @return whether this actually changed anything, so a caller can avoid saying nothing loudly
      */
-    void setConnected(boolean value, long atMillis) {
+    boolean setConnected(boolean value, long atMillis) {
+        boolean changed = connected != value;
         if (value) {
             disconnectedSinceMillis = 0;
         } else if (disconnectedSinceMillis == 0) {
@@ -97,6 +116,7 @@ public final class MatchPlayer {
             disconnectedSinceMillis = atMillis;
         }
         connected = value;
+        return changed;
     }
 
     /** When this player's socket went away, or 0 while it is up. */

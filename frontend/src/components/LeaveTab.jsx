@@ -9,12 +9,14 @@ import { useMatch } from "../state/MatchProvider";
  * control could do. The second press is the one that leaves.
  */
 export default function LeaveTab() {
-  const { quit } = useMatch();
+  const { quit, phase } = useMatch();
   const [armed, setArmed] = useState(false);
+
+  const inPlay = phase && phase.phase !== "LOBBY" && phase.phase !== "FINISHED";
 
   useEffect(() => {
     if (!armed) return undefined;
-    const id = setTimeout(() => setArmed(false), 3000);
+    const id = setTimeout(() => setArmed(false), 5000);
     return () => clearTimeout(id);
   }, [armed]);
 
@@ -22,9 +24,10 @@ export default function LeaveTab() {
     <button
       className={`corner-tab leave-tab mono ${armed ? "is-armed" : ""}`}
       onClick={() => (armed ? quit() : setArmed(true))}
-      title="Leave this room"
+      title={armed ? (inPlay ? "Press again to leave (forfeits match)" : "Press again to leave") : "Leave this room"}
+      aria-label={armed ? "Press again to leave the room" : "Leave this room"}
     >
-      {armed ? "LEAVE?" : "LEAVE"}
+      {armed ? "TAP AGAIN" : "LEAVE"}
     </button>
   );
 }

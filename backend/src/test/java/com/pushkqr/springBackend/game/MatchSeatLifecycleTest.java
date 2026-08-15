@@ -187,4 +187,113 @@ class MatchSeatLifecycleTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("next round");
     }
+
+    @Test
+    void markingASeatTellsTheCallerWhetherAnythingActuallyChanged() {
+        Match match = new Match("SEATS_TEST", new MatchConfig(1, 60, 8, 10_000, 12));
+        match.join("player1", "Player1");
+        String playerId = "player1";
+
+        // The seat is already connected once its socket has opened, so saying so again is
+        // not news and must not be broadcast.
+        assertThat(match.markConnected(playerId, true, 1_000)).isTrue();
+        assertThat(match.markConnected(playerId, true, 1_100)).isFalse();
+
+        assertThat(match.markConnected(playerId, false, 1_200)).isTrue();
+        assertThat(match.markConnected(playerId, false, 1_300)).isFalse();
+    }
+
+    @Test
+    void markingASeatThatIsNotThereChangesNothing() {
+        Match match = new Match("SEATS_TEST", new MatchConfig(1, 60, 8, 10_000, 12));
+        match.join("player1", "Player1");
+
+        assertThat(match.markConnected("nobody", false, 1_000)).isFalse();
+    }
+
+    @Test
+    void leavingDuringAMatchGivesUpTheSeatWithoutErasingTheScore() {
+        Match match = new Match("SEATS_INTERMISSION", new MatchConfig(2, 10, 1, 10_000, 12));
+        match.join("host", "Host");
+        match.join("guest", "Guest");
+        match.markConnected("host", true, 0);
+        match.markConnected("guest", true, 0);
+        match.start(0);
+        match.markReady("host");
+        match.markReady("guest");
+        match.tick(100);
+
+        for (long t = 100; t <= 12_000; t += 100) {
+            match.tick(t);
+        }
+        assertThat(match.phase()).isEqualTo(MatchPhase.INTERMISSION);
+
+        String quitter = "guest";
+        double earned = match.player(quitter).totalScore();
+
+        // A deliberate Leave is not a dropped socket: it must be acted on, and the room
+        // must be told. Today this returns false and the press is silently discarded.
+        assertThat(match.leave(quitter, 12_100)).isTrue();
+
+        MatchPlayer gone = match.player(quitter);
+        assertThat(gone).isNotNull();
+        assertThat(gone.hasLeft()).isTrue();
+        // Kept, so the standings do not suddenly disagree with rounds that really happened.
+        assertThat(gone.totalScore()).isEqualTo(earned);
+    }
+
+    @Test
+    void somebodyWhoLeftIsNotDealtIntoTheNextRound() {
+        Match match = new Match("SEATS_INTERMISSION2", new MatchConfig(2, 10, 1, 10_000, 12));
+        match.join("host", "Host");
+        match.join("guest", "Guest");
+        match.markConnected("host", true, 0);
+        match.markConnected("guest", true, 0);
+        match.start(0);
+        match.markReady("host");
+        match.markReady("guest");
+        match.tick(100);
+
+        for (long t = 100; t <= 12_000; t += 100) {
+            match.tick(t);
+        }
+        assertThat(match.phase()).isEqualTo(MatchPhase.INTERMISSION);
+
+        String quitter = "guest";
+        match.leave(quitter, 12_100);
+
+        // Advance the clock past the intermission so the next round starts and trading begins.
+        for (long t = 12_100; t <= 20_000; t += 100) {
+            match.tick(t);
+        }
+        assertThat(match.phase()).isEqualTo(MatchPhase.TRADING);
+
+        // Straight onto the latecomer path: no tip planned, so no stack allocated.
+        assertThat(match.player(quitter).round()).isNull();
+    }
+
+    @Test
+    void aSeatGivenUpMidMatchStopsHoldingASlot() {
+        Match match = new Match("SEATS_FULL", new MatchConfig(2, 10, 1, 10_000, 2));
+        match.join("host", "Host");
+        match.join("guest", "Guest");
+        match.markConnected("host", true, 0);
+        match.markConnected("guest", true, 0);
+        match.start(0);
+        match.markReady("host");
+        match.markReady("guest");
+        match.tick(100);
+
+        for (long t = 100; t <= 12_000; t += 100) {
+            match.tick(t);
+        }
+        assertThat(match.phase()).isEqualTo(MatchPhase.INTERMISSION);
+
+        String quitter = "guest";
+        match.leave(quitter, 12_100);
+
+        // The room was full only because of somebody who has gone. A latecomer should be
+        // able to take the seat they gave up.
+        assertThat(match.join("newcomer", "Newcomer")).isNotNull();
+    }
 }

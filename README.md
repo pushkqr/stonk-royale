@@ -31,9 +31,13 @@ account to create, and no market data feed to depend on.
 - **Seats survive reloads, and abandoned rooms are reaped.** A disconnected socket in the
   lobby or results screen enters a 45-second grace window before the seat and token are freed,
   because a page reload, a cellular tunnel, or a wifi handover look identical to a closed
-  window at the moment they happen. Disconnected players are shown as away in the lobby. Mid-match
-  seats are kept permanently so standings stay consistent. Empty or abandoned rooms are reaped
-  after two minutes of inactivity.
+  window at the moment they happen. Disconnected players are shown as away in the lobby immediately
+  via live STOMP roster updates. Mid-match deliberate leaves retire the seat (preserving earned score
+  in standings without dealing further rounds, while freeing the slot for newcomers), whereas dropped
+  sockets are kept temporarily for reconnecting players. The host badge passes only to human players,
+  prioritising those who remain connected, and rooms left with only bots become hostless and are reaped
+  after two minutes of inactivity. Hosts can also seat opponent bots on demand from the lobby and remove
+  them with the standard kick control.
 
 - **Latecomers can take a seat while the match is running.** Turning up after the match has
   started seats you immediately instead of bouncing you to the home page. The latecomer sits out
@@ -441,7 +445,7 @@ reach a client mid-round.
 cd backend && ./mvnw test
 ```
 
-175 tests, all passing. They assert **design targets rather than implementation details**:
+186 tests, all passing. They assert **design targets rather than implementation details**:
 
 - `RUG` actually crashes and `SQUEEZE` actually spikes, measured across 400 seeds
 - `CHOP` has no directional bias
@@ -460,8 +464,12 @@ cd backend && ./mvnw test
 - All bot actions are authored once per round from the seeded random, keeping runs fully reproducible
 - Disconnected seats in the lobby or results screen survive 45 seconds of grace before freeing,
   preserving seat tokens through page reloads and network blips
+- Dropped and reconnected socket state transitions notify the lobby roster immediately so away indicators render in real time
 - Unseated or disconnected rooms are reaped after two minutes, while bot-only rooms never hold
   reaping back
+- Host migration promotes connected human players first, never assigns the host badge to a bot, and leaves bot-only rooms hostless
+- Mid-match departures retire the seat (leaving earned scores intact on the standings, withholding future round deals, and freeing slots for new entrants)
+- Hosts can add opponent bots to waiting rooms with unique generated IDs and conflict-free names, removable via standard kick
 - Latecomers can take a seat mid-match, safely sit out the round in progress without crashing
   round settlement or taking score damage, and enter trading from the next round
 - Rooms default to private and can be made public to allow quick matchmaking without compromising game phase rules

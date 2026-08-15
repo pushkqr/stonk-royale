@@ -223,7 +223,8 @@
 }
 
 /* Held, not lost — the seat comes back if they do, and says so meanwhile. */
-.lobby-player.is-away {
+.lobby-player.is-away,
+.rank.is-away {
   opacity: 0.45;
 }
 
@@ -927,11 +928,13 @@
   border-radius: 0 0 var(--radius) 0;
 }
 
-/* Armed and waiting for the second press. */
+/* Armed and waiting for the second press. Solid danger fill for unmistakable visibility. */
 .leave-tab.is-armed,
 .leave-tab.is-armed:hover {
-  color: var(--dump);
+  background: var(--dump);
+  color: var(--void-deep);
   border-color: var(--dump);
+  font-weight: 700;
 }
 
 .wire-form {

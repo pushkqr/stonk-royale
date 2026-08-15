@@ -25,9 +25,11 @@ public class SocketLifecycleListener {
     private static final Logger logger = LoggerFactory.getLogger(SocketLifecycleListener.class);
 
     private final MatchRegistry matches;
+    private final MatchBroadcaster broadcaster;
 
-    public SocketLifecycleListener(MatchRegistry matches) {
+    public SocketLifecycleListener(MatchRegistry matches, MatchBroadcaster broadcaster) {
         this.matches = matches;
+        this.broadcaster = broadcaster;
     }
 
     /**
@@ -44,8 +46,11 @@ public class SocketLifecycleListener {
             return;
         }
         Match match = matches.get(session.matchCode());
-        if (match != null) {
-            match.markConnected(session.playerId(), true, System.currentTimeMillis());
+        if (match != null && match.markConnected(session.playerId(), true, System.currentTimeMillis())) {
+            // Only on a real change: the usual case is the socket that follows a join, and
+            // that join has already broadcast this roster. Re-sending it would double every
+            // join's traffic to say nothing new.
+            broadcaster.lobby(match);
         }
     }
 
@@ -66,7 +71,14 @@ public class SocketLifecycleListener {
         // the seat immediately meant reloading the lobby page threw you out of the room —
         // taking your token with it, so the reconnect could not even be authenticated.
         // Task 3's grace timer is what eventually clears a seat nobody comes back to.
-        match.markConnected(session.playerId(), false, System.currentTimeMillis());
+        if (match.markConnected(session.playerId(), false, System.currentTimeMillis())) {
+            // Without this the flag moved and nobody heard. Views.LobbyPlayer has carried
+            // `connected` and Lobby.jsx has drawn an "away" badge from it since they were
+            // written, but no broadcast followed the change — so the badge never appeared
+            // once, and a closed window looked exactly like a healthy seat for the full
+            // 45 seconds until SeatVacated finally said otherwise.
+            broadcaster.lobby(match);
+        }
         logger.debug("{} dropped in match {}", session.playerId(), match.code());
     }
 }

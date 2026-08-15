@@ -305,7 +305,7 @@ class MatchTest {
 
         assertThat(match.hasNoHumans()).isFalse();
 
-        match.leave("human");
+        match.leave("human", 0);
 
         // Bots must never keep a room alive — nothing would ever reap it.
         assertThat(match.hasNoHumans()).isTrue();
@@ -407,14 +407,15 @@ class MatchTest {
     }
 
     @Test
-    void leavingIsAllowedFromTheLobbyButNotMidRound() {
+    void leavingIsAllowedFromTheLobbyAndRetiresMidRound() {
         Match lobby = lobbyOfTwo("LEAVE1");
-        assertTrue(lobby.leave("p2"), "a lobby seat can be given up");
+        assertTrue(lobby.leave("p2", 0), "a lobby seat can be given up");
 
         Match playing = lobbyOfTwo("LEAVE2");
         startPlaying(playing, 0);
         step(playing, 0, 1_000);
-        assertFalse(playing.leave("p2"), "a mid-round seat is kept on purpose");
+        assertTrue(playing.leave("p2", 1_000), "a mid-round seat is retired");
+        assertTrue(playing.player("p2").hasLeft());
     }
 
     @Test
@@ -432,7 +433,7 @@ class MatchTest {
     void leavingTheLobbyFreesTheSeat() {
         Match match = lobbyOfTwo("ABCDE");
 
-        assertTrue(match.leave("p2"));
+        assertTrue(match.leave("p2", 0));
         assertEquals(1, match.players().size());
         assertNull(match.player("p2"));
     }
@@ -444,7 +445,7 @@ class MatchTest {
         step(match, 0, 60_000);
         assertEquals(MatchPhase.FINISHED, match.phase());
 
-        assertTrue(match.leave("p2"));
+        assertTrue(match.leave("p2", 60_000));
         match.rematch(false, 60_000);
 
         assertEquals(1, match.players().size());
@@ -458,9 +459,10 @@ class MatchTest {
         step(match, 0, 1_000);
         assertEquals(MatchPhase.TRADING, match.phase());
 
-        assertFalse(match.leave("p2"));
+        assertTrue(match.leave("p2", 1_000));
         assertNotNull(match.player("p2"),
                 "standings pointing at a player who vanished mid-match are worse than an idle seat");
+        assertTrue(match.player("p2").hasLeft());
     }
 
     @Test
@@ -468,7 +470,7 @@ class MatchTest {
         Match match = lobbyOfTwo("ABCDE");
         assertTrue(match.player("p1").isHost());
 
-        assertTrue(match.leave("p1"));
+        assertTrue(match.leave("p1", 0));
 
         assertTrue(match.player("p2").isHost(), "a room nobody can start is a dead room");
     }
@@ -1028,5 +1030,49 @@ class MatchTest {
         assertEquals(first.round().regime(), second.round().regime());
         assertEquals(first.round().asset(), second.round().asset());
         assertArrayEquals(first.round().path().toArray(), second.round().path().toArray());
+    }
+
+    @Test
+    void theRoomIsNeverHandedToABot() {
+        Match match = new Match("NO_BOT_HOST", CONFIG);
+        String host = match.join("p1", "alice").id();
+        match.addBot("bot:1", "Vega");
+        match.addBot("bot:2", "Kite");
+        String other = match.join("p2", "bob").id();
+
+        assertThat(match.leave(host, 0)).isTrue();
+
+        // Insertion order would reach a bot first, and a bot never presses start — the room
+        // would keep its slot and be unplayable until it was reaped.
+        assertThat(match.player(other).isHost()).isTrue();
+    }
+
+    @Test
+    void aHumanWhoIsStillConnectedIsPreferredToOneWhoIsNot() {
+        Match match = new Match("PREFER_CONNECTED", CONFIG);
+        String host = match.join("p1", "alice").id();
+        String away = match.join("p2", "bob").id();
+        String here = match.join("p3", "carol").id();
+        match.markConnected(away, false, 1_000);
+        match.markConnected(here, true, 1_000);
+
+        assertThat(match.leave(host, 0)).isTrue();
+
+        // Promoting somebody whose socket has already gone just moves the problem along.
+        assertThat(match.player(here).isHost()).isTrue();
+    }
+
+    @Test
+    void aRoomWithOnlyBotsLeftHasNoHostAtAll() {
+        Match match = new Match("BOTS_ONLY_HOST", CONFIG);
+        String host = match.join("p1", "alice").id();
+        match.addBot("bot:1", "Vega");
+        match.addBot("bot:2", "Kite");
+
+        assertThat(match.leave(host, 0)).isTrue();
+
+        // Correct rather than unfortunate: there is nobody left who could press start, and
+        // the abandonment clock is already running on this room.
+        assertThat(match.players().stream().anyMatch(MatchPlayer::isHost)).isFalse();
     }
 }

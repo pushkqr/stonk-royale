@@ -268,6 +268,7 @@ export function MatchProvider({ session, children }) {
   const start = useCallback(() => publish("start"), [publish]);
   const rematch = useCallback((sameMarket) => publish("rematch", { sameMarket }), [publish]);
   const kick = useCallback((playerId) => publish("kick", { playerId }), [publish]);
+  const addBot = useCallback(() => publish("bot"), [publish]);
   const configure = useCallback((settings) => publish("config", settings), [publish]);
   const say = useCallback((text, claim) => publish("chat", { text, claim }), [publish]);
 
@@ -310,12 +311,13 @@ export function MatchProvider({ session, children }) {
       close,
       say,
       kick,
+      addBot,
       configure,
       quit,
     }),
     [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, lobby,
       error, me, serverNow, dismissError, quit, readyState, ready, start, rematch, open,
-      close, say, kick, configure],
+      close, say, kick, addBot, configure],
   );
 
   const priceValue = useMemo(() => ({ tick, series }), [tick, series]);

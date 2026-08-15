@@ -43,9 +43,11 @@ public final class Views {
      *                no stack and no tip until the next one deals
      * @param cash    the stack with no open position counted, so the client can rebuild
      *                equity and score at the live price instead of waiting for the next board
+     * @param left    true if this player gave up their seat mid-match
      */
     public record BoardRow(String playerId, String nickname, double equity, double roundScore,
-            double totalScore, Position position, boolean bot, boolean inRound, double cash) {
+            double totalScore, Position position, boolean bot, boolean inRound, double cash,
+            boolean left) {
     }
 
     /** kind is one of NEWS, LIQUIDATION, TRADE, CHAT, FLOW. */

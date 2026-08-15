@@ -158,7 +158,8 @@ public class MatchBroadcaster {
         PlayerRound round = player.round();
         if (round == null) {
             return new Views.BoardRow(player.id(), player.nickname(), 0, 0,
-                    round2(player.totalScore()), null, player.isBot(), false, 0);
+                    round2(player.totalScore()), null, player.isBot(), false, 0,
+                    player.hasLeft());
         }
         return new Views.BoardRow(
                 player.id(),
@@ -169,7 +170,8 @@ public class MatchBroadcaster {
                 positionView(round, price),
                 player.isBot(),
                 true,
-                round2(round.cash()));
+                round2(round.cash()),
+                player.hasLeft());
     }
 
     private Views.Position positionView(PlayerRound round, double price) {

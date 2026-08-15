@@ -16,9 +16,12 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * One live match, held entirely in memory.
@@ -130,7 +133,7 @@ public final class Match {
         if (players.containsKey(playerId)) {
             return players.get(playerId);
         }
-        if (players.size() >= config.maxPlayers()) {
+        if (activePlayerIds().size() >= config.maxPlayers()) {
             throw new IllegalStateException("Match is full");
         }
         MatchPlayer player = new MatchPlayer(playerId, nickname, players.isEmpty());
@@ -163,14 +166,27 @@ public final class Match {
      * Ejecting on disconnect would throw people out of rounds they are still playing.
      *
      * Between matches the seat goes, so a leaver stops holding a slot, stops being dealt a
-     * rumour, and stops appearing in the next lobby. Mid-match it stays: standings that
-     * reference a player who vanished halfway are worse than standings with an idle one.
+     * rumour, and stops appearing in the next lobby. Mid-match the seat is retired rather
+     * than removed: deleting it would leave the standings referencing rounds played by
+     * somebody who is no longer in them, while keeping it live would deal a fresh tip and
+     * stack every round to a player who has gone. Retiring puts them on exactly the path a
+     * latecomer takes — no tip planned, so no stack, and settlement skips them without
+     * recording a false zero.
      *
      * @return whether the roster changed and the room needs telling
      */
-    public boolean leave(String playerId) {
+    public boolean leave(String playerId, long now) {
         if (phase != MatchPhase.LOBBY && phase != MatchPhase.FINISHED) {
-            return false;
+            MatchPlayer quitting = players.get(playerId);
+            if (quitting == null || quitting.hasLeft()) {
+                return false;
+            }
+            quitting.retire();
+            quitting.setConnected(false, now);
+            if (quitting.isHost()) {
+                nextHost().ifPresent(MatchPlayer::promoteToHost);
+            }
+            return true;
         }
 
         MatchPlayer gone = players.remove(playerId);
@@ -178,11 +194,34 @@ public final class Match {
             return false;
         }
 
-        // Insertion order, so the badge lands on whoever has been here longest.
         if (gone.isHost()) {
-            players.values().stream().findFirst().ifPresent(MatchPlayer::promoteToHost);
+            nextHost().ifPresent(MatchPlayer::promoteToHost);
         }
         return true;
+    }
+
+    /**
+     * Who should get the room when the host gives up their seat.
+     *
+     * Never a bot. Insertion order alone would usually pick one — quick match seats the
+     * human first and backfills the rest — and a bot never presses start, so the room keeps
+     * its slot and becomes unplayable for anyone who wanders in.
+     *
+     * A connected human first, because promoting somebody whose socket has already dropped
+     * only moves the problem. Then any human, since they may be inside their grace period
+     * and on their way back. If only bots are left there is nobody to promote and the room
+     * correctly ends up hostless — trackAbandonment has already started its clock on it.
+     *
+     * Insertion order within each pass, so the badge still lands on whoever has been here
+     * longest.
+     */
+    private Optional<MatchPlayer> nextHost() {
+        return players.values().stream()
+                .filter(player -> !player.isBot() && !player.hasLeft() && player.isConnected())
+                .findFirst()
+                .or(() -> players.values().stream()
+                        .filter(player -> !player.isBot() && !player.hasLeft())
+                        .findFirst());
     }
 
     /**
@@ -217,7 +256,7 @@ public final class Match {
             MatchPlayer player = players.get(playerId);
             // Reuses leave() so the host badge moves the same way a deliberate departure
             // moves it, rather than stranding a room with no host.
-            if (player != null && leave(playerId)) {
+            if (player != null && leave(playerId, now)) {
                 events.add(new GameEvent.SeatVacated(playerId, player.nickname()));
             }
         }
@@ -231,7 +270,7 @@ public final class Match {
      * and a registry entry that lives until the process dies.
      */
     public boolean hasNoHumans() {
-        return players.values().stream().allMatch(MatchPlayer::isBot);
+        return players.values().stream().allMatch(player -> player.isBot() || player.hasLeft());
     }
 
     /**
@@ -500,7 +539,15 @@ public final class Match {
 
     private void planRound(int index) {
         roundIndex = index;
-        round = planner.plan(matchSeed(), index, players.keySet(), botIds(), config);
+        round = planner.plan(matchSeed(), index, activePlayerIds(), botIds(), config);
+    }
+
+    /** Who the next round is for. A retired seat is skipped exactly as a latecomer's is. */
+    private Set<String> activePlayerIds() {
+        return players.values().stream()
+                .filter(player -> !player.hasLeft())
+                .map(MatchPlayer::id)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /** Sorted downstream by the planner; this is just the subset of seats that are scripted. */
@@ -539,7 +586,7 @@ public final class Match {
         // in planRound — and giving them a stack without one would put somebody in a round
         // holding none of the information it is played with.
         players.values().stream()
-                .filter(player -> round.rumorFor(player.id()) != null)
+                .filter(player -> !player.hasLeft() && round.rumorFor(player.id()) != null)
                 .forEach(player -> player.beginRound(config.startingCash()));
         phase = MatchPhase.TRADING;
         roundStartedAtMillis = now;
@@ -575,12 +622,12 @@ public final class Match {
      * A dropped socket is not a departure — phones lock their screens constantly and the
      * client reconnects — so this never frees the seat. It exists so a player who has
      * vanished cannot hold the briefing gate shut for everybody else.
+     *
+     * @return whether the roster changed and the room needs telling
      */
-    public void markConnected(String playerId, boolean connected, long now) {
+    public boolean markConnected(String playerId, boolean connected, long now) {
         MatchPlayer player = players.get(playerId);
-        if (player != null) {
-            player.setConnected(connected, now);
-        }
+        return player != null && player.setConnected(connected, now);
     }
 
     /**

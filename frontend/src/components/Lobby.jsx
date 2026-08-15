@@ -4,7 +4,7 @@ import MatchSettings from "./MatchSettings";
 import { DEFAULTS } from "../lib/matchSettings";
 
 export default function Lobby() {
-  const { lobby, session, start, kick, configure } = useMatch();
+  const { lobby, session, start, kick, addBot, configure } = useMatch();
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -30,6 +30,7 @@ export default function Lobby() {
 
   const players = lobby?.players ?? [];
   const ready = players.length >= 2;
+  const isFull = players.length >= (lobby?.maxPlayers ?? 12);
 
   /*
     Read the badge off the room, not off the seat we were handed at join time.
@@ -115,6 +116,16 @@ export default function Lobby() {
 
         {isHost ? (
           <>
+            <button
+              type="button"
+              className="btn"
+              onClick={addBot}
+              disabled={isFull}
+            >
+              Add a bot
+            </button>
+            {isFull && <p className="notice muted">Room is full.</p>}
+
             <button
               type="button"
               className="link-btn muted"

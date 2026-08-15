@@ -15,7 +15,10 @@ function Standings({ rows, meId }) {
 
       <ol className="rank-list">
         {rows.map((row, i) => (
-          <li key={row.playerId} className={`rank ${row.playerId === meId ? "rank-me" : ""}`}>
+          <li
+            key={row.playerId}
+            className={`rank ${row.playerId === meId ? "rank-me" : ""} ${row.left ? "is-away" : ""}`}
+          >
             <span className="rank-no display">{i + 1}</span>
 
             {/* The live round score leads, because it's the number that moves. The
@@ -24,6 +27,7 @@ function Standings({ rows, meId }) {
               <span className="rank-name">
                 {row.nickname}
                 {row.bot && <span className="tag tag-bot">BOT</span>}
+                {row.left && <span className="tag muted">left</span>}
               </span>
               <span className="rank-scores">
                 <span className={`rank-score mono ${toneOf(row.roundScore)}`}>

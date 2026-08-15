@@ -87,7 +87,7 @@ public class MatchSocketController {
     @MessageMapping("/match/{code}/leave")
     public void leave(@DestinationVariable String code, Principal principal) {
         Match match = require(code, principal);
-        if (!match.leave(session(principal).playerId())) {
+        if (!match.leave(session(principal).playerId(), System.currentTimeMillis())) {
             return;
         }
 
@@ -120,12 +120,34 @@ public class MatchSocketController {
         if (actor.playerId().equals(request.playerId())) {
             throw new IllegalStateException("You cannot remove yourself — use Leave");
         }
-        if (!match.leave(request.playerId())) {
+        if (!match.leave(request.playerId(), System.currentTimeMillis())) {
             return;
         }
 
         broadcaster.kicked(request.playerId());
         sessions.remove(sessionTokenOf(request.playerId()));
+        broadcaster.lobby(match);
+    }
+
+    /**
+     * Host adds an opponent to the waiting room.
+     *
+     * Lobby only, for the same reason kick is: the roster a round was planned for must not
+     * change underneath it. Removal is kick's job — it already clears a bot as readily as
+     * a person, so there is no separate path for taking one back out.
+     */
+    @MessageMapping("/match/{code}/bot")
+    public void bot(@DestinationVariable String code, Principal principal) {
+        Match match = require(code, principal);
+
+        if (!match.player(session(principal).playerId()).isHost()) {
+            throw new IllegalStateException("Only the host can add a bot");
+        }
+        if (match.phase() != MatchPhase.LOBBY) {
+            throw new IllegalStateException("Bots can only be added before the match starts");
+        }
+
+        Bots.seat(match);
         broadcaster.lobby(match);
     }
 

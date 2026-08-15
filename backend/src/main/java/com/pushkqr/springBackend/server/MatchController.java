@@ -16,11 +16,6 @@ import java.util.List;
 @RequestMapping("/api/match")
 public class MatchController {
 
-    /** Deliberately unremarkable names — a bot should read as another player, not a robot. */
-    private static final List<String> BOT_NAMES = List.of("Vega", "Kite", "Moss", "Pike", "Otto");
-
-    private static final int BOT_COUNT = 3;
-
     private final MatchRegistry matches;
     private final SessionRegistry sessions;
     private final PlayerIdentity identity;
@@ -64,7 +59,7 @@ public class MatchController {
         Match match = matches.create(new MatchConfig(3, 60, 20, 10_000, MatchConfig.MAX_PLAYERS));
         stats.matchCreated();
         Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId());
-        seatBots(match, seat.nickname());
+        Bots.fill(match, Bots.BOT_COUNT);
         long now = System.currentTimeMillis();
         match.start(now);
         // Ready, but deliberately not advanced: the engine owns every phase transition and
@@ -105,7 +100,7 @@ public class MatchController {
         match.setVisibility(true);
         stats.matchCreated();
         Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId());
-        seatBots(match, seat.nickname());
+        Bots.fill(match, Bots.BOT_COUNT);
         return seat;
     }
 
@@ -129,22 +124,6 @@ public class MatchController {
     /** Bots do not count towards how worth joining a room is — they are the filler. */
     private static long humanCount(Match match) {
         return match.players().stream().filter(player -> !player.isBot()).count();
-    }
-
-    /**
-     * The "bot:" prefix keeps these ids clear of {@link PlayerIdentity}'s, which are Firebase
-     * uids or generated guest ids — a collision would hand a bot's seat to a person.
-     */
-    private void seatBots(Match match, String humanNickname) {
-        List<String> available = BOT_NAMES.stream()
-                // Two "Moss" in a four-player room makes the standings unreadable and every
-                // accusation ambiguous.
-                .filter(name -> !name.equalsIgnoreCase(humanNickname))
-                .toList();
-
-        for (int i = 0; i < BOT_COUNT; i++) {
-            match.addBot("bot:" + i, available.get(i));
-        }
     }
 
     @PostMapping("/{code}/join")
