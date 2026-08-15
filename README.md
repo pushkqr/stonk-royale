@@ -54,7 +54,9 @@ account to create, and no market data feed to depend on.
   never able to change the round's hidden fate by itself. The seeded path is the tide; the
   room is the chop on top of it. Six players piling into the same side together can push
   price by several percent, and a liquidation is a forced sell like any other, which is how
-  a cascade can take a table down together without any special-case code for it.
+  a cascade can take a table down together without any special-case code for it. The trade
+  deck shows the price an order would actually fill at, slippage included, making the cost of
+  size visible before clicking rather than surprising you after.
 
 - **Cash resets every round.** Each round starts every player at the same $10,000 and scores
   that round's PnL independently. A blowup in round one costs that round and nothing else —

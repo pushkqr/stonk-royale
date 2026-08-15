@@ -1,5 +1,7 @@
 import { memo, useState } from "react";
-import { money, price as fmtPrice, signedMoney, toneOf } from "../lib/format";
+import { money, price as fmtPrice } from "../lib/format";
+import LivePnl from "./LivePnl";
+import FillEstimate from "./FillEstimate";
 
 /**
  * Four controls, and no more. Direction, leverage, size, and the nerve to close — those
@@ -9,7 +11,7 @@ import { money, price as fmtPrice, signedMoney, toneOf } from "../lib/format";
  * Memoised because it hangs off the trading screen, which re-renders on every price tick,
  * while everything shown here moves with the board instead — five times slower.
  */
-function TradeDeck({ me, onOpen, onClose, disabled }) {
+function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
 
@@ -32,9 +34,7 @@ function TradeDeck({ me, onOpen, onClose, disabled }) {
 
         <div className="deck-open-pnl">
           <span className="eyebrow">Unrealised</span>
-          <span className={`display deck-pnl ${toneOf(position.unrealisedPnl)}`}>
-            {signedMoney(position.unrealisedPnl)}
-          </span>
+          <LivePnl position={position} />
         </div>
 
         <button className="btn btn-big btn-scream deck-close" onClick={onClose} disabled={disabled}>
@@ -44,7 +44,8 @@ function TradeDeck({ me, onOpen, onClose, disabled }) {
     );
   }
 
-  const margin = ((me?.equity ?? 0) * size) / 100;
+  const margin = ((me?.cash ?? me?.equity ?? 0) * size) / 100;
+  const notional = margin * leverage;
 
   return (
     <div className="deck">
@@ -86,6 +87,7 @@ function TradeDeck({ me, onOpen, onClose, disabled }) {
           disabled={disabled}
         >
           Long
+          <FillEstimate side="LONG" notional={notional} impact={impact} />
         </button>
         <button
           className="btn btn-big btn-dump"
@@ -93,6 +95,7 @@ function TradeDeck({ me, onOpen, onClose, disabled }) {
           disabled={disabled}
         >
           Short
+          <FillEstimate side="SHORT" notional={notional} impact={impact} />
         </button>
       </div>
     </div>

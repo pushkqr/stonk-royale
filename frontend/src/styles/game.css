@@ -976,6 +976,22 @@
   gap: 0.5rem;
 }
 
+/* Each side button now carries its label and the price it would fill at, stacked. .btn is a
+   centred row by default, which puts them side by side and overflows at this font size. */
+.deck-sides .btn {
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+/* .btn uppercases and tracks out its text, which is right for LONG and wrong for $42.63. */
+.deck-fill {
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.75;
+}
+
 .deck-open {
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;

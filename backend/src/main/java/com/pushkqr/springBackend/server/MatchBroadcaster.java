@@ -8,6 +8,7 @@ import com.pushkqr.springBackend.game.RoundPlan;
 import com.pushkqr.springBackend.game.info.Rumor;
 import com.pushkqr.springBackend.game.model.PlayerRound;
 import com.pushkqr.springBackend.game.model.Position;
+import com.pushkqr.springBackend.game.sim.MarketImpact;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
@@ -124,7 +125,8 @@ public class MatchBroadcaster {
                 match.players().stream()
                         .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot(), p.isConnected()))
                         .toList(),
-                match.isPublic());
+                match.isPublic(),
+                new Views.Impact(MarketImpact.IMPACT_PER_TRADE, match.referenceNotional()));
     }
 
     /**
@@ -156,7 +158,7 @@ public class MatchBroadcaster {
         PlayerRound round = player.round();
         if (round == null) {
             return new Views.BoardRow(player.id(), player.nickname(), 0, 0,
-                    round2(player.totalScore()), null, player.isBot(), false);
+                    round2(player.totalScore()), null, player.isBot(), false, 0);
         }
         return new Views.BoardRow(
                 player.id(),
@@ -166,7 +168,8 @@ public class MatchBroadcaster {
                 round2(player.totalScore()),
                 positionView(round, price),
                 player.isBot(),
-                true);
+                true,
+                round2(round.cash()));
     }
 
     private Views.Position positionView(PlayerRound round, double price) {

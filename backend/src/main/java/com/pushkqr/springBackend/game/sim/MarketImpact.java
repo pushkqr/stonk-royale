@@ -10,8 +10,14 @@ package com.pushkqr.springBackend.game.sim;
  */
 public final class MarketImpact {
 
-    /** A player's largest possible single trade moves price by roughly this much. */
-    private static final double IMPACT_PER_TRADE = 0.015;
+    /**
+     * How far a trade of exactly {@code referenceNotional} pushes the price.
+     *
+     * Public because the client shows players what their order will fill at, and a second
+     * copy of this number in the frontend would drift the first time it is retuned — which
+     * has already happened once.
+     */
+    public static final double IMPACT_PER_TRADE = 0.015;
 
     /** How fast a kick fades: within one time constant it is down to ~37% of its peak. */
     private static final double DECAY_TAU_SECONDS = 4.0;

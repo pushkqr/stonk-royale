@@ -738,6 +738,11 @@ public final class Match {
         return config;
     }
 
+    /** One player's largest possible position — what a trade's impact is measured against. */
+    public double referenceNotional() {
+        return referenceNotional;
+    }
+
     public MatchPhase phase() {
         return phase;
     }

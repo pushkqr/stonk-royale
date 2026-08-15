@@ -41,9 +41,11 @@ public final class Views {
     /**
      * @param inRound false for somebody who joined after this round was planned — they hold
      *                no stack and no tip until the next one deals
+     * @param cash    the stack with no open position counted, so the client can rebuild
+     *                equity and score at the live price instead of waiting for the next board
      */
     public record BoardRow(String playerId, String nickname, double equity, double roundScore,
-            double totalScore, Position position, boolean bot, boolean inRound) {
+            double totalScore, Position position, boolean bot, boolean inRound, double cash) {
     }
 
     /** kind is one of NEWS, LIQUIDATION, TRADE, CHAT, FLOW. */
@@ -85,9 +87,22 @@ public final class Views {
             boolean connected) {
     }
 
+    /**
+     * What the client needs to predict its own slippage.
+     *
+     * A trade pushes the price by {@code perTrade × notional / referenceNotional} in its own
+     * direction, and that push lands in the trader's own fill — which is what stops anyone
+     * opening, watching their own push, and closing for free.
+     *
+     * @param referenceNotional one player's largest possible position, so it moves with the
+     *                          starting cash the host picked
+     */
+    public record Impact(double perTrade, double referenceNotional) {
+    }
+
     public record Lobby(String code, String phase, int totalRounds, int roundSeconds,
             int intermissionSeconds, double startingCash, int maxPlayers,
-            List<LobbyPlayer> players, boolean isPublic) {
+            List<LobbyPlayer> players, boolean isPublic, Impact impact) {
     }
 
     public record JoinResult(String code, String playerId, String nickname, String token, boolean host) {

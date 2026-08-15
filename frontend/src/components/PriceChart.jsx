@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { price as fmtPrice } from "../lib/format";
 import { telemetry } from "../lib/telemetry";
 
 const PAD_RIGHT = 54;
@@ -392,11 +391,16 @@ export default function PriceChart({ series, roundMillis, position, startPrice }
 
   return (
     <div className="chart-wrap" ref={wrapRef}>
+      {/* The accessible name is deliberately static. It used to be rebuilt from the latest
+          tick on every render — ten times a second for a whole round — and a name that
+          changes at that rate is noise rather than information. The live price and the
+          round's move sit directly above as ordinary text, which is where a screen reader
+          should be reading them from. */}
       <canvas
         ref={canvasRef}
         style={{ width: "100%", height: "100%", display: "block" }}
         role="img"
-        aria-label={`Price chart. Now ${fmtPrice(series.points[series.count - 1]?.p ?? startPrice)}, opened at ${fmtPrice(startPrice)}.`}
+        aria-label="Price chart for the round in progress"
       />
     </div>
   );

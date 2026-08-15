@@ -4,6 +4,7 @@ import { sound } from "../lib/sound";
 import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, price as fmtPrice, toneOf } from "../lib/format";
+import { liveRoundScore } from "../lib/pnl";
 import PriceChart from "./PriceChart";
 import Dossier from "./Dossier";
 import Standings from "./Standings";
@@ -22,6 +23,11 @@ export default function Trading() {
   const live = tick?.price ?? startPrice;
   const move = startPrice ? ((live - startPrice) / startPrice) * 100 : 0;
   const urgent = left > 0 && left <= 10_000;
+
+  // Derived rather than read off the board, so it agrees with the chart and the deck. The
+  // board's own roundScore is half a second old by the time it lands. A latecomer sitting
+  // out the round has no stack to score against, hence the inRound guard.
+  const myScore = me?.inRound ? liveRoundScore(me, live, lobby?.startingCash ?? 0) : 0;
 
   // A latecomer holds a seat but no stack: the round was dealt before they arrived.
   const waiting = !!me && !me.inRound;
@@ -71,8 +77,8 @@ export default function Trading() {
 
         <div className="strip-me">
           <span className="eyebrow">This round</span>
-          <span className={`display strip-score ${toneOf(me?.roundScore ?? 0)}`}>
-            {pct(me?.roundScore ?? 0)}
+          <span className={`display strip-score ${toneOf(myScore)}`}>
+            {pct(myScore)}
           </span>
         </div>
       </header>
@@ -107,7 +113,13 @@ export default function Trading() {
           </p>
         )}
 
-        <TradeDeck me={me} onOpen={open} onClose={close} disabled={!me || waiting} />
+        <TradeDeck
+          me={me}
+          onOpen={open}
+          onClose={close}
+          disabled={!me || waiting}
+          impact={lobby?.impact}
+        />
       </section>
 
       <Wire feed={feed} onSay={say} disabled={false} />
