@@ -4,7 +4,7 @@ import { sound } from "../lib/sound";
 import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
 import { clock } from "../lib/format";
-import { REGIME_BIAS } from "../lib/regime";
+import { REGIME_BIAS, evaluateCrossCheck } from "../lib/regime";
 import PriceChart from "./PriceChart";
 import Dossier from "./Dossier";
 import Standings from "./Standings";
@@ -85,6 +85,23 @@ export default function Trading() {
     }
   }, [feed]);
 
+  const roundNews = feed.filter(
+    (f) => f.kind === "NEWS" && f.round === phase?.roundIndex
+  );
+  const latestNews = roundNews.length > 0 ? roundNews[roundNews.length - 1] : null;
+  const crossCheckStatus = evaluateCrossCheck(
+    rumor?.claimedRegime,
+    roundNews.map((n) => n.text)
+  );
+
+  const lastNewsIdRef = useRef(null);
+  useEffect(() => {
+    if (latestNews && latestNews.id !== lastNewsIdRef.current) {
+      lastNewsIdRef.current = latestNews.id;
+      sound.news();
+    }
+  }, [latestNews]);
+
   return (
     <div className="table">
       <header className="strip">
@@ -123,22 +140,37 @@ export default function Trading() {
         <LiveFloorPrice startPrice={startPrice} />
 
         <div className="floor-intel-hud">
-          {rumor?.claimedRegime && REGIME_BIAS[rumor.claimedRegime] ? (
-            <span className={`intel-bias-badge tone-${REGIME_BIAS[rumor.claimedRegime].tone}`}>
-              {REGIME_BIAS[rumor.claimedRegime].label}
+          <div className="intel-hud-top">
+            {rumor?.claimedRegime && REGIME_BIAS[rumor.claimedRegime] ? (
+              <span className={`intel-bias-badge tone-${REGIME_BIAS[rumor.claimedRegime].tone}`}>
+                {REGIME_BIAS[rumor.claimedRegime].label}
+              </span>
+            ) : (
+              <span className="intel-bias-badge">INTEL</span>
+            )}
+            <span className="intel-pill">
+              {rumor?.text || "No active intel"}
             </span>
-          ) : (
-            <span className="intel-bias-badge">INTEL</span>
-          )}
-          <span className="intel-pill">
-            {rumor?.text || "No active intel"}
-          </span>
-          {phase?.truthfulTips != null && (
-            <span className="intel-count mono">
-              {phase.truthfulTips}/{phase.totalPlayers ?? (board?.length || 2)} Truthful
-            </span>
+            {phase?.truthfulTips != null && (
+              <span className="intel-count mono">
+                {phase.truthfulTips}/{phase.totalPlayers ?? (board?.length || 2)} Truthful
+              </span>
+            )}
+          </div>
+          {crossCheckStatus && (
+            <div className={`intel-cross-check tone-${crossCheckStatus.tone}`}>
+              <span className="cross-check-icon">{crossCheckStatus.icon}</span>
+              <span className="cross-check-text">{crossCheckStatus.text}</span>
+            </div>
           )}
         </div>
+
+        {latestNews && (
+          <div className="in-chart-news-banner" role="alert">
+            <span className="news-badge">⚡ BREAKING NEWS</span>
+            <span className="news-text">{latestNews.text}</span>
+          </div>
+        )}
 
         <PriceChart
           series={series}
@@ -164,7 +196,9 @@ export default function Trading() {
 
       <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} />
 
-      {jolt > 0 && <div className="jolt" key={jolt} aria-hidden="true" />}
+      {/* A full-viewport red frame that snaps in on liquidation and fades out. It lives
+          outside the layout flow so it can cover the whole screen without pushing anything. */}
+      {jolt > 0 && <div key={jolt} className="liquidation-flash" aria-hidden="true" />}
     </div>
   );
 }

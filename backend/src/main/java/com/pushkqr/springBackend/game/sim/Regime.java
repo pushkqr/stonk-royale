@@ -7,11 +7,11 @@ package com.pushkqr.springBackend.game.sim;
  * numbers read directly as "expected move" and "typical swing" for one 90-second round.
  */
 public enum Regime {
-    PUMP(0.25, 0.18, null),
-    DUMP(-0.25, 0.18, null),
-    CHOP(0.0, 0.30, null),
-    RUG(0.20, 0.15, new Shock(0.60, -0.40)),
-    SQUEEZE(-0.15, 0.15, new Shock(0.60, 0.40));
+    PUMP(0.35, 0.15, null),
+    DUMP(-0.35, 0.15, null),
+    CHOP(0.0, 0.25, null),
+    RUG(0.22, 0.12, new Shock(0.60, -0.50)),
+    SQUEEZE(-0.18, 0.12, new Shock(0.60, 0.50));
 
     /**
      * A violent move spliced into the path. {@code magnitude} is the total multiplicative

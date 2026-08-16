@@ -5,6 +5,8 @@ import {
   REGIME_PRIMER,
   REGIME_BIAS,
   deductionVerdict,
+  classifyHeadline,
+  evaluateCrossCheck,
 } from "../lib/regime";
 
 describe("regime.js", () => {
@@ -36,6 +38,56 @@ describe("regime.js", () => {
     expect(REGIME_BIAS.CHOP.label).toBe("BIAS: SCALP ONLY");
     expect(REGIME_BIAS.RUG.label).toBe("WARNING: RUG PULL");
     expect(REGIME_BIAS.SQUEEZE.label).toBe("ALERT: SHORT SQUEEZE");
+  });
+
+  it("classifies market headlines into matching regimes", () => {
+    expect(classifyHeadline("$NVDA NAMED TOP PICK BY MAJOR DESK")).toBe("PUMP");
+    expect(classifyHeadline("INSTITUTIONAL INFLOWS INTO $BTC HIT RECORD")).toBe("PUMP");
+    expect(classifyHeadline("$TSLA DOWNGRADED ACROSS THE STREET")).toBe("DUMP");
+    expect(classifyHeadline("EARLY BACKERS SEEN EXITING $MEME")).toBe("DUMP");
+    expect(classifyHeadline("$ETH VOLUME DRIES UP, TRADERS SIDELINED")).toBe("CHOP");
+    expect(classifyHeadline("ANALYSTS SPLIT ON $SOL, NO CONSENSUS")).toBe("CHOP");
+    expect(classifyHeadline("$DOGE DEV WALLET MOVING")).toBe("RUG");
+    expect(classifyHeadline("REGULATORS OPEN PROBE INTO $X")).toBe("RUG");
+    expect(classifyHeadline("$GME SHORT INTEREST HITS ALL-TIME HIGH")).toBe("SQUEEZE");
+    expect(classifyHeadline("$AMC FLOAT LOCKED UP, BORROW UNAVAILABLE")).toBe("SQUEEZE");
+    expect(classifyHeadline("Random unrelated tweet")).toBeNull();
+  });
+
+  it("evaluates live cross-checks between tip and news headlines", () => {
+    // Single matching headline
+    const match = evaluateCrossCheck("PUMP", ["$NVDA NAMED TOP PICK BY MAJOR DESK"]);
+    expect(match.status).toBe("MATCHING");
+    expect(match.tone).toBe("pump");
+
+    // Single conflicting headline
+    const conflict = evaluateCrossCheck("PUMP", ["$TSLA DOWNGRADED ACROSS THE STREET"]);
+    expect(conflict.status).toBe("CONFLICTING");
+    expect(conflict.tone).toBe("dump");
+
+    // 2 headlines: 1 match, 1 conflict (mixed signals)
+    const mixed = evaluateCrossCheck("PUMP", [
+      "$NVDA NAMED TOP PICK BY MAJOR DESK",
+      "$TSLA DOWNGRADED ACROSS THE STREET",
+    ]);
+    expect(mixed.status).toBe("MIXED");
+    expect(mixed.tone).toBe("scream");
+
+    // 2 matching headlines (confirmed alpha)
+    const confirmed = evaluateCrossCheck("PUMP", [
+      "$NVDA NAMED TOP PICK BY MAJOR DESK",
+      "INSTITUTIONAL INFLOWS INTO $NVDA HIT RECORD",
+    ]);
+    expect(confirmed.status).toBe("CONFIRMED");
+    expect(confirmed.tone).toBe("pump");
+
+    // 2 conflicting headlines (exposed lie)
+    const exposed = evaluateCrossCheck("PUMP", [
+      "$TSLA DOWNGRADED ACROSS THE STREET",
+      "EARLY BACKERS SEEN EXITING $TSLA",
+    ]);
+    expect(exposed.status).toBe("EXPOSED");
+    expect(exposed.tone).toBe("dump");
   });
 
   it("calculates deduction verdicts accurately across player outcomes", () => {

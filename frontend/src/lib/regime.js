@@ -48,6 +48,80 @@ export function tipCountLine(count) {
 }
 
 /**
+ * Identifies the market regime implied by a news headline.
+ */
+export function classifyHeadline(text) {
+  if (!text) return null;
+  const upper = text.toUpperCase();
+  if (upper.includes("NAMED TOP PICK") || upper.includes("INSTITUTIONAL INFLOWS")) return "PUMP";
+  if (upper.includes("DOWNGRADED") || upper.includes("EARLY BACKERS SEEN EXITING")) return "DUMP";
+  if (upper.includes("VOLUME DRIES UP") || upper.includes("ANALYSTS SPLIT")) return "CHOP";
+  if (upper.includes("DEV WALLET MOVING") || upper.includes("REGULATORS OPEN PROBE")) return "RUG";
+  if (upper.includes("SHORT INTEREST HITS") || upper.includes("FLOAT LOCKED UP")) return "SQUEEZE";
+  return null;
+}
+
+/**
+ * Evaluates live breaking headlines against a player's secret tip claim.
+ * @param {string} claimedRegime The regime claimed by player's rumor
+ * @param {Array} headlines Array of string headline texts received this round
+ * @returns {Object|null} Cross check status { status, text, tone, icon }
+ */
+export function evaluateCrossCheck(claimedRegime, headlines = []) {
+  if (!claimedRegime || !headlines || headlines.length === 0) return null;
+
+  const classified = headlines.map(classifyHeadline).filter(Boolean);
+  if (classified.length === 0) return null;
+
+  const matches = classified.filter((r) => r === claimedRegime).length;
+  const conflicts = classified.filter((r) => r !== claimedRegime).length;
+
+  if (classified.length === 1) {
+    if (matches === 1) {
+      return {
+        status: "MATCHING",
+        tone: "pump",
+        icon: "🟢",
+        text: "Headline corroborates your tip.",
+      };
+    }
+    return {
+      status: "CONFLICTING",
+      tone: "dump",
+      icon: "⚠️",
+      text: `Headline claims ${classified[0]} (conflicts with your tip).`,
+    };
+  }
+
+  // 2 or more headlines (both round headlines dropped: 1 true, 1 lie)
+  if (matches > 0 && conflicts > 0) {
+    const conflictingRegime = classified.find((r) => r !== claimedRegime);
+    return {
+      status: "MIXED",
+      tone: "scream",
+      icon: "⚖️",
+      text: `Mixed signals: 1 confirms ${claimedRegime}, 1 claims ${conflictingRegime}.`,
+    };
+  }
+
+  if (matches >= 2) {
+    return {
+      status: "CONFIRMED",
+      tone: "pump",
+      icon: "🎯",
+      text: "CONFIRMED ALPHA: News items align with your tip!",
+    };
+  }
+
+  return {
+    status: "EXPOSED",
+    tone: "dump",
+    icon: "🚨",
+    text: `PROVEN LIE: Headlines contradict ${claimedRegime}. Fade your tip!`,
+  };
+}
+
+/**
  * Categorizes a player's round performance relative to the truthfulness of their rumor.
  */
 export function deductionVerdict(myResult, settledRegime) {
