@@ -1422,6 +1422,10 @@
   padding-left: 0.18em;
 }
 
+.mobile-dock {
+  display: none;
+}
+
 /* Clipped to the page's top corners rather than floating over them. As free pills they
    landed on the masthead's rounded corner and read as browser artifacts; as tabs with the
    content cleared below, they belong to the sheet. */
@@ -1941,49 +1945,197 @@
 
 @media (max-width: 900px) {
   .table {
-    height: auto;
-    min-height: 100%;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto auto;
-    /* Wire above the chart, compressed to the last couple of messages: it is a ticker on a
-       phone, not a chat window. The chart and deck then sit in the middle of the screen
-       where your thumbs are, with the left rail under them. */
-    grid-template-areas:
-      "strip"
-      "wire"
-      "floor"
-      "left";
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--gap) + 1.8rem) var(--gap) 0;
+    gap: 0.45rem;
+  }
+
+  .table > .strip {
+    flex: 0 0 auto;
+  }
+
+  /* Desktop grid areas reset on mobile flex */
+  .table > .left-rail,
+  .table > .floor,
+  .table > .wire-talk {
+    grid-area: auto;
+  }
+
+  /* --- Tab Viewport Routing (Fixed 100dvh, zero page scroll) --- */
+  .table.tab-trade > .left-rail,
+  .table.tab-trade > .wire-talk {
+    display: none !important;
+  }
+  .table.tab-trade > .floor {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 0.5rem;
+  }
+
+  .table.tab-dossier > .floor,
+  .table.tab-dossier > .wire-talk {
+    display: none !important;
+  }
+  .table.tab-dossier > .left-rail {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .table.tab-dossier > .left-rail > .rail {
+    display: none !important;
+  }
+  .table.tab-dossier > .left-rail > .dossier {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .table.tab-standings > .floor,
+  .table.tab-standings > .wire-talk {
+    display: none !important;
+  }
+  .table.tab-standings > .left-rail {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .table.tab-standings > .left-rail > .dossier {
+    display: none !important;
+  }
+  .table.tab-standings > .left-rail > .rail {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .table.tab-wire > .floor,
+  .table.tab-wire > .left-rail {
+    display: none !important;
+  }
+  .table.tab-wire > .wire-talk {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .chart-wrap {
+    height: clamp(170px, 28vh, 260px);
+    flex-shrink: 0;
   }
 
   .left-rail {
-    height: auto;
-    overflow: visible;
+    height: 100%;
+    overflow: hidden;
   }
 
   .rail,
   .dossier {
-    flex: none;
-    height: auto;
+    flex: 1 1 auto;
+    height: 100%;
     max-height: none;
-    overflow: visible;
+    overflow-y: auto;
   }
 
-  .chart-wrap {
-    height: 40vh;
-  }
-
-  /* About two messages' worth. The list still holds the full backlog and scrolls, so
-     nothing is lost — it just stops eating the screen. */
   .wire-list {
-    max-height: 4.5rem;
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .rank-list {
+    flex: 1 1 auto;
     max-height: none;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .dossier-news {
+    flex: 1 1 auto;
     max-height: none;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* --- Mobile Tactile Dock Bar --- */
+  .mobile-dock {
+    display: flex;
+    flex: 0 0 3.4rem;
+    height: 3.4rem;
+    background: var(--void-deep);
+    border-top: 1px solid var(--edge);
+    margin: 0 calc(-1 * var(--gap));
+    padding: 0 0.5rem;
+    z-index: 100;
+    align-items: stretch;
+    justify-content: space-around;
+  }
+
+  .mobile-dock-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    background: transparent;
+    border: none;
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--haze);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.05s ease, background 0.05s ease;
+    border-top: 2px solid transparent;
+  }
+
+  .mobile-dock-btn:hover {
+    color: var(--paper);
+  }
+
+  .mobile-dock-btn.is-active {
+    color: var(--scream);
+    background: var(--void-wash);
+    border-top: 2px solid var(--scream);
+  }
+
+  .dock-icon {
+    font-size: 1.05rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dock-badge-dot {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--scream);
+    box-shadow: 0 0 6px var(--scream);
   }
 }
 

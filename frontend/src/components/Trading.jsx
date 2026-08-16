@@ -119,8 +119,12 @@ export default function Trading() {
     }
   }, [latestNews]);
 
+  const [mobileTab, setMobileTab] = useState("trade");
+  const [lastSeenFeedLen, setLastSeenFeedLen] = useState(feed?.length ?? 0);
+  const hasUnreadWire = mobileTab !== "wire" && (feed?.length ?? 0) > lastSeenFeedLen;
+
   return (
-    <div className="table">
+    <div className={`table tab-${mobileTab}`}>
       <header className="strip">
         <div className="strip-round">
           <span className="eyebrow">
@@ -207,6 +211,48 @@ export default function Trading() {
       </section>
 
       <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} />
+
+      {/* Mobile Dock Navigation */}
+      <nav className="mobile-dock" aria-label="Mobile Navigation">
+        <button
+          type="button"
+          className={`mobile-dock-btn ${mobileTab === "trade" ? "is-active" : ""}`}
+          onClick={() => setMobileTab("trade")}
+        >
+          <span className="dock-icon">📊</span>
+          <span>Trade</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-dock-btn ${mobileTab === "dossier" ? "is-active" : ""}`}
+          onClick={() => setMobileTab("dossier")}
+        >
+          <span className="dock-icon">🕵️</span>
+          <span>Intel</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-dock-btn ${mobileTab === "standings" ? "is-active" : ""}`}
+          onClick={() => setMobileTab("standings")}
+        >
+          <span className="dock-icon">🏆</span>
+          <span>Ranks</span>
+        </button>
+        <button
+          type="button"
+          className={`mobile-dock-btn ${mobileTab === "wire" ? "is-active" : ""}`}
+          onClick={() => {
+            setMobileTab("wire");
+            setLastSeenFeedLen(feed?.length ?? 0);
+          }}
+        >
+          <span className="dock-icon" style={{ position: "relative" }}>
+            💬
+            {hasUnreadWire && <span className="dock-badge-dot" />}
+          </span>
+          <span>Wire</span>
+        </button>
+      </nav>
 
       {/* A full-viewport red frame that snaps in on liquidation and fades out with screen shake. */}
       {jolt > 0 && (
