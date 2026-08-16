@@ -11,7 +11,7 @@ package com.pushkqr.springBackend.game.sim;
 public final class MarketImpact {
 
     /**
-     * How far a trade of exactly {@code referenceNotional} pushes the price.
+     * How far a trade of exactly {@code referenceNotional} pushes the price at 1.0x impact.
      *
      * Public because the client shows players what their order will fill at, and a second
      * copy of this number in the frontend would drift the first time it is retuned — which
@@ -22,22 +22,22 @@ public final class MarketImpact {
     /** How fast a kick fades: within one time constant it is down to ~37% of its peak. */
     private static final double DECAY_TAU_SECONDS = 4.0;
 
-    /**
-     * However hard the room pushes, the price can never be displaced more than this.
-     *
-     * Set so that twice this value — the worst-case swing a held position can see between
-     * its own entry (which already has whatever impact existed at entry baked into its
-     * fill price) and any later read — stays under the smallest move that liquidates any
-     * leverage up to {@code Position.MAX_LEVERAGE} (9%, at 10x). A single kick alone was
-     * always safely under that; the full entry-to-now swing was not, at the old 6% cap.
-     */
-    private static final double MAX_IMPACT = 0.04;
+    /** Base 4% impact cap for 1.0x multiplier. */
+    private static final double BASE_MAX_IMPACT = 0.04;
 
+    private final double impactMultiplier;
+    private final double maxImpact;
     private double value;
     private long lastMillis;
 
-    public MarketImpact(long startMillis) {
+    public MarketImpact(long startMillis, double impactMultiplier) {
         this.lastMillis = startMillis;
+        this.impactMultiplier = impactMultiplier;
+        this.maxImpact = Math.min(0.12, BASE_MAX_IMPACT * Math.max(1.0, impactMultiplier * 0.75));
+    }
+
+    public MarketImpact(long startMillis) {
+        this(startMillis, 1.0);
     }
 
     /**
@@ -62,12 +62,20 @@ public final class MarketImpact {
      *                          because it is a crowd, not because the reference shrinks.
      */
     public void record(double notional, int direction, double referenceNotional, long now) {
-        double kick = IMPACT_PER_TRADE * (notional * direction) / referenceNotional;
+        double kick = (IMPACT_PER_TRADE * impactMultiplier) * (notional * direction) / referenceNotional;
         value = clamp(valueAt(now) + kick);
         lastMillis = now;
     }
 
-    private static double clamp(double v) {
-        return Math.max(-MAX_IMPACT, Math.min(MAX_IMPACT, v));
+    private double clamp(double v) {
+        return Math.max(-maxImpact, Math.min(maxImpact, v));
+    }
+
+    public double impactMultiplier() {
+        return impactMultiplier;
+    }
+
+    public double maxImpact() {
+        return maxImpact;
     }
 }

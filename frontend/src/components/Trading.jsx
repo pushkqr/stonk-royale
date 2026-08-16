@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TrendingUp, FileText, Trophy, MessageSquare } from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
+import { haptic } from "../lib/haptic";
 import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
-import { clock } from "../lib/format";
+import { clock, money } from "../lib/format";
 import { REGIME_BIAS, evaluateCrossCheck } from "../lib/regime";
+import { unrealisedPnl } from "../lib/pnl";
+import { getLivePrice } from "../state/livePrice";
 import PriceChart from "./PriceChart";
 import Dossier from "./Dossier";
 import Standings from "./Standings";
@@ -61,6 +64,9 @@ export default function Trading() {
     if (lastTick.current !== second) {
       lastTick.current = second;
       sound.tick(second);
+      if (second <= 3 && second > 0) {
+        haptic.tick();
+      }
     }
   }, [left, urgent]);
 
@@ -84,6 +90,12 @@ export default function Trading() {
       setRoomLiq((n) => n + 1);
     }
   }, [feed, session.playerId]);
+
+  useEffect(() => {
+    if (jolt > 0) {
+      haptic.liquidate();
+    }
+  }, [jolt]);
 
   const [surge, setSurge] = useState(null);
   const seenSurge = useRef(0);
@@ -124,6 +136,83 @@ export default function Trading() {
   const [lastSeenFeedLen, setLastSeenFeedLen] = useState(feed?.length ?? 0);
   const hasUnreadWire = mobileTab !== "wire" && (feed?.length ?? 0) > lastSeenFeedLen;
 
+  const [floaters, setFloaters] = useState([]);
+  const [liquidations, setLiquidations] = useState([]);
+
+  const addFloater = useCallback((floater) => {
+    const id = Date.now() + Math.random();
+    setFloaters((prev) => [...prev, { ...floater, id }]);
+    setTimeout(() => {
+      setFloaters((prev) => prev.filter((f) => f.id !== id));
+    }, 1500);
+  }, []);
+
+  const roundIndex = phase?.roundIndex;
+  const prevRoundRef = useRef(roundIndex);
+  if (roundIndex !== prevRoundRef.current) {
+    prevRoundRef.current = roundIndex;
+    setLiquidations([]);
+    setFloaters([]);
+  }
+
+  const seenLiqMapRef = useRef(new Set());
+  useEffect(() => {
+    const liqEvents = feed.filter((f) => f.kind === "LIQUIDATION");
+    if (liqEvents.length === 0) return;
+
+    let hasNew = false;
+    const newMarkers = [];
+    const currentPrice = getLivePrice() || startPrice;
+    const roundElapsed = left > 0 ? Math.max(0, roundMillis - left) : 0;
+
+    liqEvents.forEach((ev) => {
+      if (!seenLiqMapRef.current.has(ev.id)) {
+        seenLiqMapRef.current.add(ev.id);
+        hasNew = true;
+        newMarkers.push({
+          id: ev.id,
+          nickname: ev.nickname || (ev.playerId === session.playerId ? me?.nickname : "Trader"),
+          isMine: ev.playerId === session.playerId,
+          t: roundElapsed,
+          p: currentPrice,
+        });
+      }
+    });
+
+    if (hasNew) {
+      setLiquidations((prev) => [...prev, ...newMarkers]);
+    }
+  }, [feed, left, roundMillis, session.playerId, startPrice, me?.nickname]);
+
+  const prevJoltRef = useRef(0);
+  useEffect(() => {
+    if (jolt > prevJoltRef.current) {
+      addFloater({
+        text: "💥 REKT",
+        subtext: "-100% MARGIN CALL",
+        tone: "rekt",
+      });
+    }
+    prevJoltRef.current = jolt;
+  }, [jolt, addFloater]);
+
+  const handleClosePosition = useCallback((pos, closePrice) => {
+    if (pos) {
+      const price = closePrice || getLivePrice() || startPrice;
+      const realized = unrealisedPnl(pos, price);
+      const margin = pos.margin || 1;
+      const pnlPct = ((realized / margin) * 100).toFixed(1);
+      const isProfit = realized >= 0;
+
+      addFloater({
+        text: `${isProfit ? "+" : ""}${money(realized)}`,
+        subtext: `${isProfit ? "+" : ""}${pnlPct}%`,
+        tone: isProfit ? "pump" : "dump",
+      });
+    }
+    close();
+  }, [close, addFloater, startPrice]);
+
   return (
     <div className={`table tab-${mobileTab}`}>
       <header className="strip">
@@ -159,6 +248,11 @@ export default function Trading() {
 
         <div className="floor-intel-hud">
           <div className="intel-hud-top">
+            {(lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1.0) >= 2.0 && (
+              <span className="intel-whale-badge" title="High PvP Market Impact Active">
+                ⚔️ WHALE IMPACT ({(lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1.0).toFixed(1)}x)
+              </span>
+            )}
             {rumor?.claimedRegime && REGIME_BIAS[rumor.claimedRegime] ? (
               <span className={`intel-bias-badge tone-${REGIME_BIAS[rumor.claimedRegime].tone}`}>
                 {REGIME_BIAS[rumor.claimedRegime].label}
@@ -194,6 +288,8 @@ export default function Trading() {
           roundMillis={roundMillis}
           position={me?.position}
           startPrice={startPrice}
+          liquidations={liquidations}
+          floaters={floaters}
         />
 
         {waiting && (
@@ -205,7 +301,7 @@ export default function Trading() {
         <TradeDeck
           me={me}
           onOpen={open}
-          onClose={close}
+          onClose={handleClosePosition}
           disabled={!me || waiting}
           impact={lobby?.impact}
         />
@@ -218,7 +314,10 @@ export default function Trading() {
         <button
           type="button"
           className={`mobile-dock-btn ${mobileTab === "trade" ? "is-active" : ""}`}
-          onClick={() => setMobileTab("trade")}
+          onClick={() => {
+            setMobileTab("trade");
+            haptic.tap();
+          }}
         >
           <span className="dock-icon"><TrendingUp size={18} strokeWidth={2.4} /></span>
           <span>Trade</span>
@@ -226,7 +325,10 @@ export default function Trading() {
         <button
           type="button"
           className={`mobile-dock-btn ${mobileTab === "dossier" ? "is-active" : ""}`}
-          onClick={() => setMobileTab("dossier")}
+          onClick={() => {
+            setMobileTab("dossier");
+            haptic.tap();
+          }}
         >
           <span className="dock-icon"><FileText size={18} strokeWidth={2.4} /></span>
           <span>Intel</span>
@@ -234,7 +336,10 @@ export default function Trading() {
         <button
           type="button"
           className={`mobile-dock-btn ${mobileTab === "standings" ? "is-active" : ""}`}
-          onClick={() => setMobileTab("standings")}
+          onClick={() => {
+            setMobileTab("standings");
+            haptic.tap();
+          }}
         >
           <span className="dock-icon"><Trophy size={18} strokeWidth={2.4} /></span>
           <span>Ranks</span>
@@ -245,6 +350,7 @@ export default function Trading() {
           onClick={() => {
             setMobileTab("wire");
             setLastSeenFeedLen(feed?.length ?? 0);
+            haptic.tap();
           }}
         >
           <span className="dock-icon" style={{ position: "relative" }}>

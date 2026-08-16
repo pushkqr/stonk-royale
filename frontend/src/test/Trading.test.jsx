@@ -50,6 +50,18 @@ vi.mock("../lib/telemetry", () => ({
   },
 }));
 
+vi.mock("../lib/haptic", () => ({
+  haptic: {
+    tap: vi.fn(),
+    trade: vi.fn(),
+    success: vi.fn(),
+    loss: vi.fn(),
+    liquidate: vi.fn(),
+    tick: vi.fn(),
+    cancel: vi.fn(),
+  },
+}));
+
 describe("Trading.jsx Mobile Navigation", () => {
   beforeEach(() => {
     window.ResizeObserver = class {
@@ -98,5 +110,12 @@ describe("Trading.jsx Mobile Navigation", () => {
     fireEvent.click(wireBtn);
     expect(wireBtn).toHaveClass("is-active");
     expect(table).toHaveClass("tab-wire");
+  });
+
+  it("renders Whale Impact badge when marketImpactMultiplier is >= 2.0", () => {
+    mockMatch.lobby.marketImpactMultiplier = 3.5;
+    render(<Trading />);
+    expect(screen.getByText(/WHALE IMPACT \(3.5x\)/i)).toBeInTheDocument();
+    mockMatch.lobby.marketImpactMultiplier = 1.0;
   });
 });

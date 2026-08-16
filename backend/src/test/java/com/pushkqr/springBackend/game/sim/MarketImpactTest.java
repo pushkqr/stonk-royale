@@ -130,4 +130,31 @@ class MarketImpactTest {
                 + "must stay under the smallest liquidation-triggering move, since entry "
                 + "price already embeds whatever impact existed when the position opened");
     }
+
+    @Test
+    void impactMultiplierScalesPriceKick() {
+        MarketImpact standard = new MarketImpact(0, 1.0);
+        standard.record(100_000, +1, REFERENCE, 0);
+        assertEquals(0.015, standard.valueAt(0), 1e-9);
+
+        MarketImpact heavy = new MarketImpact(0, 2.5);
+        heavy.record(100_000, +1, REFERENCE, 0);
+        assertEquals(0.015 * 2.5, heavy.valueAt(0), 1e-9);
+
+        MarketImpact extreme = new MarketImpact(0, 4.0);
+        extreme.record(100_000, +1, REFERENCE, 0);
+        assertEquals(0.015 * 4.0, extreme.valueAt(0), 1e-9);
+    }
+
+    @Test
+    void impactMultiplierScalesMaxImpactClamp() {
+        MarketImpact extreme = new MarketImpact(0, 4.0);
+        long now = 0;
+        for (int i = 0; i < 20; i++) {
+            extreme.record(500_000, +1, REFERENCE, now);
+            now += 100;
+        }
+        assertTrue(extreme.valueAt(now) > 0.04, "extreme impact must allow higher dynamic cap than standard 4%");
+        assertTrue(extreme.valueAt(now) <= 0.12 + 1e-9, "extreme impact must stay within maximum absolute clamp");
+    }
 }

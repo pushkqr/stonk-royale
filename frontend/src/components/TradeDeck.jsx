@@ -4,6 +4,8 @@ import LivePnl from "./LivePnl";
 import FillEstimate from "./FillEstimate";
 import { getLivePrice } from "../state/livePrice";
 import { sound } from "../lib/sound";
+import { haptic } from "../lib/haptic";
+import { unrealisedPnl } from "../lib/pnl";
 
 const PRESETS = [
   { label: "Safe", lev: 2, sz: 25 },
@@ -47,6 +49,12 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 
   const position = closing ? null : (optimisticPos || me?.position);
 
+  const applyPreset = useCallback((p) => {
+    setLeverage(p.lev);
+    setSize(p.sz);
+    haptic.tap();
+  }, []);
+
   const handleOpen = useCallback(
     (side) => {
       const livePrice = getLivePrice() || 1;
@@ -64,6 +72,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
       });
       setPending(true);
       setClosing(false);
+      haptic.trade();
       sound.trade(side === "LONG");
       onOpen(side, size / 100, leverage);
     },
@@ -71,11 +80,22 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   );
 
   const handleClose = useCallback(() => {
+    const livePrice = getLivePrice();
+    if (position) {
+      const pnlVal = livePrice != null ? unrealisedPnl(position, livePrice) : (position.unrealisedPnl ?? 0);
+      if (pnlVal >= 0) {
+        haptic.success();
+      } else {
+        haptic.loss();
+      }
+    } else {
+      haptic.tap();
+    }
     setClosing(true);
     setOptimisticPos(null);
     setPending(true);
     onClose();
-  }, [onClose]);
+  }, [onClose, position]);
 
   useEffect(() => {
     if (disabled || pending) return;
@@ -100,23 +120,20 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
           handleOpen("SHORT");
         } else if (e.key === "1") {
           e.preventDefault();
-          setLeverage(PRESETS[0].lev);
-          setSize(PRESETS[0].sz);
+          applyPreset(PRESETS[0]);
         } else if (e.key === "2") {
           e.preventDefault();
-          setLeverage(PRESETS[1].lev);
-          setSize(PRESETS[1].sz);
+          applyPreset(PRESETS[1]);
         } else if (e.key === "3") {
           e.preventDefault();
-          setLeverage(PRESETS[2].lev);
-          setSize(PRESETS[2].sz);
+          applyPreset(PRESETS[2]);
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [disabled, pending, position, handleClose, handleOpen]);
+  }, [disabled, pending, position, handleClose, handleOpen, applyPreset]);
 
   if (position) {
     return (
@@ -183,10 +200,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
               key={p.label}
               type="button"
               className={`preset-btn ${leverage === p.lev && size === p.sz ? "is-active" : ""}`}
-              onClick={() => {
-                setLeverage(p.lev);
-                setSize(p.sz);
-              }}
+              onClick={() => applyPreset(p)}
               disabled={disabled}
             >
               <kbd className="keycap">{idx + 1}</kbd> {p.label}{" "}

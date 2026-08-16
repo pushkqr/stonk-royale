@@ -144,9 +144,12 @@ public class MatchBroadcaster {
                 match.players().stream()
                         .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot(), p.isConnected()))
                         .toList(),
-                match.isPublic(),
-                new Views.Impact(MarketImpact.IMPACT_PER_TRADE, match.referenceNotional()),
-                match.config().volatilityMultiplier());
+                new Views.Impact(
+                        MarketImpact.IMPACT_PER_TRADE * match.config().marketImpactMultiplier(),
+                        match.referenceNotional(),
+                        match.config().marketImpactMultiplier()),
+                match.config().volatilityMultiplier(),
+                match.config().marketImpactMultiplier());
     }
 
     /**

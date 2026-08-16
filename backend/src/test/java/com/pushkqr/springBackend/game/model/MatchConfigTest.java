@@ -101,4 +101,14 @@ class MatchConfigTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new MatchConfig(5, 90, 15, 10_000, 12, MatchConfig.MAX_VOLATILITY + 0.1));
     }
+
+    @Test
+    void marketImpactMultiplierIsBoundedAtBothEnds() {
+        assertDoesNotThrow(() -> new MatchConfig(5, 90, 15, 10_000, 12, 1.0, MatchConfig.MIN_MARKET_IMPACT));
+        assertDoesNotThrow(() -> new MatchConfig(5, 90, 15, 10_000, 12, 1.0, MatchConfig.MAX_MARKET_IMPACT));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MatchConfig(5, 90, 15, 10_000, 12, 1.0, MatchConfig.MIN_MARKET_IMPACT - 0.1));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MatchConfig(5, 90, 15, 10_000, 12, 1.0, MatchConfig.MAX_MARKET_IMPACT + 0.1));
+    }
 }

@@ -99,16 +99,26 @@ public final class Views {
      * @param referenceNotional one player's largest possible position, so it moves with the
      *                          starting cash the host picked
      */
-    public record Impact(double perTrade, double referenceNotional) {
+    public record Impact(double perTrade, double referenceNotional, double multiplier) {
+        public Impact(double perTrade, double referenceNotional) {
+            this(perTrade, referenceNotional, 1.0);
+        }
     }
 
     public record Lobby(String code, String phase, int totalRounds, int roundSeconds,
             int intermissionSeconds, double startingCash, int maxPlayers,
-            List<LobbyPlayer> players, boolean isPublic, Impact impact, double volatilityMultiplier) {
+            List<LobbyPlayer> players, boolean isPublic, Impact impact, double volatilityMultiplier,
+            double marketImpactMultiplier) {
+        public Lobby(String code, String phase, int totalRounds, int roundSeconds,
+                int intermissionSeconds, double startingCash, int maxPlayers,
+                List<LobbyPlayer> players, boolean isPublic, Impact impact, double volatilityMultiplier) {
+            this(code, phase, totalRounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, players, isPublic, impact, volatilityMultiplier, 1.0);
+        }
+
         public Lobby(String code, String phase, int totalRounds, int roundSeconds,
                 int intermissionSeconds, double startingCash, int maxPlayers,
                 List<LobbyPlayer> players, boolean isPublic, Impact impact) {
-            this(code, phase, totalRounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, players, isPublic, impact, 1.0);
+            this(code, phase, totalRounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, players, isPublic, impact, 1.0, 1.0);
         }
     }
 

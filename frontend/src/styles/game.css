@@ -108,7 +108,7 @@
 
 .preset-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
   gap: 0.4rem;
 }
 
@@ -125,11 +125,47 @@
   font-size: 0.95rem;
 }
 
+.preset.preset-whale_wars,
+.preset.preset-whale-wars {
+  border-color: rgba(255, 180, 0, 0.4);
+  background: rgba(255, 180, 0, 0.06);
+}
+
+.preset.preset-whale_wars:hover,
+.preset.preset-whale-wars:hover {
+  border-color: var(--scream);
+  box-shadow: 0 0 12px rgba(255, 222, 89, 0.25);
+}
+
+.preset.preset-whale_wars.btn-scream,
+.preset.preset-whale-wars.btn-scream {
+  background: var(--scream);
+  color: var(--void-deep);
+  box-shadow: 0 0 16px rgba(255, 222, 89, 0.4);
+}
+
 .preset-sub {
   font-family: var(--data);
   font-size: 0.62rem;
   opacity: 0.75;
   text-transform: none;
+}
+
+.intel-whale-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: rgba(255, 180, 0, 0.18);
+  border: 1px solid rgba(255, 180, 0, 0.5);
+  color: var(--scream);
+  font-family: var(--data);
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: pulseGlow 2s infinite ease-in-out;
 }
 
 .estimate {
@@ -1151,8 +1187,89 @@
 }
 
 .chart-wrap {
+  position: relative;
   flex: 1;
   min-height: 8rem;
+}
+
+/* --- Floating PnL Floaters --- */
+.pnl-floaters-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.pnl-floater {
+  position: absolute;
+  right: 1.5rem;
+  top: 32%;
+  transform: translateY(0);
+  pointer-events: none;
+  z-index: 20;
+  animation: pnl-float-up 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  font-family: var(--data);
+  font-weight: 800;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.pnl-floater-sub {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.pnl-floater.tone-pump {
+  background: var(--void-deep);
+  border: 2px solid var(--pump);
+  color: var(--pump);
+  box-shadow: 0 0 18px rgba(33, 224, 122, 0.4);
+}
+
+.pnl-floater.tone-dump {
+  background: var(--void-deep);
+  border: 2px solid var(--dump);
+  color: var(--dump);
+  box-shadow: 0 0 18px rgba(255, 59, 84, 0.4);
+}
+
+.pnl-floater.tone-rekt {
+  background: var(--dump);
+  border: 2px solid var(--paper);
+  color: var(--void-deep);
+  box-shadow: 0 0 24px rgba(255, 59, 84, 0.65);
+  font-size: 1.1rem;
+}
+
+@keyframes pnl-float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.85);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  30% {
+    transform: translateY(-4px) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(-24px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-48px) scale(0.92);
+  }
 }
 
 /* --- standings rail ------------------------------------------------------ */

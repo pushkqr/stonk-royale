@@ -1,4 +1,12 @@
-import { CASH_STEPS, LIMITS, PRESETS, VOLATILITY_OPTIONS, estimateMinutes, matchingPreset } from "../lib/matchSettings";
+import {
+  CASH_STEPS,
+  LIMITS,
+  PRESETS,
+  VOLATILITY_OPTIONS,
+  MARKET_IMPACT_OPTIONS,
+  estimateMinutes,
+  matchingPreset,
+} from "../lib/matchSettings";
 import { money } from "../lib/format";
 
 /**
@@ -27,7 +35,16 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
 
   const volIndex = Math.max(
     0,
-    VOLATILITY_OPTIONS.findIndex((v) => Math.abs(v.value - (settings.volatilityMultiplier ?? 1.0)) < 0.1)
+    VOLATILITY_OPTIONS.findIndex(
+      (v) => Math.abs(v.value - (settings.volatilityMultiplier ?? 1.0)) < 0.1
+    )
+  );
+
+  const impactIndex = Math.max(
+    0,
+    MARKET_IMPACT_OPTIONS.findIndex(
+      (m) => Math.abs(m.value - (settings.marketImpactMultiplier ?? 1.0)) < 0.2
+    )
   );
 
   return (
@@ -37,13 +54,16 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
           <button
             key={preset.id}
             type="button"
-            className={`btn preset ${active?.id === preset.id ? "btn-scream" : ""}`}
+            className={`btn preset preset-${preset.id} ${
+              active?.id === preset.id ? "btn-scream" : ""
+            }`}
             onClick={() =>
               set({
                 rounds: preset.rounds,
                 roundSeconds: preset.roundSeconds,
                 intermissionSeconds: preset.intermissionSeconds,
                 volatilityMultiplier: preset.volatilityMultiplier,
+                marketImpactMultiplier: preset.marketImpactMultiplier,
               })
             }
             aria-pressed={active?.id === preset.id}
@@ -61,7 +81,12 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
         {!active && " · custom"}
       </p>
 
-      <button type="button" className="link-btn muted" onClick={onToggle} aria-expanded={open}>
+      <button
+        type="button"
+        className="link-btn muted"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
         {open ? "Hide settings" : "Advanced settings"}
       </button>
 
@@ -86,11 +111,39 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
               step="1"
               value={volIndex >= 0 ? volIndex : 1}
               onChange={(e) =>
-                set({ volatilityMultiplier: VOLATILITY_OPTIONS[Number(e.target.value)].value })
+                set({
+                  volatilityMultiplier:
+                    VOLATILITY_OPTIONS[Number(e.target.value)].value,
+                })
               }
             />
             <span className="setting-note muted">
               Controls chart turbulence, wick sharpness, and swing speed.
+            </span>
+          </label>
+
+          <label className="setting">
+            <span className="eyebrow setting-label">
+              Market Impact{" "}
+              <b className="mono scream">
+                {MARKET_IMPACT_OPTIONS[impactIndex >= 0 ? impactIndex : 0].label}
+              </b>
+            </span>
+            <input
+              type="range"
+              min="0"
+              max={MARKET_IMPACT_OPTIONS.length - 1}
+              step="1"
+              value={impactIndex >= 0 ? impactIndex : 0}
+              onChange={(e) =>
+                set({
+                  marketImpactMultiplier:
+                    MARKET_IMPACT_OPTIONS[Number(e.target.value)].value,
+                })
+              }
+            />
+            <span className="setting-note muted">
+              How hard player orders push the market tape (Whale Wars PvP).
             </span>
           </label>
 
@@ -104,7 +157,9 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
               max={CASH_STEPS.length - 1}
               step="1"
               value={Math.max(0, CASH_STEPS.indexOf(settings.startingCash))}
-              onChange={(e) => set({ startingCash: CASH_STEPS[Number(e.target.value)] })}
+              onChange={(e) =>
+                set({ startingCash: CASH_STEPS[Number(e.target.value)] })
+              }
             />
             {/* Said plainly so nobody mistakes this for a difficulty dial. */}
             <span className="setting-note muted">

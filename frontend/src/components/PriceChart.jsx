@@ -228,12 +228,57 @@ function draw(canvas, size, state) {
     }
   }
 
+  // 4. Liquidation Battle-Scar Markers along the price curve
+  const liquidations = state.liquidations;
+  if (liquidations && liquidations.length > 0) {
+    ctx.save();
+    for (let i = 0; i < liquidations.length; i += 1) {
+      const m = liquidations[i];
+      if (m.t > elapsed) continue;
+      const mx = x(m.t);
+      const my = y(m.p);
+
+      if (mx >= 0 && mx <= plotW) {
+        // Vertical dashed drop line
+        ctx.setLineDash([2, 3]);
+        ctx.strokeStyle = m.isMine ? "rgba(255, 59, 84, 0.7)" : "rgba(244, 63, 94, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(mx, PAD_Y);
+        ctx.lineTo(mx, PAD_Y + plotH);
+        ctx.stroke();
+
+        // Skull & dot marker on the curve
+        ctx.setLineDash([]);
+        ctx.fillStyle = m.isMine ? "#ff3b54" : "#f43f5e";
+        ctx.beginPath();
+        ctx.arc(mx, my, m.isMine ? 5 : 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Monospace text label
+        ctx.font = "700 8.5px 'Space Mono', monospace";
+        ctx.fillStyle = m.isMine ? "#ffffff" : "rgba(255, 244, 224, 0.75)";
+        ctx.textBaseline = "bottom";
+        const label = `💀 ${m.nickname || "REKT"}`;
+        ctx.fillText(label, Math.max(4, Math.min(plotW - 55, mx - 14)), Math.max(PAD_Y + 12, my - 6));
+      }
+    }
+    ctx.restore();
+  }
+
   return isSettled;
 }
 
 const EMPTY_SERIES = { points: [], count: 0 };
 
-function PriceChart({ series: propSeries, roundMillis, position, startPrice }) {
+function PriceChart({
+  series: propSeries,
+  roundMillis,
+  position,
+  startPrice,
+  liquidations = [],
+  floaters = [],
+}) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -241,7 +286,16 @@ function PriceChart({ series: propSeries, roundMillis, position, startPrice }) {
   const priceCtx = usePrice();
   const series = propSeries || priceCtx?.series || EMPTY_SERIES;
 
-  const liveRef = useRef({ series, roundMillis, position, startPrice, smoothP: null, smoothT: null, lastFrameTime: 0 });
+  const liveRef = useRef({
+    series,
+    roundMillis,
+    position,
+    startPrice,
+    liquidations,
+    smoothP: null,
+    smoothT: null,
+    lastFrameTime: 0,
+  });
   const sizeRef = useRef(size);
   const frameRef = useRef(0);
   const runningRef = useRef(false);
@@ -276,11 +330,12 @@ function PriceChart({ series: propSeries, roundMillis, position, startPrice }) {
     live.position = position;
     live.startPrice = startPrice;
     live.series = series;
+    live.liquidations = liquidations;
     sizeRef.current = size;
 
     start();
     return undefined;
-  }, [series, size, position, startPrice, roundMillis, start]);
+  }, [series, size, position, startPrice, roundMillis, liquidations, start]);
 
   useEffect(() => {
     const wake = () => {
@@ -306,6 +361,16 @@ function PriceChart({ series: propSeries, roundMillis, position, startPrice }) {
         role="img"
         aria-label="Price chart for the round in progress"
       />
+      {floaters && floaters.length > 0 && (
+        <div className="pnl-floaters-container" aria-live="polite">
+          {floaters.map((f) => (
+            <div key={f.id} className={`pnl-floater tone-${f.tone}`}>
+              <span>{f.text}</span>
+              {f.subtext && <span className="pnl-floater-sub">{f.subtext}</span>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -7,7 +7,14 @@ package com.pushkqr.springBackend.game.model;
  * endpoint is public: without an upper bound a request could ask for a 24-hour round or a
  * hundred-thousand-player room and the server would happily allocate it.
  */
-public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers, double volatilityMultiplier) {
+public record MatchConfig(
+        int rounds,
+        int roundSeconds,
+        int intermissionSeconds,
+        double startingCash,
+        int maxPlayers,
+        double volatilityMultiplier,
+        double marketImpactMultiplier) {
 
     /** Price ticks per second. 10 is smooth on a chart without flooding the socket. */
     public static final int TICKS_PER_SECOND = 10;
@@ -28,6 +35,9 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
     public static final double MIN_VOLATILITY = 0.5;
     public static final double MAX_VOLATILITY = 3.0;
 
+    public static final double MIN_MARKET_IMPACT = 0.5;
+    public static final double MAX_MARKET_IMPACT = 5.0;
+
     public MatchConfig {
         // Rounds are capped by the catalogue because a match never repeats an asset.
         require(rounds >= 1 && rounds <= AssetCatalog.size(),
@@ -42,11 +52,18 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
                 "maxPlayers must be between " + MIN_PLAYERS + " and " + MAX_PLAYERS);
         require(volatilityMultiplier >= MIN_VOLATILITY && volatilityMultiplier <= MAX_VOLATILITY,
                 "volatilityMultiplier must be between " + MIN_VOLATILITY + " and " + MAX_VOLATILITY);
+        require(marketImpactMultiplier >= MIN_MARKET_IMPACT && marketImpactMultiplier <= MAX_MARKET_IMPACT,
+                "marketImpactMultiplier must be between " + MIN_MARKET_IMPACT + " and " + MAX_MARKET_IMPACT);
     }
 
-    /** Backward-compatible 5-argument constructor defaulting volatilityMultiplier to 1.0. */
+    /** Backward-compatible 6-argument constructor defaulting marketImpactMultiplier to 1.0. */
+    public MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers, double volatilityMultiplier) {
+        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, volatilityMultiplier, 1.0);
+    }
+
+    /** Backward-compatible 5-argument constructor defaulting volatilityMultiplier & marketImpactMultiplier to 1.0. */
     public MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers) {
-        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, 1.0);
+        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, 1.0, 1.0);
     }
 
     private static void require(boolean condition, String message) {
@@ -56,7 +73,7 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
     }
 
     public static MatchConfig standard() {
-        return new MatchConfig(5, 90, 25, 10_000, MAX_PLAYERS, 1.0);
+        return new MatchConfig(5, 90, 25, 10_000, MAX_PLAYERS, 1.0, 1.0);
     }
 
     public long roundMillis() {
@@ -73,6 +90,6 @@ public record MatchConfig(int rounds, int roundSeconds, int intermissionSeconds,
 
     /** What the lobby advertises as the match length, intermissions included. */
     public long estimatedMillis() {
-        return rounds * (roundMillis() + intermissionMillis());
+        return (long) rounds * (roundSeconds + intermissionSeconds) * 1000L;
     }
 }

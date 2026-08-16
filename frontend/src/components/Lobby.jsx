@@ -31,6 +31,7 @@ export default function Lobby() {
         startingCash: lobby.startingCash,
         isPublic: lobby.isPublic,
         volatilityMultiplier: lobby.volatilityMultiplier ?? 1.0,
+        marketImpactMultiplier: lobby.marketImpactMultiplier ?? 1.0,
       });
     }
   }

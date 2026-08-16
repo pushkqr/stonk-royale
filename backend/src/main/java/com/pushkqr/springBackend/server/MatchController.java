@@ -172,7 +172,8 @@ public class MatchController {
                 orDefault(request.intermissionSeconds(), standard.intermissionSeconds()),
                 request.startingCash() == null ? standard.startingCash() : request.startingCash(),
                 orDefault(request.maxPlayers(), standard.maxPlayers()),
-                request.volatilityMultiplier() == null ? standard.volatilityMultiplier() : request.volatilityMultiplier());
+                request.volatilityMultiplier() == null ? standard.volatilityMultiplier() : request.volatilityMultiplier(),
+                request.marketImpactMultiplier() == null ? standard.marketImpactMultiplier() : request.marketImpactMultiplier());
     }
 
     private static int orDefault(Integer value, int fallback) {

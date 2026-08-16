@@ -12,6 +12,7 @@ export const DEFAULTS = {
   startingCash: 10_000,
   isPublic: false,
   volatilityMultiplier: 1.0,
+  marketImpactMultiplier: 1.0,
 };
 
 export const LIMITS = {
@@ -31,17 +32,72 @@ export const VOLATILITY_OPTIONS = [
   { value: 1.8, label: "Chaos (1.8x)" },
 ];
 
+export const MARKET_IMPACT_OPTIONS = [
+  { value: 1.0, label: "Standard (1.0x)" },
+  { value: 2.5, label: "Heavy (2.5x)" },
+  { value: 4.0, label: "Whale Wars (4.0x)" },
+];
+
 export const PRESETS = [
-  { id: "blitz", label: "Blitz", rounds: 3, roundSeconds: 30, intermissionSeconds: 15, volatilityMultiplier: 1.4 },
-  { id: "quick", label: "Quick", rounds: 3, roundSeconds: 60, intermissionSeconds: 20, volatilityMultiplier: 1.0 },
-  { id: "standard", label: "Standard", rounds: 5, roundSeconds: 90, intermissionSeconds: 25, volatilityMultiplier: 1.0 },
-  { id: "marathon", label: "Marathon", rounds: 7, roundSeconds: 120, intermissionSeconds: 30, volatilityMultiplier: 0.8 },
+  {
+    id: "blitz",
+    label: "Blitz",
+    rounds: 3,
+    roundSeconds: 30,
+    intermissionSeconds: 15,
+    volatilityMultiplier: 1.4,
+    marketImpactMultiplier: 1.0,
+  },
+  {
+    id: "quick",
+    label: "Quick",
+    rounds: 3,
+    roundSeconds: 60,
+    intermissionSeconds: 20,
+    volatilityMultiplier: 1.0,
+    marketImpactMultiplier: 1.0,
+  },
+  {
+    id: "standard",
+    label: "Standard",
+    rounds: 5,
+    roundSeconds: 90,
+    intermissionSeconds: 25,
+    volatilityMultiplier: 1.0,
+    marketImpactMultiplier: 1.0,
+  },
+  {
+    id: "whale_wars",
+    label: "Whale Wars",
+    rounds: 4,
+    roundSeconds: 60,
+    intermissionSeconds: 20,
+    volatilityMultiplier: 1.4,
+    marketImpactMultiplier: 3.5,
+  },
+  {
+    id: "marathon",
+    label: "Marathon",
+    rounds: 7,
+    roundSeconds: 120,
+    intermissionSeconds: 30,
+    volatilityMultiplier: 0.8,
+    marketImpactMultiplier: 1.0,
+  },
 ];
 
 export function estimateMinutes({ rounds, roundSeconds, intermissionSeconds }) {
   return Math.max(1, Math.round((rounds * (roundSeconds + intermissionSeconds)) / 60));
 }
 
-export function matchingPreset({ rounds, roundSeconds }) {
-  return PRESETS.find((p) => p.rounds === rounds && p.roundSeconds === roundSeconds) ?? null;
+export function matchingPreset({ rounds, roundSeconds, marketImpactMultiplier }) {
+  return (
+    PRESETS.find(
+      (p) =>
+        p.rounds === rounds &&
+        p.roundSeconds === roundSeconds &&
+        (marketImpactMultiplier == null ||
+          Math.abs((p.marketImpactMultiplier ?? 1.0) - (marketImpactMultiplier ?? 1.0)) < 0.2)
+    ) ?? null
+  );
 }

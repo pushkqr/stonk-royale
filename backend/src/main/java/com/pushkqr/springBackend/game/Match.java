@@ -605,7 +605,7 @@ public final class Match {
         phaseEndsAtMillis = now + config.roundMillis();
         newsFired = 0;
         botActionsFired = 0;
-        impact = new MarketImpact(now);
+        impact = new MarketImpact(now, config.marketImpactMultiplier());
         flowSurging = false;
         lastFlowEventMillis = Long.MIN_VALUE;
         events.add(new GameEvent.PhaseChanged(MatchPhase.TRADING, roundIndex, phaseEndsAtMillis));

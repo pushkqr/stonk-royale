@@ -16,11 +16,18 @@ public final class Requests {
      */
     public record Create(String nickname, Integer rounds, Integer roundSeconds,
             Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
-            String deviceId, Boolean isPublic, Double volatilityMultiplier) {
+            String deviceId, Boolean isPublic, Double volatilityMultiplier,
+            Double marketImpactMultiplier) {
+        public Create(String nickname, Integer rounds, Integer roundSeconds,
+                Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
+                String deviceId, Boolean isPublic, Double volatilityMultiplier) {
+            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, volatilityMultiplier, 1.0);
+        }
+
         public Create(String nickname, Integer rounds, Integer roundSeconds,
                 Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
                 String deviceId, Boolean isPublic) {
-            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, 1.0);
+            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, 1.0, 1.0);
         }
     }
 
@@ -50,10 +57,16 @@ public final class Requests {
 
     /** Host-only, lobby-only retune. All values are required — the client sends the full set. */
     public record Config(int rounds, int roundSeconds, int intermissionSeconds,
-            double startingCash, int maxPlayers, boolean isPublic, Double volatilityMultiplier) {
+            double startingCash, int maxPlayers, boolean isPublic, Double volatilityMultiplier,
+            Double marketImpactMultiplier) {
+        public Config(int rounds, int roundSeconds, int intermissionSeconds,
+                double startingCash, int maxPlayers, boolean isPublic, Double volatilityMultiplier) {
+            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, volatilityMultiplier, 1.0);
+        }
+
         public Config(int rounds, int roundSeconds, int intermissionSeconds,
                 double startingCash, int maxPlayers, boolean isPublic) {
-            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, 1.0);
+            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, 1.0, 1.0);
         }
     }
 }
