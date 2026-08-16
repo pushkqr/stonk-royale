@@ -68,12 +68,20 @@ export default function Trading() {
   // grey line in a busy feed. Keyed remount is what replays the flash on a second blowup.
   const [jolt, setJolt] = useState(0);
   const seenJolt = useRef(0);
+  const [roomLiq, setRoomLiq] = useState(0);
+  const seenRoomLiq = useRef(0);
+
   useEffect(() => {
-    const mine = feed.filter((f) => f.kind === "LIQUIDATION" && f.playerId === session.playerId);
-    const latest = mine.at(-1)?.id ?? 0;
-    if (latest > seenJolt.current) {
-      seenJolt.current = latest;
+    const liquidations = feed.filter((f) => f.kind === "LIQUIDATION");
+    const latest = liquidations.at(-1);
+    if (!latest) return;
+
+    if (latest.playerId === session.playerId && latest.id > seenJolt.current) {
+      seenJolt.current = latest.id;
       setJolt((n) => n + 1);
+    } else if (latest.playerId !== session.playerId && latest.id > seenRoomLiq.current) {
+      seenRoomLiq.current = latest.id;
+      setRoomLiq((n) => n + 1);
     }
   }, [feed, session.playerId]);
 
@@ -201,9 +209,22 @@ export default function Trading() {
 
       <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} />
 
-      {/* A full-viewport red frame that snaps in on liquidation and fades out. It lives
-          outside the layout flow so it can cover the whole screen without pushing anything. */}
-      {jolt > 0 && <div key={jolt} className="liquidation-flash" aria-hidden="true" />}
+      {/* A full-viewport red frame that snaps in on liquidation and fades out with screen shake. */}
+      {jolt > 0 && (
+        <div
+          key={jolt}
+          className="liquidation-flash liquidation-flash-shake"
+          aria-hidden="true"
+        />
+      )}
+      {roomLiq > 0 && (
+        <div
+          key={`room-${roomLiq}`}
+          className="liquidation-room-ping"
+          style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 998 }}
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 }

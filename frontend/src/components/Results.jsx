@@ -3,6 +3,7 @@ import { pct, toneOf } from "../lib/format";
 import CountUp from "./CountUp";
 import Ledger from "./Ledger";
 import Accolades from "./Accolades";
+import Confetti from "./Confetti";
 
 export default function Results() {
   const { standings, session, rematch, lobby, settled, quit, feed, suspects } = useMatch();
@@ -17,6 +18,7 @@ export default function Results() {
 
   return (
     <main className="center-page">
+      {iWon && <Confetti />}
       <header className="hero">
         <h1 className="display hero-verdict">
           {solo

@@ -178,10 +178,33 @@ function draw(canvas, size, state) {
     ctx.lineCap = "round";
     ctx.stroke();
 
-    // 3. Head Dot
+    // 3. Head Halo & Dot
+    const headX = x(head.t);
+    const headY = y(head.p);
+
+    // Radial breathing neon pulse
+    const pulse = 1 + 0.25 * Math.sin(now * 0.008);
+    const haloRadius = 12 * pulse;
+    const radial = ctx.createRadialGradient(headX, headY, 2, headX, headY, haloRadius);
+    radial.addColorStop(0, `${lineColor}88`);
+    radial.addColorStop(0.6, `${lineColor}33`);
+    radial.addColorStop(1, `${lineColor}00`);
+
+    ctx.fillStyle = radial;
+    ctx.beginPath();
+    ctx.arc(headX, headY, haloRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Solid inner core
     ctx.fillStyle = lineColor;
     ctx.beginPath();
-    ctx.arc(x(head.t), y(head.p), 4.5, 0, Math.PI * 2);
+    ctx.arc(headX, headY, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // White center specular point
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(headX, headY, 1.8, 0, Math.PI * 2);
     ctx.fill();
   }
 
