@@ -67,14 +67,12 @@ function Standings({ rows, meId, suspects = {} }) {
                 cumulative total only appears once there's a previous round in it. */}
             <span className="rank-body">
               <span className="rank-name">
-                <span className="standings-player-wrap">
-                  <Avatar
-                    archetypeId={getAvatarForPlayer(row.playerId, row.nickname, row.playerId === meId)}
-                    mood={getMood({ pnl: row.roundScore, wasLie: suspects[row.playerId] === "SUS" })}
-                    size={22}
-                  />
-                  <span>{row.nickname}</span>
-                </span>
+                <Avatar
+                  archetypeId={getAvatarForPlayer(row.playerId, row.nickname, row.playerId === meId)}
+                  mood={getMood({ pnl: row.roundScore, wasLie: suspects[row.playerId] === "SUS" })}
+                  size={20}
+                />
+                <span className="rank-name-text">{row.nickname}</span>
                 {suspects[row.playerId] === "TRUSTED" && (
                   <span className="badge-suspect badge-trust">TRUST</span>
                 )}

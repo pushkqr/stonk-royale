@@ -1221,11 +1221,26 @@
 }
 
 .rank-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.9rem;
   font-weight: 600;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.rank-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.rank-name .tag,
+.rank-name .badge-suspect {
+  flex-shrink: 0;
+  margin: 0;
 }
 
 .rank-scores {
