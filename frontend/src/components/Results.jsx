@@ -78,17 +78,21 @@ export default function Results() {
               Rerun the same market
             </button>
           )}
+          <button className="btn" onClick={quit}>
+            Leave Room
+          </button>
           <p className="footnote muted">
             Everyone keeps their seat, and anyone new can join before you start.
           </p>
         </div>
       ) : (
-        <p className="notice muted">Waiting for the host to start another one.</p>
+        <div className="stack sheet" style={{ gap: "0.5rem" }}>
+          <p className="notice muted">Waiting for the host to start another one.</p>
+          <button className="btn" onClick={quit}>
+            Leave Room
+          </button>
+        </div>
       )}
-
-      <button className="link-btn muted" onClick={quit}>
-        Leave
-      </button>
 
       {lobby?.code && (
         <p className="footnote muted">

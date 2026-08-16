@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMatch, usePrice } from "../state/MatchProvider";
+import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
@@ -29,7 +29,6 @@ export default function Trading() {
     suspects,
     toggleSuspect,
   } = useMatch();
-  const { series } = usePrice();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
   // Sets the chart's opening window, before enough of the round has elapsed to fill it.
@@ -173,7 +172,6 @@ export default function Trading() {
         )}
 
         <PriceChart
-          series={series}
           roundMillis={roundMillis}
           position={me?.position}
           startPrice={startPrice}
