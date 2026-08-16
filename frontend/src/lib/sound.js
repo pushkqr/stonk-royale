@@ -64,10 +64,10 @@ function softClip(amount = 2.2) {
 
 function audio() {
   // Nothing plays into a tab nobody is looking at.
-  if (muted || document.hidden) return null;
+  if (muted || (typeof document !== "undefined" && document.hidden)) return null;
 
   if (!ctx) {
-    const Ctor = window.AudioContext || window.webkitAudioContext;
+    const Ctor = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext) : null;
     if (!Ctor) return null;
     ctx = new Ctor();
 
@@ -86,7 +86,7 @@ function audio() {
     bus.connect(shaper).connect(tone).connect(master).connect(ctx.destination);
   }
 
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
   return ctx;
 }
 
@@ -99,184 +99,272 @@ function note({
   to = from,
   type = "square",
   duration = 0.12,
-  gain = 0.05,
+  gain = 0.08,
   at = 0,
   detune = 0,
-  pan = 0,
 }) {
-  const c = audio();
-  if (!c) return;
+  const a = audio();
+  if (!a) return;
 
-  const start = c.currentTime + at;
-  const amp = c.createGain();
+  const start = a.currentTime + at;
+  const stop = start + duration;
 
-  // Ramped rather than switched, so notes don't click on and off.
-  amp.gain.setValueAtTime(0.0001, start);
-  amp.gain.exponentialRampToValueAtTime(gain, start + 0.012);
-  amp.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  const g = a.createGain();
+  g.gain.setValueAtTime(0.0001, start);
+  g.gain.linearRampToValueAtTime(gain, start + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, stop);
+  g.connect(bus);
 
-  if (pan && c.createStereoPanner) {
-    const panner = c.createStereoPanner();
-    panner.pan.value = pan;
-    amp.connect(panner).connect(bus);
-  } else {
-    amp.connect(bus);
-  }
-
-  for (const cents of detune ? [-detune, detune] : [0]) {
-    const osc = c.createOscillator();
+  const make = (drift) => {
+    const osc = a.createOscillator();
     osc.type = type;
-    osc.detune.value = cents;
+    osc.detune.value = drift;
     osc.frequency.setValueAtTime(safe(from), start);
-    if (to !== from) osc.frequency.exponentialRampToValueAtTime(safe(to), start + duration);
-    osc.connect(amp);
+    if (to !== from) osc.frequency.exponentialRampToValueAtTime(safe(to), stop);
+    osc.connect(g);
     osc.start(start);
-    osc.stop(start + duration + 0.03);
-  }
+    osc.stop(stop);
+  };
+
+  make(0);
+  if (detune !== 0) make(detune);
 }
 
-/** Filtered noise. Everything percussive — paper, stamps, the crash — is built from this. */
-function noise({ duration = 0.12, gain = 0.05, at = 0, from = 1800, to = 400, q = 1 }) {
-  const c = audio();
-  if (!c) return;
+/** Filtered white noise. Reuses one buffer rather than allocating for every whoosh. */
+function noise({
+  duration = 0.15,
+  gain = 0.06,
+  from = 1800,
+  to = from,
+  q = 1.4,
+  at = 0,
+  type = "bandpass",
+}) {
+  const a = audio();
+  if (!a) return;
 
   if (!noiseBuffer) {
-    noiseBuffer = c.createBuffer(1, Math.floor(c.sampleRate * 0.6), c.sampleRate);
+    noiseBuffer = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
     const data = noiseBuffer.getChannelData(0);
     for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
   }
 
-  const start = c.currentTime + at;
-  const source = c.createBufferSource();
-  source.buffer = noiseBuffer;
+  const start = a.currentTime + at;
+  const stop = start + duration;
 
-  const band = c.createBiquadFilter();
-  band.type = "bandpass";
-  band.Q.value = q;
-  band.frequency.setValueAtTime(safe(from), start);
-  band.frequency.exponentialRampToValueAtTime(safe(to), start + duration);
+  const src = a.createBufferSource();
+  src.buffer = noiseBuffer;
+  src.loop = true;
 
-  const amp = c.createGain();
-  amp.gain.setValueAtTime(gain, start);
-  amp.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  const filter = a.createBiquadFilter();
+  filter.type = type;
+  filter.Q.value = q;
+  filter.frequency.setValueAtTime(safe(from), start);
+  if (to !== from) filter.frequency.exponentialRampToValueAtTime(safe(to), stop);
 
-  source.connect(band).connect(amp).connect(bus);
-  source.start(start);
-  source.stop(start + duration + 0.02);
+  const g = a.createGain();
+  g.gain.setValueAtTime(0.0001, start);
+  g.gain.linearRampToValueAtTime(gain, start + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, stop);
+
+  src.connect(filter).connect(g).connect(bus);
+  src.start(start);
+  src.stop(stop);
 }
 
-const MAJOR = [0, 4, 7, 12];
-const MINOR = [0, 3, 7, 12];
-const step = (root, semitones) => root * 2 ** (semitones / 12);
-
-/**
- * A dozen people talking over one intermission would otherwise machine-gun the chatter
- * cue into a rattle. One blip per gap, and the rest of the room's typing is silent.
- */
-const CHATTER_GAP_MS = 130;
 let lastChatterAt = 0;
+const CHATTER_GAP_MS = 250;
+
+// --- background tension generator (BGM) -----------------------------------
+let bgmInterval = null;
+let bgmMode = "normal";
+let bgmActive = false;
+
+function playBgmBeat() {
+  if (muted || (typeof document !== "undefined" && document.hidden) || !bgmActive) return;
+  const a = audio();
+  if (!a || !bus) return;
+
+  const isUrgent = bgmMode === "urgent";
+  const now = a.currentTime;
+
+  // Sub pulse & soft rhythmic sweep
+  const osc = a.createOscillator();
+  const gain = a.createGain();
+  const filter = a.createBiquadFilter();
+
+  osc.type = isUrgent ? "sawtooth" : "sine";
+  osc.frequency.setValueAtTime(isUrgent ? 82.4 : 55.0, now);
+  if (isUrgent) {
+    osc.frequency.exponentialRampToValueAtTime(110.0, now + 0.15);
+  }
+
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(isUrgent ? 600 : 250, now);
+  filter.Q.value = isUrgent ? 2.5 : 1.0;
+
+  const peakGain = isUrgent ? 0.032 : 0.018;
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.linearRampToValueAtTime(peakGain, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + (isUrgent ? 0.28 : 0.45));
+
+  osc.connect(filter).connect(gain).connect(bus);
+  osc.start(now);
+  osc.stop(now + (isUrgent ? 0.3 : 0.5));
+}
+
+export const bgm = {
+  start: (mode = "normal") => {
+    bgmActive = true;
+    bgmMode = mode;
+    if (bgmInterval) clearInterval(bgmInterval);
+    const intervalMs = mode === "urgent" ? 500 : 750;
+    playBgmBeat();
+    bgmInterval = setInterval(playBgmBeat, intervalMs);
+  },
+
+  setUrgent: (isUrgent) => {
+    const nextMode = isUrgent ? "urgent" : "normal";
+    if (bgmMode === nextMode && bgmInterval) return;
+    bgmMode = nextMode;
+    if (bgmActive) {
+      if (bgmInterval) clearInterval(bgmInterval);
+      const intervalMs = nextMode === "urgent" ? 500 : 750;
+      playBgmBeat();
+      bgmInterval = setInterval(playBgmBeat, intervalMs);
+    }
+  },
+
+  stop: () => {
+    bgmActive = false;
+    if (bgmInterval) {
+      clearInterval(bgmInterval);
+      bgmInterval = null;
+    }
+  },
+
+  isActive: () => bgmActive,
+  getMode: () => bgmMode,
+};
 
 export const sound = {
+  isMuted,
+  setMuted,
+  toggle,
+  bgm,
+
   /**
-   * The closing ten seconds. Pitch and weight climb as the clock falls, so the run-in
-   * tightens instead of repeating the same beep ten times.
+   * Final ten seconds of a trading round. Climbs one semitone per second so urgency is
+   * legible across the room.
    */
-  tick: (secondsLeft = 10) => {
-    const closeness = Math.min(Math.max(11 - secondsLeft, 1), 10);
+  tick: (secondsLeft) => {
+    const step = Math.max(1, Math.min(10, secondsLeft));
+    const hz = 440 * 2 ** ((10 - step) / 12);
     note({
-      from: 620 + closeness * 46,
-      duration: 0.035,
-      gain: 0.016 + closeness * 0.0028,
+      from: hz,
+      type: "sine",
+      duration: step === 1 ? 0.22 : 0.06,
+      gain: step === 1 ? 0.12 : 0.06,
+      detune: 4,
     });
-    if (secondsLeft <= 3) noise({ duration: 0.05, gain: 0.018, from: 3200, to: 1400, q: 1.4 });
   },
 
-  /** Direction lives in the sweep: a long climbs, a short falls. */
-  open: (side = "LONG") =>
-    side === "SHORT"
-      ? note({ from: 680, to: 300, duration: 0.14, gain: 0.05, detune: 9 })
-      : note({ from: 300, to: 720, duration: 0.14, gain: 0.05, detune: 9 }),
+  /** Long or short position opened. */
+  open: (side) => {
+    const isLong = side === "LONG";
+    note({
+      from: isLong ? 260 : 680,
+      to: isLong ? 680 : 260,
+      type: "triangle",
+      duration: 0.12,
+      gain: 0.07,
+      detune: 8,
+    });
+    noise({
+      duration: 0.1,
+      gain: 0.03,
+      from: isLong ? 800 : 3400,
+      to: isLong ? 3400 : 800,
+    });
+  },
 
-  /** Subtle pitch sweep on trade execution. */
+  /** Instant trade feedback click */
   trade: (isLong = true) => {
-    const a = audio();
-    if (!a) return;
-    const now = a.currentTime;
-    const osc = a.createOscillator();
-    const gain = a.createGain();
-
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(isLong ? 320 : 440, now);
-    osc.frequency.exponentialRampToValueAtTime(isLong ? 580 : 220, now + 0.08);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-
-    osc.connect(gain);
-    gain.connect(bus);
-    osc.start(now);
-    osc.stop(now + 0.09);
+    note({
+      from: isLong ? 440 : 330,
+      to: isLong ? 660 : 220,
+      type: "sine",
+      duration: 0.06,
+      gain: 0.05,
+    });
   },
 
-  /** Closing green resolves upward; closing red drops away. */
-  close: (profit = 0) =>
-    profit >= 0
-      ? note({ from: 520, to: 780, duration: 0.16, gain: 0.05, detune: 7 })
-      : note({ from: 520, to: 240, duration: 0.18, gain: 0.05, detune: 7 }),
+  /** Position closed. Chord color reflects whether it was green or red. */
+  close: (pnl) => {
+    const profit = pnl >= 0;
+    const base = profit ? 523.25 : 370; // C5 vs F#4
+    const third = profit ? 659.25 : 440; // E5 vs A4
+    const fifth = profit ? 783.99 : 554.37; // G5 vs C#5
+    note({ from: base, duration: 0.2, gain: 0.05 });
+    note({ from: third, duration: 0.22, gain: 0.045, at: 0.02 });
+    note({ from: fifth, duration: 0.28, gain: 0.04, at: 0.04 });
+  },
 
   /**
-   * The loudest thing in the game, because it is the funniest thing in the game — but only
-   * when it happens to you. Somebody else blowing up is news, not slapstick.
+   * You blew up. The loudest, ugliest cue in the game: an oscillator dive and low-frequency
+   * noise, cutting hard into the soft-clipper.
    */
-  liquidation: (mine = true) => {
-    if (!mine) {
-      note({ from: 260, to: 90, type: "sawtooth", duration: 0.26, gain: 0.03, pan: 0.4 });
+  liquidation: (isMine = false) => {
+    if (!isMine) {
+      // Somebody else blew up. Distinct, but quieter so it does not startle the player.
+      note({ from: 180, to: 65, type: "sawtooth", duration: 0.35, gain: 0.06 });
+      noise({ duration: 0.28, gain: 0.04, from: 1400, to: 160, q: 2 });
       return;
     }
-    noise({ duration: 0.5, gain: 0.075, from: 4200, to: 180, q: 0.6 });
-    note({ from: 300, to: 40, type: "sawtooth", duration: 0.5, gain: 0.1, detune: 16 });
-    note({ from: 95, to: 45, type: "triangle", duration: 0.4, gain: 0.09, at: 0.06 });
+    note({ from: 320, to: 45, type: "sawtooth", duration: 0.55, gain: 0.18, detune: 12 });
+    noise({ duration: 0.5, gain: 0.14, from: 2400, to: 90, q: 2.2 });
+    // Sub rumble that outlasts the noise.
+    note({ from: 60, to: 30, type: "sine", duration: 0.7, gain: 0.15, at: 0.08 });
   },
 
-  /** A barker opening the stall: filter sweep up, then the market is live. */
+  /** The opening bell of a round. */
   roundStart: () => {
-    noise({ duration: 0.3, gain: 0.03, from: 300, to: 3600, q: 0.8 });
-    [0, 7, 12].forEach((semitones, i) =>
-      note({
-        from: step(262, semitones),
-        duration: 0.16,
-        gain: 0.05,
-        at: i * 0.075,
-        detune: 8,
-      }),
-    );
-    note({ from: 700, to: 1050, duration: 0.2, gain: 0.035, at: 0.24, type: "triangle" });
+    note({ from: 880, type: "triangle", duration: 0.3, gain: 0.07, detune: 6 });
+    note({ from: 1320, type: "triangle", duration: 0.2, gain: 0.035, at: 0.04 });
   },
 
-  /** Major if the round paid, minor if it did not. The chord is the scoreboard. */
-  settle: (score = 0) => {
-    const shape = score >= 0 ? MAJOR : MINOR;
-    const root = score >= 0 ? 349 : 294;
-    shape.forEach((semitones, i) =>
-      note({
-        from: step(root, semitones),
-        type: "triangle",
-        duration: 0.34,
-        gain: 0.042,
-        at: i * 0.055,
-        detune: 6,
-      }),
-    );
+  /**
+   * The score arriving at the intermission. A rising arpeggio for profit, a slow descending
+   * pair of notes for a loss.
+   */
+  settle: (totalScore) => {
+    if (totalScore >= 0) {
+      [523.25, 659.25, 783.99, 1046.5].forEach((hz, i) =>
+        note({
+          from: hz,
+          type: "triangle",
+          duration: 0.18,
+          gain: 0.045,
+          at: i * 0.07,
+          detune: 4,
+        }),
+      );
+    } else {
+      note({ from: 311.13, to: 277.18, type: "triangle", duration: 0.26, gain: 0.06 });
+      note({ from: 233.08, to: 207.65, type: "triangle", duration: 0.34, gain: 0.055, at: 0.12 });
+    }
   },
 
-  /** Winning gets the full run; everyone else gets the short, flatter version. */
+  /** Match finished. Victory fanfare or a muted resolution. */
   finish: (won = false) => {
-    const line = won ? [0, 4, 7, 12, 16] : [0, 3, 7];
-    line.forEach((semitones, i) =>
+    const scale = won
+      ? [523.25, 659.25, 783.99, 1046.5, 1318.51]
+      : [392.0, 349.23, 311.13, 261.63];
+    scale.forEach((hz, i) =>
       note({
-        from: step(won ? 349 : 262, semitones),
+        from: hz,
         type: "triangle",
-        duration: 0.26,
+        duration: won ? 0.28 : 0.35,
         gain: 0.055,
         at: i * 0.1,
         detune: 7,
@@ -293,23 +381,17 @@ export const sound = {
 
   /**
    * A bulletin coming off the wire: teletype keys, then the bell.
-   *
-   * The one cue meant to pull your eyes off the chart, because a headline is the only
-   * thing inside a round that changes what the price is about to do. Pitched well above
-   * everything else so it cuts through a moving market.
    */
   news: () => {
     for (let i = 0; i < 3; i += 1) {
       noise({ duration: 0.03, gain: 0.028, from: 3000, to: 2200, q: 2.4, at: i * 0.045 });
     }
     note({ from: 1560, type: "triangle", duration: 0.22, gain: 0.045, at: 0.14, detune: 5 });
-    // A fifth above the bell, quiet — it reads as shimmer rather than a second note.
     note({ from: 2340, type: "triangle", duration: 0.16, gain: 0.02, at: 0.14 });
   },
 
   /**
-   * Somebody said something. Deliberately the quietest cue in the game: it has to register
-   * while your eyes are on the chart without ever becoming the sound of the game.
+   * Somebody said something. Deliberately the quietest cue in the game.
    */
   chatter: () => {
     const now = Date.now();
@@ -319,8 +401,7 @@ export const sound = {
   },
 
   /**
-   * Somebody readied up in the briefing. Pitch climbs with the count, so the room hears
-   * itself filling without anyone having to read the number.
+   * Somebody readied up in the briefing.
    */
   ready: (fraction = 0) =>
     note({

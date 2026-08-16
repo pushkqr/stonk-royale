@@ -22,6 +22,10 @@ export default function Intermission() {
   const timerRef = useRef(null);
 
   useEffect(() => {
+    sound.bgm.stop();
+  }, []);
+
+  useEffect(() => {
     if (!lastRumor) {
       setBeat("deal");
       return;

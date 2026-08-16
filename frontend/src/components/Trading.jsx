@@ -46,6 +46,13 @@ export default function Trading() {
     return () => telemetry.stop();
   }, [session.code]);
 
+  // Dynamic Web Audio background tension generator
+  const isUrgentClimax = left > 0 && left <= 15_000;
+  useEffect(() => {
+    sound.bgm.start(isUrgentClimax ? "urgent" : "normal");
+    return () => sound.bgm.stop();
+  }, [isUrgentClimax]);
+
   // One tick per second over the closing ten, not one per render.
   const lastTick = useRef(null);
   useEffect(() => {
