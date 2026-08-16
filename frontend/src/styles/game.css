@@ -1911,7 +1911,15 @@
 }
 
 .rules-tab {
+  left: 0;
+  border-left: 0;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+.leave-tab + .rules-tab,
+.leave-tab ~ .rules-tab {
   left: calc(var(--leave-tab) + 0.4rem);
+  border-left: 2px solid var(--edge);
   border-radius: 0 0 var(--radius) var(--radius);
 }
 
@@ -2163,11 +2171,21 @@
   }
 
   .rules-tab {
+    left: 0;
+  }
+
+  .leave-tab + .rules-tab,
+  .leave-tab ~ .rules-tab {
     left: calc(var(--leave-tab) + 0.35rem);
   }
 
   .table {
     padding-top: calc(var(--gap) + 2.1rem);
+  }
+
+  .center-page {
+    padding-top: calc(var(--gap) + 3rem);
+    padding-bottom: 2rem;
   }
 
   input[type="range"] {
