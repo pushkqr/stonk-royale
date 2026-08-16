@@ -34,7 +34,7 @@ describe("matchSettings.js", () => {
     expect(VOLATILITY_OPTIONS.some((v) => v.value === 1.0)).toBe(true);
     expect(MARKET_IMPACT_OPTIONS.length).toBe(3);
     expect(MARKET_IMPACT_OPTIONS.some((m) => m.value === 4.0)).toBe(true);
-    expect(PRESETS.length).toBe(5);
+    expect(PRESETS.length).toBe(4);
   });
 
   it("estimates match length in minutes correctly", () => {
@@ -45,7 +45,6 @@ describe("matchSettings.js", () => {
 
   it("finds matching lobby presets", () => {
     expect(matchingPreset({ rounds: 3, roundSeconds: 30, marketImpactMultiplier: 1.0 })?.id).toBe("blitz");
-    expect(matchingPreset({ rounds: 3, roundSeconds: 60, marketImpactMultiplier: 1.0 })?.id).toBe("quick");
     expect(matchingPreset({ rounds: 5, roundSeconds: 90, marketImpactMultiplier: 1.0 })?.id).toBe("standard");
     expect(matchingPreset({ rounds: 4, roundSeconds: 60, marketImpactMultiplier: 3.5 })?.id).toBe("whale_wars");
     expect(matchingPreset({ rounds: 7, roundSeconds: 120, marketImpactMultiplier: 1.0 })?.id).toBe("marathon");

@@ -49,15 +49,6 @@ export const PRESETS = [
     marketImpactMultiplier: 1.0,
   },
   {
-    id: "quick",
-    label: "Quick",
-    rounds: 3,
-    roundSeconds: 60,
-    intermissionSeconds: 20,
-    volatilityMultiplier: 1.0,
-    marketImpactMultiplier: 1.0,
-  },
-  {
     id: "standard",
     label: "Standard",
     rounds: 5,
@@ -67,15 +58,6 @@ export const PRESETS = [
     marketImpactMultiplier: 1.0,
   },
   {
-    id: "whale_wars",
-    label: "Whale Wars",
-    rounds: 4,
-    roundSeconds: 60,
-    intermissionSeconds: 20,
-    volatilityMultiplier: 1.4,
-    marketImpactMultiplier: 3.5,
-  },
-  {
     id: "marathon",
     label: "Marathon",
     rounds: 7,
@@ -83,6 +65,15 @@ export const PRESETS = [
     intermissionSeconds: 30,
     volatilityMultiplier: 0.8,
     marketImpactMultiplier: 1.0,
+  },
+  {
+    id: "whale_wars",
+    label: "⚔️ Whale Wars",
+    rounds: 4,
+    roundSeconds: 60,
+    intermissionSeconds: 20,
+    volatilityMultiplier: 1.4,
+    marketImpactMultiplier: 3.5,
   },
 ];
 

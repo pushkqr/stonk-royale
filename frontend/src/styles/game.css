@@ -108,40 +108,34 @@
 
 .preset-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
-  gap: 0.4rem;
-}
-
-@media (max-width: 480px) {
-  .preset-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
 }
 
 .preset {
   flex-direction: column;
   gap: 0.1rem;
-  padding: 0.55rem 0.4rem;
+  padding: 0.55rem 0.5rem;
   font-size: 0.95rem;
 }
 
 .preset.preset-whale_wars,
 .preset.preset-whale-wars {
-  border-color: rgba(255, 180, 0, 0.4);
-  background: rgba(255, 180, 0, 0.06);
+  border-color: rgba(255, 180, 0, 0.45);
+  background: rgba(255, 180, 0, 0.08);
 }
 
 .preset.preset-whale_wars:hover,
 .preset.preset-whale-wars:hover {
   border-color: var(--scream);
-  box-shadow: 0 0 12px rgba(255, 222, 89, 0.25);
+  box-shadow: 0 0 14px rgba(255, 222, 89, 0.3);
 }
 
 .preset.preset-whale_wars.btn-scream,
 .preset.preset-whale-wars.btn-scream {
   background: var(--scream);
   color: var(--void-deep);
-  box-shadow: 0 0 16px rgba(255, 222, 89, 0.4);
+  box-shadow: 0 0 16px rgba(255, 222, 89, 0.45);
 }
 
 .preset-sub {
