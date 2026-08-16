@@ -209,6 +209,15 @@ function playBgmBeat() {
   gain.gain.exponentialRampToValueAtTime(0.0001, now + (isUrgent ? 0.28 : 0.45));
 
   osc.connect(filter).connect(gain).connect(bus);
+  osc.onended = () => {
+    try {
+      osc.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    } catch {
+      // Ignored if already disconnected
+    }
+  };
   osc.start(now);
   osc.stop(now + (isUrgent ? 0.3 : 0.5));
 }

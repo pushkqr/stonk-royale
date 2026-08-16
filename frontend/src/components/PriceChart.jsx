@@ -144,7 +144,7 @@ function draw(canvas, size, state) {
   }
 
   if (count > 0) {
-    // 1. Fill gradient under the curve
+    // 1. Fill gradient under the curve (cached)
     if (state.gradientColor !== lineColor || state.gradientH !== plotH) {
       const gradient = ctx.createLinearGradient(0, PAD_Y, 0, PAD_Y + plotH);
       gradient.addColorStop(0, `${lineColor}33`);
@@ -154,9 +154,11 @@ function draw(canvas, size, state) {
       state.gradientH = plotH;
     }
 
+    const step = count > 240 ? Math.ceil(count / 200) : 1;
+
     ctx.beginPath();
     ctx.moveTo(x(points[0].t), PAD_Y + plotH);
-    for (let i = 0; i < count - 1; i += 1) {
+    for (let i = 0; i < count - 1; i += step) {
       ctx.lineTo(x(points[i].t), y(points[i].p));
     }
     ctx.lineTo(x(head.t), y(head.p));
@@ -168,7 +170,7 @@ function draw(canvas, size, state) {
     // 2. Stroke main price line
     ctx.beginPath();
     ctx.moveTo(x(points[0].t), y(points[0].p));
-    for (let i = 1; i < count - 1; i += 1) {
+    for (let i = step; i < count - 1; i += step) {
       ctx.lineTo(x(points[i].t), y(points[i].p));
     }
     ctx.lineTo(x(head.t), y(head.p));
@@ -178,27 +180,28 @@ function draw(canvas, size, state) {
     ctx.lineCap = "round";
     ctx.stroke();
 
-    // 3. Head Halo & Dot
+    // 3. Head Halo & Dot (0 allocations, pure GPU blend)
     const headX = x(head.t);
     const headY = y(head.p);
 
-    // Radial breathing neon pulse
-    const pulse = 1 + 0.25 * Math.sin(now * 0.008);
-    const haloRadius = 12 * pulse;
-    const radial = ctx.createRadialGradient(headX, headY, 2, headX, headY, haloRadius);
-    radial.addColorStop(0, `${lineColor}88`);
-    radial.addColorStop(0.6, `${lineColor}33`);
-    radial.addColorStop(1, `${lineColor}00`);
-
-    ctx.fillStyle = radial;
+    // Layered neon halo
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = lineColor;
     ctx.beginPath();
-    ctx.arc(headX, headY, haloRadius, 0, Math.PI * 2);
+    ctx.arc(headX, headY, 11, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.arc(headX, headY, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     // Solid inner core
     ctx.fillStyle = lineColor;
     ctx.beginPath();
-    ctx.arc(headX, headY, 4.5, 0, Math.PI * 2);
+    ctx.arc(headX, headY, 4, 0, Math.PI * 2);
     ctx.fill();
 
     // White center specular point

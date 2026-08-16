@@ -23,24 +23,29 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
   const [pending, setPending] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [optimisticPos, setOptimisticPos] = useState(null);
   const [prevPosition, setPrevPosition] = useState(me?.position);
 
   if (me?.position !== prevPosition) {
     setPrevPosition(me?.position);
     setOptimisticPos(null);
+    setClosing(false);
     setPending(false);
   }
 
-  // Safety fallback: guarantee pending is never stuck for > 2000ms
+  // Safety fallback: guarantee pending/closing are never stuck for > 2000ms
   useEffect(() => {
-    if (pending) {
-      const timer = setTimeout(() => setPending(false), 2000);
+    if (pending || closing) {
+      const timer = setTimeout(() => {
+        setPending(false);
+        setClosing(false);
+      }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [pending]);
+  }, [pending, closing]);
 
-  const position = optimisticPos || me?.position;
+  const position = closing ? null : (optimisticPos || me?.position);
 
   const handleOpen = useCallback(
     (side) => {
@@ -58,6 +63,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         unrealisedPnl: 0,
       });
       setPending(true);
+      setClosing(false);
       sound.trade(side === "LONG");
       onOpen(side, size / 100, leverage);
     },
@@ -65,9 +71,9 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   );
 
   const handleClose = useCallback(() => {
+    setClosing(true);
     setOptimisticPos(null);
     setPending(true);
-    sound.trade(false);
     onClose();
   }, [onClose]);
 

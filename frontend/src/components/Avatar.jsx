@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { ARCHETYPES } from "../lib/avatars";
 
-export default function Avatar({
+function Avatar({
   archetypeId = "banker",
   mood = "neutral",
   size = 36,
@@ -272,3 +273,5 @@ export default function Avatar({
     </svg>
   );
 }
+
+export default memo(Avatar);
