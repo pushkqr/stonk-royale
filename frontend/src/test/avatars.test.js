@@ -12,8 +12,8 @@ describe("avatars.js", () => {
     localStorage.clear();
   });
 
-  it("exports 8 valid archetypes with roles and colors", () => {
-    expect(ARCHETYPES.length).toBe(8);
+  it("exports 9 valid archetypes with roles and colors", () => {
+    expect(ARCHETYPES.length).toBe(9);
     ARCHETYPES.forEach((a) => {
       expect(a.id).toBeDefined();
       expect(a.name).toBeDefined();

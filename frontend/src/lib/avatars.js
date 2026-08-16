@@ -65,6 +65,14 @@ export const ARCHETYPES = [
     accent: "#f43f5e",
     accessory: "beanie",
   },
+  {
+    id: "whale",
+    name: "Apex Whale",
+    role: "Liquidity Mover",
+    bg: "#0c4a6e",
+    accent: "#38bdf8",
+    accessory: "crown",
+  },
 ];
 
 export function getMyAvatar() {
