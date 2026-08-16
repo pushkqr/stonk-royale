@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { money, pct, price as fmtPrice, toneOf } from "../lib/format";
 
 /**
  * The operator's view: who is playing right now, how much has ever been played, and how the
@@ -30,6 +31,7 @@ function Figure({ label, value, note }) {
 export default function Admin() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [selectedRoomCode, setSelectedRoomCode] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -75,6 +77,15 @@ export default function Admin() {
 
   const { rooms, playersNow, lifetime, server, recentTelemetry } = data;
   const slow = recentTelemetry.filter((r) => r.worstFrameMs > 100);
+  const smoothRatio = recentTelemetry.length
+    ? Math.round(((recentTelemetry.length - slow.length) / recentTelemetry.length) * 100)
+    : 100;
+
+  const memPct = server.heapMaxMb > 0
+    ? Math.min(100, Math.round((server.heapUsedMb / server.heapMaxMb) * 100))
+    : 0;
+
+  const selectedRoom = rooms.find((r) => r.code === selectedRoomCode) || (rooms.length > 0 ? rooms[0] : null);
 
   return (
     <main className="admin">
@@ -96,6 +107,55 @@ export default function Admin() {
         <Figure label="Liquidations" value={lifetime.liquidations} />
       </section>
 
+      {/* --- Visual Health Gauges --- */}
+      <section className="panel stack admin-gauges">
+        <div className="panel-head">
+          <h2 className="display pane-title">Server Health & Telemetry Gauges</h2>
+        </div>
+        <div className="admin-gauge-grid">
+          <div className="admin-gauge-card">
+            <span className="eyebrow">JVM Heap Memory</span>
+            <div className="admin-gauge-bar-wrap">
+              <div
+                className="admin-gauge-bar"
+                style={{
+                  width: `${memPct}%`,
+                  background: memPct > 85 ? "var(--dump)" : memPct > 65 ? "var(--scream)" : "var(--pump)",
+                }}
+              />
+            </div>
+            <span className="mono admin-gauge-val">
+              {server.heapUsedMb} / {server.heapMaxMb} MB ({memPct}%)
+            </span>
+          </div>
+
+          <div className="admin-gauge-card">
+            <span className="eyebrow">Tick Engine Latency</span>
+            <div className="admin-gauge-stat">
+              <span className="display admin-stat-num">{server.tickMedianMillis}ms</span>
+              <span className="mono muted">budget {server.tickBudgetMillis}ms</span>
+            </div>
+            <span className="mono admin-gauge-val">
+              Worst: {server.tickWorstMillis}ms · Overruns: {server.tickOverruns}
+            </span>
+          </div>
+
+          <div className="admin-gauge-card">
+            <span className="eyebrow">Client Smoothness</span>
+            <div className="admin-gauge-stat">
+              <span className={`display admin-stat-num ${smoothRatio >= 90 ? "pump" : "dump"}`}>
+                {smoothRatio}%
+              </span>
+              <span className="mono muted">60/120fps clean</span>
+            </div>
+            <span className="mono admin-gauge-val">
+              {slow.length} hitches in {recentTelemetry.length} sessions
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Live Rooms List & Room Inspector --- */}
       <section className="panel stack">
         <div className="panel-head">
           <h2 className="display pane-title">Live rooms</h2>
@@ -103,18 +163,84 @@ export default function Admin() {
         {rooms.length === 0 ? (
           <p className="notice muted">Nobody is playing.</p>
         ) : (
-          <ul className="admin-rooms">
-            {rooms.map((room) => (
-              <li key={room.code}>
-                <span className="mono scream">{room.code}</span>
-                <span>{room.players} players</span>
-                <span className="eyebrow">{room.phase}</span>
-                <span className="mono muted">
-                  round {room.round}/{room.totalRounds}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="admin-rooms">
+              {rooms.map((room) => (
+                <li
+                  key={room.code}
+                  className={`admin-room-row ${selectedRoom?.code === room.code ? "is-selected" : ""}`}
+                  onClick={() => setSelectedRoomCode(room.code)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <span className="mono scream">{room.code}</span>
+                  <span>{room.players} players ({room.humanPlayers || 0} humans)</span>
+                  <span className="eyebrow">{room.phase}</span>
+                  <span className="mono muted">
+                    {room.assetTicker !== "—" ? `${room.assetTicker} @ ${fmtPrice(room.livePrice)}` : "—"}
+                  </span>
+                  <span className="mono muted">
+                    round {room.round}/{room.totalRounds}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {selectedRoom && selectedRoom.playerDetails && selectedRoom.playerDetails.length > 0 && (
+              <div className="admin-room-drawer">
+                <header className="admin-drawer-head">
+                  <span className="eyebrow">Room {selectedRoom.code} Inspector</span>
+                  <span className="mono scream">
+                    {selectedRoom.assetTicker} · {fmtPrice(selectedRoom.livePrice)}
+                  </span>
+                </header>
+                <div className="admin-table-wrap">
+                  <table className="admin-inspector-table">
+                    <thead>
+                      <tr>
+                        <th>Player</th>
+                        <th>Status</th>
+                        <th>Cash</th>
+                        <th>Equity</th>
+                        <th>Score</th>
+                        <th>Position</th>
+                        <th>Unrealised PnL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedRoom.playerDetails.map((p) => (
+                        <tr key={p.playerId}>
+                          <td>
+                            <strong>{p.nickname}</strong>
+                            {p.isBot && <span className="tag tag-bot">BOT</span>}
+                          </td>
+                          <td>
+                            <span className={`status-dot ${p.isConnected ? "is-online" : "is-offline"}`} />
+                            {p.isConnected ? "Online" : "Quiet"}
+                          </td>
+                          <td className="mono">{money(p.cash)}</td>
+                          <td className="mono">{money(p.equity)}</td>
+                          <td className={`mono ${toneOf(p.roundScore)}`}>{pct(p.roundScore)}</td>
+                          <td className="mono">
+                            {p.positionSide ? (
+                              <span className={p.positionSide === "LONG" ? "pump" : "dump"}>
+                                {p.positionLeverage}x {p.positionSide} @ {fmtPrice(p.entryPrice)}
+                              </span>
+                            ) : (
+                              <span className="muted">Flat</span>
+                            )}
+                          </td>
+                          <td className={`mono ${toneOf(p.unrealisedPnl)}`}>
+                            {p.positionSide ? money(p.unrealisedPnl) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </section>
 

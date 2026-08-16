@@ -151,14 +151,46 @@ public class Stats {
     }
 
     private AdminViews.Room roomOf(Match match) {
+        long now = System.currentTimeMillis();
+        double livePrice = match.currentPrice(now);
+        String ticker = match.round() != null && match.round().asset() != null
+                ? match.round().asset().ticker()
+                : "—";
+
+        List<AdminViews.PlayerDetail> playerDetails = match.players().stream()
+                .filter(p -> !p.hasLeft())
+                .map(p -> {
+                    com.pushkqr.springBackend.game.model.PlayerRound pr = p.round();
+                    com.pushkqr.springBackend.game.model.Position pos = pr != null ? pr.position() : null;
+                    return new AdminViews.PlayerDetail(
+                            p.id(),
+                            p.nickname(),
+                            p.isBot(),
+                            p.isConnected(),
+                            pr != null ? pr.cash() : 0.0,
+                            pr != null ? pr.equity(livePrice) : 0.0,
+                            pr != null ? pr.scoreAt(livePrice) : p.totalScore(),
+                            pos != null ? pos.side().name() : null,
+                            pos != null ? pos.leverage() : 0,
+                            pos != null ? pos.entryPrice() : 0.0,
+                            pos != null ? pos.unrealisedPnl(livePrice) : 0.0);
+                })
+                .toList();
+
+        int humanCount = (int) match.players().stream()
+                .filter(player -> !player.isBot() && !player.hasLeft())
+                .count();
+
         return new AdminViews.Room(
                 match.code(),
-                // Bots would otherwise inflate every practice room by three and poison the
-                // lifetime peak, which is meant to count people.
-                (int) match.players().stream().filter(player -> !player.isBot()).count(),
+                (int) match.players().stream().filter(p -> !p.hasLeft()).count(),
+                humanCount,
                 match.phase().name(),
                 match.roundIndex() + 1,
-                match.config().rounds());
+                match.config().rounds(),
+                ticker,
+                livePrice,
+                playerDetails);
     }
 
     // --- persistence ----------------------------------------------------------

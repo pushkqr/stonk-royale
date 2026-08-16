@@ -8,7 +8,30 @@ public final class AdminViews {
     private AdminViews() {
     }
 
-    public record Room(String code, int players, String phase, int round, int totalRounds) {
+    public record PlayerDetail(
+            String playerId,
+            String nickname,
+            boolean isBot,
+            boolean isConnected,
+            double cash,
+            double equity,
+            double roundScore,
+            String positionSide,
+            int positionLeverage,
+            double entryPrice,
+            double unrealisedPnl) {
+    }
+
+    public record Room(
+            String code,
+            int players,
+            int humanPlayers,
+            String phase,
+            int round,
+            int totalRounds,
+            String assetTicker,
+            double livePrice,
+            List<PlayerDetail> playerDetails) {
     }
 
     public record Lifetime(int devices, long seatsTaken, long matchesCreated, long matchesFinished,
