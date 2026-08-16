@@ -110,6 +110,15 @@ export default function Results() {
           Room <b className="room-code mono scream">{lobby.code}</b> is still open.
         </p>
       )}
+
+      <footer className="footer-credit muted">
+        <p className="footnote-disclaimer">
+          Fake tickers, fake money, real lying. Nothing here is investment advice.
+        </p>
+        <p className="footnote-watermark">
+          Made with <span className="credit-heart" aria-hidden="true">♥</span> by pushkqr
+        </p>
+      </footer>
     </main>
   );
 }
