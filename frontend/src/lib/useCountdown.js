@@ -11,7 +11,7 @@ export function useCountdown(endsAtMillis, serverNow) {
     }
     const update = () => setLeft(Math.max(0, endsAtMillis - serverNow()));
     update();
-    const id = setInterval(update, 200);
+    const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [endsAtMillis, serverNow]);
 

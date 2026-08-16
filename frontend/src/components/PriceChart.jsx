@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { usePrice } from "../state/MatchProvider";
 import { telemetry } from "../lib/telemetry";
 import { unrealisedPnl } from "../lib/pnl";
@@ -233,7 +233,7 @@ function draw(canvas, size, state) {
 
 const EMPTY_SERIES = { points: [], count: 0 };
 
-export default function PriceChart({ series: propSeries, roundMillis, position, startPrice }) {
+function PriceChart({ series: propSeries, roundMillis, position, startPrice }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -309,3 +309,5 @@ export default function PriceChart({ series: propSeries, roundMillis, position, 
     </div>
   );
 }
+
+export default memo(PriceChart);

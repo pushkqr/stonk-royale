@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { telemetry } from "../lib/telemetry";
@@ -27,7 +27,6 @@ export default function Trading() {
     say,
     serverNow,
     suspects,
-    toggleSuspect,
   } = useMatch();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
@@ -99,14 +98,18 @@ export default function Trading() {
     }
   }, [feed]);
 
-  const roundNews = feed.filter(
-    (f) => f.kind === "NEWS" && f.round === phase?.roundIndex
-  );
-  const latestNews = roundNews.length > 0 ? roundNews[roundNews.length - 1] : null;
-  const crossCheckStatus = evaluateCrossCheck(
-    rumor?.claimedRegime,
-    roundNews.map((n) => n.text)
-  );
+  const { latestNews, crossCheckStatus } = useMemo(() => {
+    const news = feed.filter(
+      (f) => f.kind === "NEWS" && f.round === phase?.roundIndex
+    );
+    return {
+      latestNews: news.length > 0 ? news[news.length - 1] : null,
+      crossCheckStatus: evaluateCrossCheck(
+        rumor?.claimedRegime,
+        news.map((n) => n.text)
+      ),
+    };
+  }, [feed, phase?.roundIndex, rumor?.claimedRegime]);
 
   const lastNewsIdRef = useRef(null);
   useEffect(() => {
@@ -143,10 +146,6 @@ export default function Trading() {
           truthfulTips={phase?.truthfulTips}
           feed={feed}
           roundIndex={phase?.roundIndex}
-          players={board}
-          meId={session.playerId}
-          suspects={suspects}
-          onToggleSuspect={toggleSuspect}
         />
       </div>
 
