@@ -1,11 +1,16 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { sound, isMuted, setMuted, toggle, bgm } from "../lib/sound";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { sound, isMuted, setMuted, toggle, bgm, duckBgm } from "../lib/sound";
 
 describe("sound.js", () => {
   beforeEach(() => {
     localStorage.clear();
     setMuted(false);
     bgm.stop();
+  });
+
+  afterEach(() => {
+    bgm.stop();
+    setMuted(false);
   });
 
   it("handles mute and unmute state transitions", () => {
@@ -21,7 +26,7 @@ describe("sound.js", () => {
     expect(localStorage.getItem("stonk:muted")).toBe("0");
   });
 
-  it("controls background tension generator BGM state and tempo", () => {
+  it("controls procedural Wall Street Arcade BGM engine state and modes", () => {
     expect(bgm.isActive()).toBe(false);
 
     bgm.start("normal");
@@ -34,11 +39,13 @@ describe("sound.js", () => {
     bgm.setUrgent(false);
     expect(bgm.getMode()).toBe("normal");
 
+    bgm.duck(0.2, 0.4);
+
     bgm.stop();
     expect(bgm.isActive()).toBe(false);
   });
 
-  it("runs sound synthesizer calls safely in headless test environment", () => {
+  it("runs all sound synthesizer cues safely in headless test environment", () => {
     expect(() => {
       sound.tick(5);
       sound.open("LONG");
@@ -61,7 +68,24 @@ describe("sound.js", () => {
       sound.stamp(true);
       sound.bgm.start("normal");
       sound.bgm.setUrgent(true);
+      sound.bgm.duck(0.1, 0.5);
+      duckBgm(0.3, 0.2);
       sound.bgm.stop();
     }).not.toThrow();
+  });
+
+  it("handles document visibility changes cleanly", () => {
+    bgm.start("normal");
+    expect(bgm.isActive()).toBe(true);
+
+    // Simulate document visibility event
+    Object.defineProperty(document, "hidden", { value: true, writable: true, configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    Object.defineProperty(document, "hidden", { value: false, writable: true, configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(bgm.isActive()).toBe(true);
+    bgm.stop();
   });
 });

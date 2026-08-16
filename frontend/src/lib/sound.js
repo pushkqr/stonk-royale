@@ -1,23 +1,28 @@
 /**
- * Synthesized so there are no audio files to ship, cache or fail to load.
+ * Synthesized procedural audio engine — 0KB audio assets, zero network fetches.
  *
- * The game sounds like a cheap transistor radio in a newsroom, not a trading terminal.
- * Every cue runs through one shared chain — soft-clipped, then rolled off above 3.2kHz — so
- * the square waves read as a small blown speaker instead of a raw oscillator, and so two
- * cues landing together glue rather than clip.
- *
- * Cues carry information wherever they can: the countdown climbs as the clock falls, a long
- * and a short are opposite pitch sweeps, and a round settles into a major or minor chord
- * depending on whether you made money. You can play with your eyes off the screen.
- *
- * The AudioContext is created lazily on the first cue, by which point the player has
- * already clicked something — browsers refuse to start audio before a gesture.
+ * Architecture:
+ * - Master Bus: Soft-clipping shaper -> 3.2kHz lowpass roll-off -> Master Gain -> Destination.
+ * - SFX Engine: Procedural oscillators and noise buffers for trade, liquidation, news, etc.
+ * - "Wall Street Arcade" BGM Engine:
+ *   - 16-step A-minor resonant synth bassline.
+ *   - Pentatonic neon arpeggio shimmer with subtle stereo-detune.
+ *   - High-frequency crisp ticker rhythm on 8th notes.
+ *   - Dynamic tempo & tension scaling: 110 BPM normal -> 135 BPM urgent mode with filter opening.
+ *   - Sidechain ducking: Master BGM gain automatically ducks on high-priority SFX.
+ *   - Clean lifecycle: Explicit node disconnection on `osc.onended`, zero memory leaks.
+ *   - Automatic visibility & mute handling.
  */
+
 const STORE_KEY = "stonk:muted";
 
+// --- Global Audio Graph State ---
 let ctx = null;
 let bus = null;
+let bgmGainNode = null;
+let bgmFilterNode = null;
 let noiseBuffer = null;
+let tickerBuffer = null;
 let muted = typeof localStorage !== "undefined" ? localStorage.getItem(STORE_KEY) === "1" : false;
 
 export const isMuted = () => muted;
@@ -26,6 +31,26 @@ export function setMuted(next) {
   muted = next;
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(STORE_KEY, next ? "1" : "0");
+  }
+  if (muted) {
+    if (bgmGainNode && ctx) {
+      try {
+        bgmGainNode.gain.cancelScheduledValues(ctx.currentTime);
+        bgmGainNode.gain.setValueAtTime(0, ctx.currentTime);
+      } catch {
+        // Ignored
+      }
+    }
+  } else {
+    if (bgmGainNode && ctx && bgmActive) {
+      try {
+        bgmGainNode.gain.cancelScheduledValues(ctx.currentTime);
+        bgmGainNode.gain.setValueAtTime(0.001, ctx.currentTime);
+        bgmGainNode.gain.linearRampToValueAtTime(BGM_BASE_GAIN, ctx.currentTime + 0.1);
+      } catch {
+        // Ignored
+      }
+    }
   }
 }
 
@@ -50,6 +75,35 @@ if (typeof window !== "undefined") {
   window.addEventListener("click", unlockAudio, { passive: true });
   window.addEventListener("touchstart", unlockAudio, { passive: true });
   window.addEventListener("keydown", unlockAudio, { passive: true });
+
+  // Document visibility change listener to pause/resume BGM gracefully
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        if (bgmGainNode && ctx) {
+          try {
+            bgmGainNode.gain.cancelScheduledValues(ctx.currentTime);
+            bgmGainNode.gain.setValueAtTime(0, ctx.currentTime);
+          } catch {
+            // Ignored
+          }
+        }
+      } else {
+        if (ctx && ctx.state === "suspended") {
+          ctx.resume().catch(() => {});
+        }
+        if (bgmGainNode && ctx && bgmActive && !muted) {
+          try {
+            bgmGainNode.gain.cancelScheduledValues(ctx.currentTime);
+            bgmGainNode.gain.setValueAtTime(0.001, ctx.currentTime);
+            bgmGainNode.gain.linearRampToValueAtTime(BGM_BASE_GAIN, ctx.currentTime + 0.1);
+          } catch {
+            // Ignored
+          }
+        }
+      }
+    });
+  }
 }
 
 /** Soft knee rather than a hard ceiling, so a stacked cue distorts instead of cracking. */
@@ -63,7 +117,6 @@ function softClip(amount = 2.2) {
 }
 
 function audio() {
-  // Nothing plays into a tab nobody is looking at.
   if (muted || (typeof document !== "undefined" && document.hidden)) return null;
 
   if (!ctx) {
@@ -84,6 +137,17 @@ function audio() {
 
     bus = ctx.createGain();
     bus.connect(shaper).connect(tone).connect(master).connect(ctx.destination);
+
+    // Dedicated BGM sub-bus with dynamic lowpass filter & sidechain gain
+    bgmFilterNode = ctx.createBiquadFilter();
+    bgmFilterNode.type = "lowpass";
+    bgmFilterNode.frequency.value = 1400;
+    bgmFilterNode.Q.value = 1.8;
+
+    bgmGainNode = ctx.createGain();
+    bgmGainNode.gain.value = BGM_BASE_GAIN;
+
+    bgmGainNode.connect(bgmFilterNode).connect(bus);
   }
 
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
@@ -92,6 +156,22 @@ function audio() {
 
 /** Exponential ramps cannot reach zero, and a negative target throws. */
 const safe = (hz) => Math.max(hz, 1);
+
+// --- Sidechain Ducking System ---
+const BGM_BASE_GAIN = 0.38;
+
+export function duckBgm(duckLevel = 0.25, duration = 0.3) {
+  if (!bgmGainNode || !ctx || muted || !bgmActive) return;
+  const now = ctx.currentTime;
+  try {
+    bgmGainNode.gain.cancelScheduledValues(now);
+    bgmGainNode.gain.setValueAtTime(bgmGainNode.gain.value, now);
+    bgmGainNode.gain.linearRampToValueAtTime(BGM_BASE_GAIN * duckLevel, now + 0.015);
+    bgmGainNode.gain.linearRampToValueAtTime(BGM_BASE_GAIN, now + 0.015 + duration);
+  } catch {
+    // Gracefully handle timing conflicts
+  }
+}
 
 /** One shaped note. Two oscillators a few cents apart give it body. */
 function note({
@@ -122,6 +202,14 @@ function note({
     osc.frequency.setValueAtTime(safe(from), start);
     if (to !== from) osc.frequency.exponentialRampToValueAtTime(safe(to), stop);
     osc.connect(g);
+    osc.onended = () => {
+      try {
+        osc.disconnect();
+        g.disconnect();
+      } catch {
+        // Ignored
+      }
+    };
     osc.start(start);
     osc.stop(stop);
   };
@@ -168,6 +256,15 @@ function noise({
   g.gain.exponentialRampToValueAtTime(0.0001, stop);
 
   src.connect(filter).connect(g).connect(bus);
+  src.onended = () => {
+    try {
+      src.disconnect();
+      filter.disconnect();
+      g.disconnect();
+    } catch {
+      // Ignored
+    }
+  };
   src.start(start);
   src.stop(stop);
 }
@@ -175,81 +272,311 @@ function noise({
 let lastChatterAt = 0;
 const CHATTER_GAP_MS = 250;
 
-// --- background tension generator (BGM) -----------------------------------
-let bgmInterval = null;
-let bgmMode = "normal";
+// --- "Wall Street Arcade" Procedural BGM Engine ---
+
+// Note Frequencies in A-minor & Pentatonic
+const NOTE = {
+  A1: 55.00,
+  C2: 65.41,
+  D2: 73.42,
+  E2: 82.41,
+  F2: 87.31,
+  G2: 98.00,
+  A2: 110.00,
+  C3: 130.81,
+  D3: 146.83,
+  E3: 164.81,
+  G3: 196.00,
+  A3: 220.00,
+  C4: 261.63,
+  D4: 293.66,
+  E4: 329.63,
+  G4: 392.00,
+  A4: 440.00,
+  C5: 523.25,
+  D5: 587.33,
+  E5: 659.25,
+  G5: 783.99,
+  A5: 880.00,
+};
+
+// 16-Step Composition Patterns
+const BASS_PATTERN_NORMAL = [
+  NOTE.A1, NOTE.A1, NOTE.A2, NOTE.A1,
+  NOTE.C2, NOTE.C2, NOTE.D2, NOTE.E2,
+  NOTE.A1, NOTE.A1, NOTE.G2, NOTE.A1,
+  NOTE.F2, NOTE.E2, NOTE.D2, NOTE.C2,
+];
+
+const BASS_PATTERN_URGENT = [
+  NOTE.A1, NOTE.A2, NOTE.A1, NOTE.A2,
+  NOTE.C2, NOTE.E2, NOTE.D2, NOTE.E2,
+  NOTE.A1, NOTE.A2, NOTE.G2, NOTE.A2,
+  NOTE.F2, NOTE.G2, NOTE.A2, NOTE.E2,
+];
+
+const ARP_PATTERN_NORMAL = [
+  NOTE.A3, 0,       NOTE.E4, NOTE.A4,
+  NOTE.C4, 0,       NOTE.G4, NOTE.E4,
+  NOTE.A3, NOTE.C4, NOTE.D4, NOTE.E4,
+  NOTE.G4, NOTE.E4, NOTE.D4, NOTE.C4,
+];
+
+const ARP_PATTERN_URGENT = [
+  NOTE.A4, NOTE.C5, NOTE.E5, NOTE.A5,
+  NOTE.G4, NOTE.E5, NOTE.D5, NOTE.C5,
+  NOTE.A4, NOTE.E5, NOTE.G5, NOTE.E5,
+  NOTE.D5, NOTE.C5, NOTE.E5, NOTE.G5,
+];
+
+// Ticker triggers on 8th notes (steps 0, 2, 4, 6, 8, 10, 12, 14) + syncopations
+const TICKER_PATTERN_NORMAL = [
+  1, 0, 1, 0,
+  1, 0, 1, 0,
+  1, 0, 1, 0,
+  1, 0, 1, 0,
+];
+
+const TICKER_PATTERN_URGENT = [
+  1, 0, 1, 1,
+  1, 0, 1, 1,
+  1, 0, 1, 1,
+  1, 1, 1, 1,
+];
+
 let bgmActive = false;
+let bgmMode = "normal";
+let bgmSchedulerTimer = null;
+let currentStep = 0;
+let nextStepTime = 0;
 
-function playBgmBeat() {
-  if (muted || (typeof document !== "undefined" && document.hidden) || !bgmActive) return;
-  const a = audio();
-  if (!a || !bus) return;
+const LOOKAHEAD_MS = 25;
+const SCHEDULE_AHEAD_SEC = 0.12;
 
-  const isUrgent = bgmMode === "urgent";
-  const now = a.currentTime;
+function scheduleBassNote(freq, time, isUrgent) {
+  if (!ctx || !bgmGainNode || !freq) return;
+  const duration = isUrgent ? 0.09 : 0.12;
+  const stopTime = time + duration;
 
-  // Sub pulse & soft rhythmic sweep
-  const osc = a.createOscillator();
-  const gain = a.createGain();
-  const filter = a.createBiquadFilter();
+  const osc = ctx.createOscillator();
+  const filter = ctx.createBiquadFilter();
+  const gain = ctx.createGain();
 
-  osc.type = isUrgent ? "sawtooth" : "sine";
-  osc.frequency.setValueAtTime(isUrgent ? 82.4 : 55.0, now);
-  if (isUrgent) {
-    osc.frequency.exponentialRampToValueAtTime(110.0, now + 0.15);
-  }
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(freq, time);
 
   filter.type = "lowpass";
-  filter.frequency.setValueAtTime(isUrgent ? 600 : 250, now);
-  filter.Q.value = isUrgent ? 2.5 : 1.0;
+  const startCutoff = isUrgent ? 1400 : 700;
+  const endCutoff = isUrgent ? 240 : 120;
+  filter.frequency.setValueAtTime(startCutoff, time);
+  filter.frequency.exponentialRampToValueAtTime(endCutoff, stopTime);
+  filter.Q.value = isUrgent ? 3.5 : 2.0;
 
-  const peakGain = isUrgent ? 0.032 : 0.018;
-  gain.gain.setValueAtTime(0.001, now);
-  gain.gain.linearRampToValueAtTime(peakGain, now + 0.03);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + (isUrgent ? 0.28 : 0.45));
+  const peakGain = isUrgent ? 0.07 : 0.055;
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.linearRampToValueAtTime(peakGain, time + 0.003);
+  gain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
 
-  osc.connect(filter).connect(gain).connect(bus);
+  osc.connect(filter).connect(gain).connect(bgmGainNode);
+
   osc.onended = () => {
     try {
       osc.disconnect();
       filter.disconnect();
       gain.disconnect();
     } catch {
-      // Ignored if already disconnected
+      // Ignored
     }
   };
-  osc.start(now);
-  osc.stop(now + (isUrgent ? 0.3 : 0.5));
+
+  osc.start(time);
+  osc.stop(stopTime);
+}
+
+function scheduleArpNote(freq, time, isUrgent) {
+  if (!ctx || !bgmGainNode || !freq) return;
+  const duration = isUrgent ? 0.08 : 0.11;
+  const stopTime = time + duration;
+
+  const osc = ctx.createOscillator();
+  const oscDetune = ctx.createOscillator();
+  const filter = ctx.createBiquadFilter();
+  const gain = ctx.createGain();
+
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(freq, time);
+
+  oscDetune.type = "sine";
+  oscDetune.frequency.setValueAtTime(freq, time);
+  oscDetune.detune.setValueAtTime(isUrgent ? 8 : 5, time);
+
+  filter.type = "bandpass";
+  filter.frequency.setValueAtTime(isUrgent ? 2600 : 1800, time);
+  filter.Q.value = 1.2;
+
+  const peakGain = isUrgent ? 0.038 : 0.024;
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.linearRampToValueAtTime(peakGain, time + 0.004);
+  gain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
+
+  osc.connect(filter);
+  oscDetune.connect(filter);
+  filter.connect(gain).connect(bgmGainNode);
+
+  osc.onended = () => {
+    try {
+      osc.disconnect();
+      oscDetune.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    } catch {
+      // Ignored
+    }
+  };
+
+  osc.start(time);
+  oscDetune.start(time);
+  osc.stop(stopTime);
+  oscDetune.stop(stopTime);
+}
+
+function scheduleTicker(time, isUrgent) {
+  if (!ctx || !bgmGainNode) return;
+  const duration = 0.018;
+  const stopTime = time + duration;
+
+  if (!tickerBuffer) {
+    tickerBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
+    const d = tickerBuffer.getChannelData(0);
+    for (let i = 0; i < d.length; i += 1) {
+      d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.005));
+    }
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = tickerBuffer;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = "highpass";
+  filter.frequency.setValueAtTime(isUrgent ? 5500 : 4200, time);
+
+  const gain = ctx.createGain();
+  const peakGain = isUrgent ? 0.028 : 0.016;
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.linearRampToValueAtTime(peakGain, time + 0.001);
+  gain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
+
+  src.connect(filter).connect(gain).connect(bgmGainNode);
+
+  src.onended = () => {
+    try {
+      src.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    } catch {
+      // Ignored
+    }
+  };
+
+  src.start(time);
+  src.stop(stopTime);
+}
+
+function scheduleStep(step, time, mode) {
+  const isUrgent = mode === "urgent";
+
+  const bassFreq = isUrgent ? BASS_PATTERN_URGENT[step] : BASS_PATTERN_NORMAL[step];
+  if (bassFreq) scheduleBassNote(bassFreq, time, isUrgent);
+
+  const arpFreq = isUrgent ? ARP_PATTERN_URGENT[step] : ARP_PATTERN_NORMAL[step];
+  if (arpFreq) scheduleArpNote(arpFreq, time, isUrgent);
+
+  const tickerOn = isUrgent ? TICKER_PATTERN_URGENT[step] : TICKER_PATTERN_NORMAL[step];
+  if (tickerOn) scheduleTicker(time, isUrgent);
+}
+
+function updateBgmFilter(mode) {
+  if (!bgmFilterNode || !ctx) return;
+  const isUrgent = mode === "urgent";
+  const targetFreq = isUrgent ? 3600 : 1500;
+  const targetQ = isUrgent ? 2.4 : 1.6;
+  try {
+    bgmFilterNode.frequency.cancelScheduledValues(ctx.currentTime);
+    bgmFilterNode.frequency.linearRampToValueAtTime(targetFreq, ctx.currentTime + 0.3);
+    bgmFilterNode.Q.cancelScheduledValues(ctx.currentTime);
+    bgmFilterNode.Q.linearRampToValueAtTime(targetQ, ctx.currentTime + 0.3);
+  } catch {
+    // Ignored
+  }
+}
+
+function schedulerTick() {
+  if (!bgmActive || muted || (typeof document !== "undefined" && document.hidden)) return;
+  const a = audio();
+  if (!a || !bgmGainNode) return;
+
+  const bpm = bgmMode === "urgent" ? 135 : 110;
+  const stepDuration = (60 / bpm) / 4; // 16th note step
+
+  while (nextStepTime < a.currentTime + SCHEDULE_AHEAD_SEC) {
+    scheduleStep(currentStep, nextStepTime, bgmMode);
+    nextStepTime += stepDuration;
+    currentStep = (currentStep + 1) % 16;
+  }
 }
 
 export const bgm = {
   start: (mode = "normal") => {
     bgmActive = true;
     bgmMode = mode;
-    if (bgmInterval) clearInterval(bgmInterval);
-    const intervalMs = mode === "urgent" ? 500 : 750;
-    playBgmBeat();
-    bgmInterval = setInterval(playBgmBeat, intervalMs);
+
+    const a = audio();
+    if (a) {
+      if (bgmGainNode) {
+        bgmGainNode.gain.cancelScheduledValues(a.currentTime);
+        bgmGainNode.gain.setValueAtTime(bgmGainNode.gain.value || 0.001, a.currentTime);
+        bgmGainNode.gain.linearRampToValueAtTime(BGM_BASE_GAIN, a.currentTime + 0.08);
+      }
+      updateBgmFilter(mode);
+      if (nextStepTime < a.currentTime) {
+        nextStepTime = a.currentTime + 0.03;
+      }
+    }
+
+    if (bgmSchedulerTimer) clearInterval(bgmSchedulerTimer);
+    schedulerTick();
+    bgmSchedulerTimer = setInterval(schedulerTick, LOOKAHEAD_MS);
   },
 
   setUrgent: (isUrgent) => {
     const nextMode = isUrgent ? "urgent" : "normal";
-    if (bgmMode === nextMode && bgmInterval) return;
+    if (bgmMode === nextMode) return;
     bgmMode = nextMode;
-    if (bgmActive) {
-      if (bgmInterval) clearInterval(bgmInterval);
-      const intervalMs = nextMode === "urgent" ? 500 : 750;
-      playBgmBeat();
-      bgmInterval = setInterval(playBgmBeat, intervalMs);
+    if (bgmActive && ctx) {
+      updateBgmFilter(nextMode);
     }
   },
 
   stop: () => {
     bgmActive = false;
-    if (bgmInterval) {
-      clearInterval(bgmInterval);
-      bgmInterval = null;
+    currentStep = 0;
+    if (bgmSchedulerTimer) {
+      clearInterval(bgmSchedulerTimer);
+      bgmSchedulerTimer = null;
     }
+    if (bgmGainNode && ctx) {
+      try {
+        bgmGainNode.gain.cancelScheduledValues(ctx.currentTime);
+        bgmGainNode.gain.setValueAtTime(bgmGainNode.gain.value, ctx.currentTime);
+        bgmGainNode.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.06);
+      } catch {
+        // Ignored
+      }
+    }
+  },
+
+  duck: (level = 0.25, duration = 0.3) => {
+    duckBgm(level, duration);
   },
 
   isActive: () => bgmActive,
@@ -280,6 +607,7 @@ export const sound = {
 
   /** Long or short position opened. */
   open: (side) => {
+    duckBgm(0.3, 0.25);
     const isLong = side === "LONG";
     note({
       from: isLong ? 260 : 680,
@@ -299,6 +627,7 @@ export const sound = {
 
   /** Instant trade feedback click */
   trade: (isLong = true) => {
+    duckBgm(0.35, 0.2);
     note({
       from: isLong ? 440 : 330,
       to: isLong ? 660 : 220,
@@ -310,6 +639,7 @@ export const sound = {
 
   /** Position closed. Chord color reflects whether it was green or red. */
   close: (pnl) => {
+    duckBgm(0.25, 0.35);
     const profit = pnl >= 0;
     const base = profit ? 523.25 : 370; // C5 vs F#4
     const third = profit ? 659.25 : 440; // E5 vs A4
@@ -324,6 +654,7 @@ export const sound = {
    * noise, cutting hard into the soft-clipper.
    */
   liquidation: (isMine = false) => {
+    duckBgm(0.12, 0.65);
     if (!isMine) {
       // Somebody else blew up. Distinct, but quieter so it does not startle the player.
       note({ from: 180, to: 65, type: "sawtooth", duration: 0.35, gain: 0.06 });
@@ -338,6 +669,7 @@ export const sound = {
 
   /** The opening bell of a round. */
   roundStart: () => {
+    duckBgm(0.2, 0.45);
     note({ from: 880, type: "triangle", duration: 0.3, gain: 0.07, detune: 6 });
     note({ from: 1320, type: "triangle", duration: 0.2, gain: 0.035, at: 0.04 });
   },
@@ -347,6 +679,7 @@ export const sound = {
    * pair of notes for a loss.
    */
   settle: (totalScore) => {
+    duckBgm(0.25, 0.4);
     if (totalScore >= 0) {
       [523.25, 659.25, 783.99, 1046.5].forEach((hz, i) =>
         note({
@@ -366,6 +699,7 @@ export const sound = {
 
   /** Match finished. Victory fanfare or a muted resolution. */
   finish: (won = false) => {
+    duckBgm(0.2, 0.5);
     const scale = won
       ? [523.25, 659.25, 783.99, 1046.5, 1318.51]
       : [392.0, 349.23, 311.13, 261.63];
@@ -392,6 +726,7 @@ export const sound = {
    * A bulletin coming off the wire: teletype keys, then the bell.
    */
   news: () => {
+    duckBgm(0.25, 0.35);
     for (let i = 0; i < 3; i += 1) {
       noise({ duration: 0.03, gain: 0.028, from: 3000, to: 2200, q: 2.4, at: i * 0.045 });
     }
@@ -423,6 +758,7 @@ export const sound = {
 
   /** The verdict stamp hitting the card. */
   stamp: (wasTrue = false) => {
+    duckBgm(0.25, 0.3);
     noise({ duration: 0.1, gain: 0.07, from: 1600, to: 260, q: 0.7 });
     note({
       from: wasTrue ? 220 : 150,

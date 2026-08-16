@@ -2,18 +2,14 @@ import { useEffect, useState } from "react";
 
 /** Milliseconds left, measured against the server clock rather than the browser's. */
 export function useCountdown(endsAtMillis, serverNow) {
-  const [left, setLeft] = useState(0);
+  const [, setTick] = useState(0);
 
   useEffect(() => {
-    if (!endsAtMillis) {
-      setLeft(0);
-      return;
-    }
-    const update = () => setLeft(Math.max(0, endsAtMillis - serverNow()));
-    update();
-    const id = setInterval(update, 1000);
+    if (!endsAtMillis || !serverNow) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, [endsAtMillis, serverNow]);
 
-  return left;
+  if (!endsAtMillis || !serverNow) return 0;
+  return Math.max(0, endsAtMillis - serverNow());
 }

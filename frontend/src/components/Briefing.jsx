@@ -23,14 +23,13 @@ export default function Briefing() {
   const [seenBefore] = useState(() => hasSeenBriefing());
   const [open, setOpen] = useState(() => !seenBefore);
   const [readAll, setReadAll] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(() => seenBefore);
   const endRef = useRef(null);
 
   useEffect(() => {
-    if (!seenBefore || sent || !connected) return;
-    setSent(true);
+    if (!seenBefore || !connected) return;
     ready();
-  }, [seenBefore, ready, sent, connected]);
+  }, [seenBefore, ready, connected]);
 
   useEffect(() => {
     const end = endRef.current;

@@ -17,7 +17,7 @@ export default function Intermission() {
 
   // Two beats: what just happened to you, then what's coming next. Without the pause the
   // stamp would be replaced by the next card before anyone read it.
-  const [beat, setBeat] = useState(lastRumor ? "reveal" : "deal");
+  const [beat, setBeat] = useState(() => (lastRumor ? "reveal" : "deal"));
 
   const timerRef = useRef(null);
 
@@ -26,11 +26,7 @@ export default function Intermission() {
   }, []);
 
   useEffect(() => {
-    if (!lastRumor) {
-      setBeat("deal");
-      return;
-    }
-    setBeat("reveal");
+    if (!lastRumor) return;
     sound.stamp(lastRumor.wasTrue);
     // Never spend the whole intermission looking backwards: a host can set it as low as a
     // second, and the next round's tip is the half that players still have to act on.

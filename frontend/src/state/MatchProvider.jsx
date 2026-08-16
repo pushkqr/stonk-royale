@@ -9,6 +9,7 @@ import { setLivePrice } from "./livePrice";
 const MatchContext = createContext(null);
 const PriceContext = createContext(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useMatch = () => useContext(MatchContext);
 
 /**
@@ -16,6 +17,7 @@ export const useMatch = () => useContext(MatchContext);
  * Only the trading screen reads it; anything else subscribing would repaint at that rate
  * for a number it never shows.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const usePrice = () => useContext(PriceContext);
 
 const FEED_LIMIT = 60;
