@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { ShieldCheck, EyeOff } from "lucide-react";
 import RumorCard from "./RumorCard";
 import { tipCountLine } from "../lib/regime";
 
@@ -30,13 +29,8 @@ function Dossier({
   truthfulTips,
   feed,
   roundIndex,
-  players = [],
-  meId,
-  suspects = {},
-  onToggleSuspect,
 }) {
   const news = feed.filter((item) => item.kind === "NEWS" && item.round === roundIndex);
-  const opponents = players.filter((p) => p.playerId !== meId && !p.left);
 
   return (
     <section className="panel stack dossier">
@@ -67,46 +61,8 @@ function Dossier({
           </ul>
         )}
       </div>
-
-      {opponents.length > 0 && (
-        <div className="dossier-suspects">
-          <p className="eyebrow dossier-subhead">Suspect Tracker</p>
-          <ul className="suspect-list">
-            {opponents.map((p) => {
-              const status = suspects[p.playerId];
-              return (
-                <li key={p.playerId} className="suspect-row">
-                  <span className="suspect-name">
-                    {p.nickname}
-                    {p.bot && <span className="tag tag-bot">BOT</span>}
-                  </span>
-                  <div className="suspect-actions">
-                    <button
-                      type="button"
-                      className={`suspect-btn btn-trust ${status === "TRUSTED" ? "is-active" : ""}`}
-                      onClick={() => onToggleSuspect?.(p.playerId, "TRUSTED")}
-                      title="Mark as Trusted"
-                    >
-                      <ShieldCheck size={11} strokeWidth={2.5} /> Trust
-                    </button>
-                    <button
-                      type="button"
-                      className={`suspect-btn btn-sus ${status === "SUS" ? "is-active" : ""}`}
-                      onClick={() => onToggleSuspect?.(p.playerId, "SUS")}
-                      title="Mark as Suspect"
-                    >
-                      <EyeOff size={11} strokeWidth={2.5} /> Sus
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }
 
 export default memo(Dossier);
-

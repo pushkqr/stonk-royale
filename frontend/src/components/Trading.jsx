@@ -121,6 +121,20 @@ export default function Trading() {
       <section className={`panel stack floor ${surge ? `is-surging-${surge}` : ""}`}>
         <LiveFloorPrice startPrice={startPrice} />
 
+        <div className="floor-intel-hud">
+          <span className="intel-pill">
+            <span className="intel-label">INTEL:</span>{" "}
+            {rumor?.claimedRegime
+              ? `Tip claims ${rumor.claimedRegime}`
+              : rumor?.text || "No active intel"}
+          </span>
+          {phase?.truthfulTips != null && (
+            <span className="intel-count mono">
+              {phase.truthfulTips}/{phase.totalPlayers ?? (board?.length || 2)} Truthful
+            </span>
+          )}
+        </div>
+
         <PriceChart
           series={series}
           roundMillis={roundMillis}

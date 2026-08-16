@@ -864,6 +864,82 @@
   font-weight: 700;
 }
 
+/* --- in-chart thesis hud ------------------------------------------------- */
+
+.floor-intel-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  font-size: 0.76rem;
+}
+
+.intel-pill {
+  color: var(--paper);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.intel-label {
+  font-family: var(--display);
+  font-weight: 800;
+  color: var(--scream);
+  letter-spacing: 0.04em;
+  margin-right: 0.25rem;
+}
+
+.intel-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--scream);
+  background: rgba(255, 222, 89, 0.12);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 222, 89, 0.25);
+}
+
+/* --- intermission tabs --------------------------------------------------- */
+
+.intermission-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+  width: 100%;
+  max-width: 32rem;
+}
+
+.btn-tab {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius);
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  color: var(--haze);
+  font-family: var(--display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-tab:hover {
+  border-color: var(--scream);
+  color: var(--scream);
+}
+
+.btn-tab.is-active {
+  background: var(--scream);
+  border-color: var(--scream);
+  color: var(--void-deep);
+  font-weight: 800;
+}
+
 .chart-wrap {
   flex: 1;
   min-height: 8rem;

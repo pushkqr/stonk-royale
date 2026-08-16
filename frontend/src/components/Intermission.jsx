@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
@@ -8,7 +8,7 @@ import RumorCard from "./RumorCard";
 import Ledger from "./Ledger";
 import Wire from "./Wire";
 
-const HOLD_ON_REVEAL_MS = 5000;
+const HOLD_ON_REVEAL_MS = 10000;
 
 export default function Intermission() {
   const { phase, rumor, lastRumor, settled, standings, session, serverNow, feed, say, suspects } =
@@ -18,6 +18,8 @@ export default function Intermission() {
   // Two beats: what just happened to you, then what's coming next. Without the pause the
   // stamp would be replaced by the next card before anyone read it.
   const [beat, setBeat] = useState(lastRumor ? "reveal" : "deal");
+
+  const timerRef = useRef(null);
 
   useEffect(() => {
     if (!lastRumor) {
@@ -30,14 +32,37 @@ export default function Intermission() {
     // second, and the next round's tip is the half that players still have to act on.
     const remaining = (phase?.endsAtMillis ?? 0) - Date.now();
     const hold = Math.max(1000, Math.min(HOLD_ON_REVEAL_MS, remaining * 0.4));
-    const id = setTimeout(() => setBeat("deal"), hold);
-    return () => clearTimeout(id);
+    timerRef.current = setTimeout(() => setBeat("deal"), hold);
+    return () => clearTimeout(timerRef.current);
   }, [lastRumor, phase?.endsAtMillis]);
+
+  const switchBeat = (nextBeat) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setBeat(nextBeat);
+  };
 
   const myResult = settled?.results.find((r) => r.playerId === session.playerId);
 
   return (
     <main className="center-page">
+      {lastRumor && settled && (
+        <div className="intermission-tabs">
+          <button
+            type="button"
+            className={`btn-tab ${beat === "reveal" ? "is-active" : ""}`}
+            onClick={() => switchBeat("reveal")}
+          >
+            Round {settled.roundIndex + 1} Results
+          </button>
+          <button
+            type="button"
+            className={`btn-tab ${beat === "deal" ? "is-active" : ""}`}
+            onClick={() => switchBeat("deal")}
+          >
+            Round {(phase?.roundIndex ?? 0) + 1} Intel (${phase?.asset?.ticker})
+          </button>
+        </div>
+      )}
       {beat === "reveal" && settled ? (
         <>
           <header className="hero">
