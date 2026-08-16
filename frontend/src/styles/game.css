@@ -2360,14 +2360,12 @@
 .avatar-picker-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(10, 6, 16, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
   z-index: 10000;
-  animation: fadeIn 0.2s ease-out;
 }
 
 .avatar-picker-modal {
@@ -2394,6 +2392,7 @@
   font-size: 1.1rem;
   cursor: pointer;
   color: var(--haze);
+  transition: color 0.05s ease;
 }
 
 .btn-close-modal:hover {
@@ -2413,22 +2412,28 @@
   gap: 0.5rem;
   padding: 0.8rem 0.5rem;
   background: var(--void-deep);
-  border: 1px solid var(--edge);
+  border: 2px solid var(--edge);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.05s ease, border-color 0.05s ease, background 0.05s ease;
   position: relative;
+  user-select: none;
 }
 
 .avatar-card:hover {
   border-color: var(--scream);
+  background: var(--void-wash);
   transform: translateY(-2px);
+}
+
+.avatar-card:active {
+  transform: translateY(1px) scale(0.98);
 }
 
 .avatar-card.is-selected {
   border-color: var(--pump);
-  box-shadow: 0 0 12px rgba(0, 230, 153, 0.3);
-  background: rgba(0, 230, 153, 0.08);
+  box-shadow: 0 0 16px rgba(0, 230, 153, 0.35);
+  background: rgba(0, 230, 153, 0.12);
 }
 
 .avatar-info {
