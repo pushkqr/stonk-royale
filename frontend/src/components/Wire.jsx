@@ -84,14 +84,12 @@ function Wire({ feed, onSay, disabled, suspects = {}, className = "" }) {
             {item.kind === "CHAT" ? (
               <>
                 <span className="wire-name">
-                  <span className="wire-author-wrap">
-                    <Avatar
-                      archetypeId={getAvatarForPlayer(item.playerId, item.nickname, false)}
-                      mood={getMood({ wasLie: suspects[item.playerId] === "SUS" })}
-                      size={18}
-                    />
-                    <span>{item.nickname}</span>
-                  </span>
+                  <Avatar
+                    archetypeId={getAvatarForPlayer(item.playerId, item.nickname, false)}
+                    mood={getMood({ wasLie: suspects[item.playerId] === "SUS" })}
+                    size={18}
+                  />
+                  <span>{item.nickname}</span>
                   {suspects[item.playerId] === "TRUSTED" && (
                     <span
                       className="badge-suspect badge-trust"

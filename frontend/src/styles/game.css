@@ -1277,10 +1277,21 @@
   overflow-wrap: anywhere;
 }
 
+.wire-chat {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  line-height: 1.4;
+}
+
 .wire-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-weight: 800;
   color: var(--scream);
-  margin-right: 0.35rem;
+  vertical-align: middle;
 }
 
 .wire-news {
