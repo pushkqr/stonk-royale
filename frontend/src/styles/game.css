@@ -1321,6 +1321,11 @@
   letter-spacing: 0.02em;
 }
 
+.wire-news .wire-text {
+  color: var(--void-deep);
+  font-weight: 800;
+}
+
 .wire-liquidation {
   background: var(--dump);
   color: var(--void-deep);
@@ -1328,6 +1333,11 @@
   font-size: 1rem;
   text-transform: uppercase;
   animation: shove 0.3s ease-out both;
+}
+
+.wire-liquidation .wire-text {
+  color: var(--void-deep);
+  font-family: var(--display);
 }
 
 @keyframes shove {
