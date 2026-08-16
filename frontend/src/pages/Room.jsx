@@ -19,13 +19,18 @@ export default function Room() {
   // Arriving on a shared link with no seat yet: ask for a name, nothing more.
   if (!seat) {
     return (
-      <JoinGate
-        code={code}
-        onSeated={(next) => {
-          saveSeat(next);
-          setSeat(next);
-        }}
-      />
+      <>
+        <LeaveTab />
+        <RulesTab />
+        <MuteToggle />
+        <JoinGate
+          code={code}
+          onSeated={(next) => {
+            saveSeat(next);
+            setSeat(next);
+          }}
+        />
+      </>
     );
   }
 

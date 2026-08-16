@@ -8,7 +8,8 @@ import RulesContent from "./RulesContent";
  * alternative is asking out loud and telling the room you do not know.
  */
 export default function RulesTab() {
-  const { phase } = useMatch();
+  const match = useMatch();
+  const phase = match?.phase;
   const [open, setOpen] = useState(false);
 
   // This overlay is mounted for the whole match and never unmounts, so its own state has

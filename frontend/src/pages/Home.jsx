@@ -5,6 +5,8 @@ import { authAvailable, signIn } from "../lib/auth";
 import { saveSeat } from "../lib/session";
 import { DEFAULTS } from "../lib/matchSettings";
 import MatchSettings from "../components/MatchSettings";
+import RulesTab from "../components/RulesTab";
+import MuteToggle from "../components/MuteToggle";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -46,8 +48,11 @@ export default function Home() {
   };
 
   return (
-    <main className="center-page">
-      <header className="hero">
+    <>
+      <RulesTab />
+      <MuteToggle />
+      <main className="center-page">
+        <header className="hero">
         <h1 className="display hero-title">
           Stonk<span className="hero-title-break">Royale</span>
         </h1>
@@ -134,5 +139,6 @@ export default function Home() {
         Fake tickers, fake money, real lying. Nothing here is investment advice.
       </p>
     </main>
+    </>
   );
 }
