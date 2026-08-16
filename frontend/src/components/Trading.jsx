@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { TrendingUp, FileText, Trophy, MessageSquare } from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { telemetry } from "../lib/telemetry";
@@ -219,7 +220,7 @@ export default function Trading() {
           className={`mobile-dock-btn ${mobileTab === "trade" ? "is-active" : ""}`}
           onClick={() => setMobileTab("trade")}
         >
-          <span className="dock-icon">📊</span>
+          <span className="dock-icon"><TrendingUp size={18} strokeWidth={2.4} /></span>
           <span>Trade</span>
         </button>
         <button
@@ -227,7 +228,7 @@ export default function Trading() {
           className={`mobile-dock-btn ${mobileTab === "dossier" ? "is-active" : ""}`}
           onClick={() => setMobileTab("dossier")}
         >
-          <span className="dock-icon">🕵️</span>
+          <span className="dock-icon"><FileText size={18} strokeWidth={2.4} /></span>
           <span>Intel</span>
         </button>
         <button
@@ -235,7 +236,7 @@ export default function Trading() {
           className={`mobile-dock-btn ${mobileTab === "standings" ? "is-active" : ""}`}
           onClick={() => setMobileTab("standings")}
         >
-          <span className="dock-icon">🏆</span>
+          <span className="dock-icon"><Trophy size={18} strokeWidth={2.4} /></span>
           <span>Ranks</span>
         </button>
         <button
@@ -247,7 +248,7 @@ export default function Trading() {
           }}
         >
           <span className="dock-icon" style={{ position: "relative" }}>
-            💬
+            <MessageSquare size={18} strokeWidth={2.4} />
             {hasUnreadWire && <span className="dock-badge-dot" />}
           </span>
           <span>Wire</span>
