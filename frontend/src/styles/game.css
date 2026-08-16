@@ -1294,10 +1294,10 @@
 
 .wire-chat {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  line-height: 1.4;
+  gap: 0.4rem;
+  line-height: 1.3;
 }
 
 .wire-name {
@@ -1306,7 +1306,11 @@
   gap: 0.35rem;
   font-weight: 800;
   color: var(--scream);
-  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.wire-text {
+  color: var(--paper);
 }
 
 .wire-news {
