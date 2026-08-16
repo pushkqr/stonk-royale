@@ -360,11 +360,33 @@
 
 .rumor-bias-tag {
   font-family: var(--display);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  padding: 0.15rem 0.45rem;
-  border-radius: 2px;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.rumor-bias-tag.tone-pump {
+  background: #007a4d;
+  color: #ffffff;
+  border: 1px solid #005a38;
+  box-shadow: 0 1px 3px rgba(0, 122, 77, 0.25);
+}
+
+.rumor-bias-tag.tone-dump {
+  background: #c92a2a;
+  color: #ffffff;
+  border: 1px solid #a61e1e;
+  box-shadow: 0 1px 3px rgba(201, 42, 42, 0.25);
+}
+
+.rumor-bias-tag.tone-muted {
+  background: #343a40;
+  color: #ffffff;
+  border: 1px solid #212529;
+  box-shadow: 0 1px 3px rgba(52, 58, 64, 0.25);
 }
 
 .rumor-text {
@@ -913,23 +935,20 @@
   border: 1px solid var(--edge);
 }
 
-.intel-bias-badge.tone-pump,
-.rumor-bias-tag.tone-pump {
+.intel-bias-badge.tone-pump {
   background: rgba(0, 230, 153, 0.18);
   color: var(--pump);
   border: 1px solid rgba(0, 230, 153, 0.4);
 }
 
-.intel-bias-badge.tone-dump,
-.rumor-bias-tag.tone-dump {
+.intel-bias-badge.tone-dump {
   background: rgba(255, 59, 84, 0.18);
   color: var(--dump);
   border: 1px solid rgba(255, 59, 84, 0.4);
 }
 
-.intel-bias-badge.tone-muted,
-.rumor-bias-tag.tone-muted {
-  background: rgba(255, 255, 255, 0.08);
+.intel-bias-badge.tone-muted {
+  background: rgba(255, 255, 255, 0.12);
   color: var(--paper);
   border: 1px solid var(--edge);
 }
