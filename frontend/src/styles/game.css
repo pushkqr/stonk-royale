@@ -346,9 +346,25 @@
   }
 }
 
+.rumor-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 0.5rem;
+}
+
 .rumor-eyebrow {
   color: #8a5a2b;
-  margin: 0 0 0.5rem;
+  margin: 0;
+}
+
+.rumor-bias-tag {
+  font-family: var(--display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 2px;
 }
 
 .rumor-text {
@@ -878,6 +894,40 @@
   font-size: 0.76rem;
 }
 
+.intel-bias-badge {
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: var(--void-deep);
+  color: var(--scream);
+  border: 1px solid var(--edge);
+}
+
+.intel-bias-badge.tone-pump,
+.rumor-bias-tag.tone-pump {
+  background: rgba(0, 230, 153, 0.18);
+  color: var(--pump);
+  border: 1px solid rgba(0, 230, 153, 0.4);
+}
+
+.intel-bias-badge.tone-dump,
+.rumor-bias-tag.tone-dump {
+  background: rgba(255, 59, 84, 0.18);
+  color: var(--dump);
+  border: 1px solid rgba(255, 59, 84, 0.4);
+}
+
+.intel-bias-badge.tone-muted,
+.rumor-bias-tag.tone-muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--paper);
+  border: 1px solid var(--edge);
+}
+
 .intel-pill {
   color: var(--paper);
   overflow: hidden;
@@ -901,6 +951,55 @@
   padding: 0.15rem 0.4rem;
   border-radius: 3px;
   border: 1px solid rgba(255, 222, 89, 0.25);
+}
+
+/* --- tip deduction breakdown --------------------------------------------- */
+
+.tip-deduction-card {
+  width: min(30rem, 100%);
+  margin: 0.6rem 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  text-align: left;
+}
+
+.tip-deduction-card.tone-pump {
+  border-color: rgba(0, 230, 153, 0.4);
+  background: rgba(0, 230, 153, 0.07);
+}
+
+.tip-deduction-card.tone-dump {
+  border-color: rgba(255, 59, 84, 0.4);
+  background: rgba(255, 59, 84, 0.07);
+}
+
+.deduction-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.deduction-tag {
+  font-family: var(--display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--scream);
+}
+
+.deduction-score {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.deduction-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--paper);
+  line-height: 1.35;
 }
 
 /* --- intermission tabs --------------------------------------------------- */
@@ -1552,6 +1651,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
   gap: 0.5rem;
+}
+
+.accolade-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .accolade-card {

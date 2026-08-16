@@ -4,6 +4,7 @@ import { sound } from "../lib/sound";
 import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
 import { clock } from "../lib/format";
+import { REGIME_BIAS } from "../lib/regime";
 import PriceChart from "./PriceChart";
 import Dossier from "./Dossier";
 import Standings from "./Standings";
@@ -122,11 +123,15 @@ export default function Trading() {
         <LiveFloorPrice startPrice={startPrice} />
 
         <div className="floor-intel-hud">
+          {rumor?.claimedRegime && REGIME_BIAS[rumor.claimedRegime] ? (
+            <span className={`intel-bias-badge tone-${REGIME_BIAS[rumor.claimedRegime].tone}`}>
+              {REGIME_BIAS[rumor.claimedRegime].label}
+            </span>
+          ) : (
+            <span className="intel-bias-badge">INTEL</span>
+          )}
           <span className="intel-pill">
-            <span className="intel-label">INTEL:</span>{" "}
-            {rumor?.claimedRegime
-              ? `Tip claims ${rumor.claimedRegime}`
-              : rumor?.text || "No active intel"}
+            {rumor?.text || "No active intel"}
           </span>
           {phase?.truthfulTips != null && (
             <span className="intel-count mono">

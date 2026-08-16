@@ -3,7 +3,7 @@ import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, pct, toneOf } from "../lib/format";
-import { REGIME_VERDICT, tipCountLine } from "../lib/regime";
+import { REGIME_VERDICT, tipCountLine, deductionVerdict } from "../lib/regime";
 import RumorCard from "./RumorCard";
 import Ledger from "./Ledger";
 import Wire from "./Wire";
@@ -81,15 +81,20 @@ export default function Intermission() {
               stamp — but as unrelated elements. Stated as one sentence they become the
               answer to "was my tip worth listening to", which is the thing that has to
               accumulate over five rounds for anyone to start using it. */}
-          {myResult && (
-            <p className="tip-lesson mono" role="status">
-              Your tip said <strong>{myResult.rumorClaimed}</strong>. The round was{" "}
-              <strong>{settled.regime}</strong>.{" "}
-              {myResult.rumorWasTrue
-                ? "Trusting it was the right call."
-                : "Trusting it cost you."}
-            </p>
-          )}
+          {myResult && (() => {
+            const verdict = deductionVerdict(myResult, settled.regime);
+            return (
+              <div className={`tip-deduction-card tone-${verdict?.tone || "muted"}`}>
+                <div className="deduction-head">
+                  <span className="deduction-tag">{verdict?.tag || "OUTCOME"}</span>
+                  <span className={`mono deduction-score ${toneOf(myResult.roundScore)}`}>
+                    {pct(myResult.roundScore)}
+                  </span>
+                </div>
+                <p className="deduction-summary">{verdict?.summary}</p>
+              </div>
+            );
+          })()}
 
           {/* The count told the room how many tips were real. This is where it gets settled. */}
           <Ledger results={settled.results} meId={session.playerId} suspects={suspects} />

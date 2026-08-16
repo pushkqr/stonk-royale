@@ -1,4 +1,4 @@
-import { REGIME_PRIMER } from "../lib/regime";
+import { REGIME_PRIMER, REGIME_BIAS } from "../lib/regime";
 
 /**
  * The signature element.
@@ -19,7 +19,14 @@ export default function RumorCard({ text, stamp, claimedRegime, compact = false 
         compact ? "rumor-compact" : ""
       }`}
     >
-      <figcaption className="eyebrow rumor-eyebrow">Word on the street</figcaption>
+      <div className="rumor-header-row">
+        <figcaption className="eyebrow rumor-eyebrow">Word on the street</figcaption>
+        {claimedRegime && REGIME_BIAS[claimedRegime] && (
+          <span className={`rumor-bias-tag tone-${REGIME_BIAS[claimedRegime].tone}`}>
+            {REGIME_BIAS[claimedRegime].label}
+          </span>
+        )}
+      </div>
       <blockquote className="rumor-text">{text}</blockquote>
 
       {/* The claim is already readable off the text. Naming it removes the decode step

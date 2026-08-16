@@ -36,10 +36,13 @@ describe("accolades.js", () => {
   const feed = [
     { kind: "LIQUIDATION", playerId: "p3" },
     { kind: "LIQUIDATION", playerId: "p3" },
+    { kind: "TRADE", playerId: "p1" },
+    { kind: "TRADE", playerId: "p1" },
   ];
 
-  it("computes oracle, rekt, and mastermind accolades accurately", () => {
+  it("computes oracle, rekt, mastermind, and survivor/degen accolades accurately", () => {
     const awards = computeAccolades(standings, settled, feed);
+    expect(awards.length).toBeLessThanOrEqual(4);
     expect(awards.some((a) => a.id === "oracle" && a.player === "Alice")).toBe(true);
     expect(awards.some((a) => a.id === "rekt" && a.player === "Charlie")).toBe(true);
     expect(awards.some((a) => a.id === "mastermind" && a.player === "Bob")).toBe(true);

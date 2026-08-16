@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { tipCountLine, REGIME_VERDICT, REGIME_PRIMER } from "../lib/regime";
+import {
+  tipCountLine,
+  REGIME_VERDICT,
+  REGIME_PRIMER,
+  REGIME_BIAS,
+  deductionVerdict,
+} from "../lib/regime";
 
 describe("regime.js", () => {
   it("pluralizes tip count copy correctly", () => {
@@ -22,5 +28,38 @@ describe("regime.js", () => {
     expect(REGIME_PRIMER.CHOP).toBe("no drift, high volatility");
     expect(REGIME_PRIMER.RUG).toBe("grinds up, then dumps hard");
     expect(REGIME_PRIMER.SQUEEZE).toBe("slow bleed, then rips");
+  });
+
+  it("provides trade bias definitions for all core market regimes", () => {
+    expect(REGIME_BIAS.PUMP.label).toBe("BIAS: GO LONG");
+    expect(REGIME_BIAS.DUMP.label).toBe("BIAS: GO SHORT");
+    expect(REGIME_BIAS.CHOP.label).toBe("BIAS: SCALP ONLY");
+    expect(REGIME_BIAS.RUG.label).toBe("WARNING: RUG PULL");
+    expect(REGIME_BIAS.SQUEEZE.label).toBe("ALERT: SHORT SQUEEZE");
+  });
+
+  it("calculates deduction verdicts accurately across player outcomes", () => {
+    // 1. Insider alpha (True tip + profit)
+    const alpha = deductionVerdict({ rumorWasTrue: true, roundScore: 0.15, rumorClaimed: "PUMP" }, "PUMP");
+    expect(alpha.tag).toBe("INSIDER ALPHA");
+    expect(alpha.tone).toBe("pump");
+
+    // 2. Bamboozled (Fake tip + loss)
+    const bamboozled = deductionVerdict({ rumorWasTrue: false, roundScore: -0.2, rumorClaimed: "PUMP" }, "DUMP");
+    expect(bamboozled.tag).toBe("BAMBOOZLED");
+    expect(bamboozled.tone).toBe("dump");
+
+    // 3. Big brain contrarian (Fake tip + profit)
+    const contrarian = deductionVerdict({ rumorWasTrue: false, roundScore: 0.35, rumorClaimed: "DUMP" }, "PUMP");
+    expect(contrarian.tag).toBe("BIG BRAIN CONTRARIAN");
+    expect(contrarian.tone).toBe("pump");
+
+    // 4. Risk off (Flat / zero score)
+    const flat = deductionVerdict({ rumorWasTrue: true, roundScore: 0, rumorClaimed: "PUMP" }, "PUMP");
+    expect(flat.tag).toBe("RISK-OFF");
+    expect(flat.tone).toBe("muted");
+
+    // 5. Null result returns null
+    expect(deductionVerdict(null, "PUMP")).toBeNull();
   });
 });

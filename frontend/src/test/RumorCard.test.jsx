@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import RumorCard from "../components/RumorCard";
 
 describe("RumorCard.jsx", () => {
-  it("renders rumor text and claimed regime", () => {
+  it("renders rumor text, claimed regime, and bias badge", () => {
     render(
       <RumorCard
         text="A major whale is accumulating ahead of the protocol launch."
@@ -12,6 +12,7 @@ describe("RumorCard.jsx", () => {
     );
     expect(screen.getByText(/whale is accumulating/i)).toBeInTheDocument();
     expect(screen.getByText(/Claims: PUMP/i)).toBeInTheDocument();
+    expect(screen.getByText("BIAS: GO LONG")).toBeInTheDocument();
   });
 
   it("renders TRUE stamp with 3D flip class", () => {

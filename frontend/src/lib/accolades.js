@@ -1,4 +1,4 @@
-import { Crown, Skull, Drama, Gem } from "lucide-react";
+import { Crown, Skull, Drama, Gem, Flame, ShieldCheck } from "lucide-react";
 import { pct } from "./format";
 
 /**
@@ -69,10 +69,54 @@ export function computeAccolades(standings = [], settled = null, feed = []) {
     });
   }
 
-  // 4. Diamond Hands: Highest total score among non-winners or winner with positive returns
-  if (accolades.length < 3 && standings.length > 1) {
+  // 4. The Survivor: Player with 0 liquidations and positive profit
+  const survivor = standings.find(
+    (p) => !liquidationCounts[p.playerId] && (p.totalScore ?? 0) > 0
+  );
+  if (survivor && accolades.length < 4) {
+    accolades.push({
+      id: "survivor",
+      title: "THE SURVIVOR",
+      icon: ShieldCheck,
+      player: survivor.nickname,
+      subtitle: `Clean sheet & ${pct(survivor.totalScore)} profit`,
+    });
+  }
+
+  // 5. The Degen: Player with most trade actions in feed
+  const tradeCounts = {};
+  feed
+    .filter((f) => f.kind === "TRADE" || f.kind === "LEVERAGE")
+    .forEach((f) => {
+      tradeCounts[f.playerId] = (tradeCounts[f.playerId] || 0) + 1;
+    });
+
+  let degenId = null;
+  let maxTrades = 0;
+  for (const [pId, count] of Object.entries(tradeCounts)) {
+    if (count > maxTrades) {
+      maxTrades = count;
+      degenId = pId;
+    }
+  }
+
+  if (degenId && maxTrades > 0 && accolades.length < 4) {
+    const degenPlayer = standings.find((p) => p.playerId === degenId);
+    if (degenPlayer) {
+      accolades.push({
+        id: "degen",
+        title: "THE DEGEN",
+        icon: Flame,
+        player: degenPlayer.nickname,
+        subtitle: `${maxTrades} market trades placed`,
+      });
+    }
+  }
+
+  // 6. Diamond Hands: Highest total score among non-winners or winner with positive returns
+  if (accolades.length < 4 && standings.length > 1) {
     const runnerUp = standings[1];
-    if (runnerUp && runnerUp.totalScore > 0) {
+    if (runnerUp && (runnerUp.totalScore ?? 0) > 0) {
       accolades.push({
         id: "diamond",
         title: "DIAMOND HANDS",
@@ -83,5 +127,5 @@ export function computeAccolades(standings = [], settled = null, feed = []) {
     }
   }
 
-  return accolades;
+  return accolades.slice(0, 4);
 }
