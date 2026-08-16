@@ -1,6 +1,8 @@
 import { memo, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { money, pct, toneOf } from "../lib/format";
+import Avatar from "./Avatar";
+import { getAvatarForPlayer, getMood } from "../lib/avatars";
 
 /**
  * Memoised because it hangs off the trading screen, which re-renders on every price tick.
@@ -65,7 +67,14 @@ function Standings({ rows, meId, suspects = {} }) {
                 cumulative total only appears once there's a previous round in it. */}
             <span className="rank-body">
               <span className="rank-name">
-                {row.nickname}
+                <span className="standings-player-wrap">
+                  <Avatar
+                    archetypeId={getAvatarForPlayer(row.playerId, row.nickname, row.playerId === meId)}
+                    mood={getMood({ pnl: row.roundScore, wasLie: suspects[row.playerId] === "SUS" })}
+                    size={22}
+                  />
+                  <span>{row.nickname}</span>
+                </span>
                 {suspects[row.playerId] === "TRUSTED" && (
                   <span className="badge-suspect badge-trust">TRUST</span>
                 )}

@@ -9,6 +9,8 @@ import {
   Gem,
   Drama,
 } from "lucide-react";
+import Avatar from "./Avatar";
+import { getAvatarForPlayer, getMood } from "../lib/avatars";
 
 /**
  * The speech acts that matter: claim a tip, state a position, accuse.
@@ -82,7 +84,14 @@ function Wire({ feed, onSay, disabled, suspects = {}, className = "" }) {
             {item.kind === "CHAT" ? (
               <>
                 <span className="wire-name">
-                  {item.nickname}
+                  <span className="wire-author-wrap">
+                    <Avatar
+                      archetypeId={getAvatarForPlayer(item.playerId, item.nickname, false)}
+                      mood={getMood({ wasLie: suspects[item.playerId] === "SUS" })}
+                      size={18}
+                    />
+                    <span>{item.nickname}</span>
+                  </span>
                   {suspects[item.playerId] === "TRUSTED" && (
                     <span
                       className="badge-suspect badge-trust"

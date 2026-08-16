@@ -1,13 +1,18 @@
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Sparkles } from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import MatchSettings from "./MatchSettings";
 import { DEFAULTS } from "../lib/matchSettings";
+import Avatar from "./Avatar";
+import AvatarPicker from "./AvatarPicker";
+import { getAvatarForPlayer, getMyAvatar } from "../lib/avatars";
 
 export default function Lobby() {
   const { lobby, session, start, kick, addBot, configure } = useMatch();
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [myAvatar, setMyAvatarState] = useState(() => getMyAvatar());
   const [advanced, setAdvanced] = useState(false);
   const [draft, setDraft] = useState(DEFAULTS);
 
@@ -99,27 +104,44 @@ export default function Lobby() {
 
         <ul className="lobby-list">
           {players.map((player) => {
+            const isMe = player.playerId === session.playerId;
             // Bots have no socket to lose, so "away" is not a state they can be in.
             const away = !player.connected && !player.bot;
+            const archetypeId = isMe ? myAvatar : getAvatarForPlayer(player.playerId, player.nickname, false);
             return (
               <li key={player.playerId} className={`lobby-player ${away ? "is-away" : ""}`}>
-                <span className="lobby-name">{player.nickname}</span>
-                {player.bot && <span className="tag tag-bot">BOT</span>}
-                {away && <span className="tag muted">away</span>}
-                {player.host && <span className="tag tag-scream">Host</span>}
-                {player.playerId === session.playerId && <span className="tag">You</span>}
-                {/* Host only, and never against themselves — Leave is how you remove you. */}
-                {isHost && player.playerId !== session.playerId && (
-                  <button
-                    type="button"
-                    className="lobby-kick"
-                    onClick={() => kick(player.playerId)}
-                    title={`Remove ${player.nickname}`}
-                    aria-label={`Remove ${player.nickname}`}
-                  >
-                    ✕
-                  </button>
-                )}
+                <div className="lobby-player-info">
+                  <Avatar archetypeId={archetypeId} size={28} />
+                  <span className="lobby-name">{player.nickname}</span>
+                </div>
+                <div className="lobby-player-tags">
+                  {player.bot && <span className="tag tag-bot">BOT</span>}
+                  {away && <span className="tag muted">away</span>}
+                  {player.host && <span className="tag tag-scream">Host</span>}
+                  {isMe && (
+                    <button
+                      type="button"
+                      className="btn-custom-avatar"
+                      onClick={() => setShowPicker(true)}
+                      title="Change your Degen Avatar"
+                      aria-label="Change your Degen Avatar"
+                    >
+                      <Sparkles size={12} /> Avatar
+                    </button>
+                  )}
+                  {/* Host only, and never against themselves — Leave is how you remove you. */}
+                  {isHost && !isMe && (
+                    <button
+                      type="button"
+                      className="lobby-kick"
+                      onClick={() => kick(player.playerId)}
+                      title={`Remove ${player.nickname}`}
+                      aria-label={`Remove ${player.nickname}`}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -174,6 +196,16 @@ export default function Lobby() {
         {lobby?.totalRounds ?? 5} rounds · {lobby?.roundSeconds ?? 90} seconds each · everyone
         starts each round with the same stack
       </p>
+
+      {showPicker && (
+        <AvatarPicker
+          onSelect={(id) => {
+            setMyAvatarState(id);
+            setShowPicker(false);
+          }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
     </main>
   );
 }

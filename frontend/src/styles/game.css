@@ -2321,3 +2321,150 @@
   }
 }
 
+/* --- avatar system & lobby customizer ------------------------------------ */
+
+.lobby-player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lobby-player-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-custom-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--scream);
+  background: rgba(255, 222, 89, 0.12);
+  border: 1px solid rgba(255, 222, 89, 0.35);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-custom-avatar:hover {
+  background: var(--scream);
+  color: var(--void-deep);
+}
+
+.avatar-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.avatar-picker-modal {
+  width: min(36rem, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.2rem;
+}
+
+.avatar-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--edge);
+  padding-bottom: 0.6rem;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--haze);
+}
+
+.btn-close-modal:hover {
+  color: var(--paper);
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.8rem;
+}
+
+.avatar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 0.5rem;
+  background: var(--void-deep);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.avatar-card:hover {
+  border-color: var(--scream);
+  transform: translateY(-2px);
+}
+
+.avatar-card.is-selected {
+  border-color: var(--pump);
+  box-shadow: 0 0 12px rgba(0, 230, 153, 0.3);
+  background: rgba(0, 230, 153, 0.08);
+}
+
+.avatar-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.avatar-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--paper);
+}
+
+.avatar-role {
+  font-size: 0.65rem;
+  color: var(--haze);
+}
+
+.wire-author-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.standings-player-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.podium-player-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+

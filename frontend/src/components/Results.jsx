@@ -4,6 +4,8 @@ import CountUp from "./CountUp";
 import Ledger from "./Ledger";
 import Accolades from "./Accolades";
 import Confetti from "./Confetti";
+import Avatar from "./Avatar";
+import { getAvatarForPlayer, getMood } from "../lib/avatars";
 
 export default function Results() {
   const { standings, session, rematch, lobby, settled, quit, feed, suspects } = useMatch();
@@ -37,7 +39,14 @@ export default function Results() {
           >
             <span className="podium-rank display">{row.rank}</span>
             <span className="podium-name">
-              {row.nickname}
+              <span className="podium-player-wrap">
+                <Avatar
+                  archetypeId={getAvatarForPlayer(row.playerId, row.nickname, row.playerId === session.playerId)}
+                  mood={getMood({ isWinner: row.rank === 1, pnl: row.totalScore })}
+                  size={32}
+                />
+                <span>{row.nickname}</span>
+              </span>
               {row.bot && <span className="tag tag-bot">BOT</span>}
             </span>
             <span className="podium-scores">
