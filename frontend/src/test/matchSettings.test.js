@@ -32,8 +32,8 @@ describe("matchSettings.js", () => {
     expect(CASH_STEPS).toContain(10000);
     expect(VOLATILITY_OPTIONS.length).toBe(4);
     expect(VOLATILITY_OPTIONS.some((v) => v.value === 1.0)).toBe(true);
-    expect(MARKET_IMPACT_OPTIONS.length).toBe(3);
-    expect(MARKET_IMPACT_OPTIONS.some((m) => m.value === 4.0)).toBe(true);
+    expect(MARKET_IMPACT_OPTIONS.length).toBe(4);
+    expect(MARKET_IMPACT_OPTIONS.some((m) => m.value === 3.5)).toBe(true);
     expect(PRESETS.length).toBe(4);
   });
 

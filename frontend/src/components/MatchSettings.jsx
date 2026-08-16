@@ -33,19 +33,27 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
     </label>
   );
 
-  const volIndex = Math.max(
-    0,
-    VOLATILITY_OPTIONS.findIndex(
-      (v) => Math.abs(v.value - (settings.volatilityMultiplier ?? 1.0)) < 0.1
-    )
-  );
+  let volIndex = 1;
+  let minVolDiff = Infinity;
+  const currentVol = settings.volatilityMultiplier ?? 1.0;
+  for (let i = 0; i < VOLATILITY_OPTIONS.length; i += 1) {
+    const diff = Math.abs(VOLATILITY_OPTIONS[i].value - currentVol);
+    if (diff < minVolDiff) {
+      minVolDiff = diff;
+      volIndex = i;
+    }
+  }
 
-  const impactIndex = Math.max(
-    0,
-    MARKET_IMPACT_OPTIONS.findIndex(
-      (m) => Math.abs(m.value - (settings.marketImpactMultiplier ?? 1.0)) < 0.2
-    )
-  );
+  let impactIndex = 0;
+  let minImpactDiff = Infinity;
+  const currentImpact = settings.marketImpactMultiplier ?? 1.0;
+  for (let i = 0; i < MARKET_IMPACT_OPTIONS.length; i += 1) {
+    const diff = Math.abs(MARKET_IMPACT_OPTIONS[i].value - currentImpact);
+    if (diff < minImpactDiff) {
+      minImpactDiff = diff;
+      impactIndex = i;
+    }
+  }
 
   return (
     <div className="stack" style={{ gap: "0.6rem" }}>

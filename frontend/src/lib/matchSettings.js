@@ -34,8 +34,9 @@ export const VOLATILITY_OPTIONS = [
 
 export const MARKET_IMPACT_OPTIONS = [
   { value: 1.0, label: "Standard (1.0x)" },
-  { value: 2.5, label: "Heavy (2.5x)" },
-  { value: 4.0, label: "Whale Wars (4.0x)" },
+  { value: 2.0, label: "Heavy (2.0x)" },
+  { value: 3.5, label: "Whale Wars (3.5x)" },
+  { value: 5.0, label: "Chaos (5.0x)" },
 ];
 
 export const PRESETS = [
