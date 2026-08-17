@@ -226,12 +226,59 @@
 }
 
 .credit-heart {
-  color: #ff477e;
+  color: var(--dump);
+  fill: var(--dump);
   display: inline-block;
-  font-size: 0.75rem;
+  vertical-align: -1px;
+  transition: transform 0.2s ease;
+}
+
+.credit-heart:hover {
+  transform: scale(1.25);
 }
 
 /* --- home segmented tab switcher ----------------------------------------- */
+
+.eyebrow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.45rem;
+  font-family: var(--data);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--haze);
+  background: transparent;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dice-btn:hover {
+  color: var(--scream);
+  border-color: var(--scream);
+  background: rgba(255, 222, 89, 0.08);
+}
+
+.field.field-error {
+  border-color: var(--dump);
+  box-shadow: 0 0 8px rgba(255, 59, 84, 0.35);
+  animation: inputShake 0.35s ease-in-out;
+}
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
 
 .home-tab-switcher {
   display: grid;
@@ -248,13 +295,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   padding: 0.55rem 0.75rem;
-  font-family: var(--display);
-  font-size: 0.88rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: var(--haze);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.72);
   background: transparent;
   border: 1px solid transparent;
   border-radius: calc(var(--radius) - 2px);
@@ -264,7 +311,7 @@
 
 .home-tab-btn:hover:not(.is-active) {
   color: var(--paper);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .home-tab-btn.is-active {

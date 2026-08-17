@@ -120,7 +120,7 @@ export default function Results() {
           Fake tickers, fake money, real lying. Nothing here is investment advice.
         </p>
         <p className="footnote-watermark">
-          Made with <Heart size={11} className="credit-heart" aria-hidden="true" /> by pushkqr
+          Made with <Heart size={11} fill="var(--dump)" stroke="var(--dump)" className="credit-heart" aria-hidden="true" /> by pushkqr
         </p>
       </footer>
     </main>

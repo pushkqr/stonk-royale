@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Gamepad2, SlidersHorizontal, Zap, Bot, Heart } from "lucide-react";
+import { Gamepad2, SlidersHorizontal, Zap, Bot, Heart, Dice5 } from "lucide-react";
 import { createMatch, joinMatch, practiceMatch, quickMatch } from "../lib/api";
 import { authAvailable, signIn } from "../lib/auth";
 import { saveSeat } from "../lib/session";
@@ -10,10 +10,32 @@ import RulesTab from "../components/RulesTab";
 import MuteToggle from "../components/MuteToggle";
 import GameplayHook from "../components/GameplayHook";
 
+const TRADER_NAMES = [
+  "Bull42",
+  "MoonShot",
+  "GigaChad",
+  "DiamondHands",
+  "PaperHands",
+  "GordonGekko",
+  "Whale99",
+  "AlphaSeeker",
+  "ShortSqueeze",
+  "MarginCall",
+];
+
 export default function Home() {
   const navigate = useNavigate();
   const [homeMode, setHomeMode] = useState("play");
-  const [nickname, setNickname] = useState("");
+  const [nickname, setNickname] = useState(() => {
+    try {
+      return localStorage.getItem("stonk_nickname") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [nameError, setNameError] = useState(false);
+  const nameInputRef = useRef(null);
+
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -21,14 +43,38 @@ export default function Home() {
   const [settings, setSettings] = useState(DEFAULTS);
   const [showSettings, setShowSettings] = useState(false);
 
+  const updateNickname = (val) => {
+    setNickname(val);
+    setNameError(false);
+    try {
+      localStorage.setItem("stonk_nickname", val);
+    } catch {
+      // ignore storage error
+    }
+  };
+
+  const rollNickname = () => {
+    const available = TRADER_NAMES.filter((n) => n !== nickname);
+    const chosen = available[Math.floor(Math.random() * available.length)] || TRADER_NAMES[0];
+    updateNickname(chosen);
+  };
+
   const go = async (action) => {
     if (!nickname.trim()) {
       setError("Pick a name first.");
+      setNameError(true);
+      nameInputRef.current?.focus();
       return;
     }
+    setNameError(false);
     setBusy(true);
     setError(null);
     try {
+      try {
+        localStorage.setItem("stonk_nickname", nickname.trim());
+      } catch {
+        // ignore storage error
+      }
       const seat = await action();
       saveSeat(seat);
       navigate(`/m/${seat.code}`);
@@ -69,11 +115,24 @@ export default function Home() {
 
         <div className="panel sheet stack">
           <label className="stack" style={{ gap: "0.35rem" }}>
-            <span className="eyebrow">Your name</span>
+            <div className="eyebrow-row">
+              <span className="eyebrow">Your name</span>
+              <button
+                type="button"
+                className="dice-btn"
+                onClick={rollNickname}
+                title="Roll random trader name"
+                aria-label="Roll random trader name"
+              >
+                <Dice5 size={13} strokeWidth={2.4} />
+                <span>Random</span>
+              </button>
+            </div>
             <input
-              className="field"
+              ref={nameInputRef}
+              className={`field ${nameError ? "field-error" : ""}`}
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={(e) => updateNickname(e.target.value)}
               placeholder="what should they call you"
               maxLength={16}
               autoFocus
@@ -177,7 +236,7 @@ export default function Home() {
             Fake tickers, fake money, real lying. Nothing here is investment advice.
           </p>
           <p className="footnote-watermark">
-            Made with <Heart size={11} className="credit-heart" aria-hidden="true" /> by pushkqr
+            Made with <Heart size={11} fill="var(--dump)" stroke="var(--dump)" className="credit-heart" aria-hidden="true" /> by pushkqr
           </p>
         </footer>
       </main>

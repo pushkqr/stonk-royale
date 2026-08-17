@@ -20,9 +20,10 @@ vi.mock("../lib/session", () => ({
   saveSeat: vi.fn(),
 }));
 
-describe("Home.jsx Tabbed Switcher", () => {
+describe("Home.jsx Tabbed Switcher & Micro-Interactions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   it("renders Play / Join as the default tab with Find a Game button", () => {
@@ -51,12 +52,13 @@ describe("Home.jsx Tabbed Switcher", () => {
     expect(screen.queryByRole("button", { name: /Find a Game/i })).not.toBeInTheDocument();
   });
 
-  it("persists nickname across tab switches", () => {
+  it("persists nickname across tab switches and in localStorage", () => {
     render(<Home />);
 
     const nameInput = screen.getByPlaceholderText("what should they call you");
     fireEvent.change(nameInput, { target: { value: "CryptoKing" } });
     expect(nameInput.value).toBe("CryptoKing");
+    expect(localStorage.getItem("stonk_nickname")).toBe("CryptoKing");
 
     const hostTab = screen.getByRole("tab", { name: /Host Lobby/i });
     fireEvent.click(hostTab);
@@ -65,6 +67,33 @@ describe("Home.jsx Tabbed Switcher", () => {
     const playTab = screen.getByRole("tab", { name: /Play \/ Join/i });
     fireEvent.click(playTab);
     expect(screen.getByPlaceholderText("what should they call you").value).toBe("CryptoKing");
+  });
+
+  it("loads stored nickname from localStorage on initialization", () => {
+    localStorage.setItem("stonk_nickname", "Satoshi");
+    render(<Home />);
+    expect(screen.getByPlaceholderText("what should they call you").value).toBe("Satoshi");
+  });
+
+  it("rolls a random nickname when the dice button is clicked", () => {
+    render(<Home />);
+    const diceBtn = screen.getByRole("button", { name: /Roll random trader name/i });
+    fireEvent.click(diceBtn);
+
+    const nameInput = screen.getByPlaceholderText("what should they call you");
+    expect(nameInput.value.length).toBeGreaterThan(0);
+    expect(localStorage.getItem("stonk_nickname")).toBe(nameInput.value);
+  });
+
+  it("highlights input with error and prevents submission when name is blank", () => {
+    render(<Home />);
+    const findBtn = screen.getByRole("button", { name: /Find a Game/i });
+    fireEvent.click(findBtn);
+
+    expect(screen.getByText("Pick a name first.")).toBeInTheDocument();
+    const nameInput = screen.getByPlaceholderText("what should they call you");
+    expect(nameInput).toHaveClass("field-error");
+    expect(api.quickMatch).not.toHaveBeenCalled();
   });
 
   it("triggers quickMatch on Find a Game button click", async () => {
