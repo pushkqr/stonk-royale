@@ -8,8 +8,8 @@ export default function GameplayHook() {
           <FileText size={16} strokeWidth={2.4} />
         </div>
         <div className="hook-text">
-          <span className="hook-title display">1. Secret Intel</span>
-          <span className="hook-sub">You get private market info</span>
+          <span className="hook-title">1. Secret Intel</span>
+          <span className="hook-sub">Get private tips</span>
         </div>
       </div>
 
@@ -22,8 +22,8 @@ export default function GameplayHook() {
           <MessageSquare size={16} strokeWidth={2.4} />
         </div>
         <div className="hook-text">
-          <span className="hook-title display">2. Bluff or Truth</span>
-          <span className="hook-sub">Some tips are lies. Call bluffs.</span>
+          <span className="hook-title">2. Spot the Liar</span>
+          <span className="hook-sub">Call out false rumors</span>
         </div>
       </div>
 
@@ -36,8 +36,8 @@ export default function GameplayHook() {
           <TrendingUp size={16} strokeWidth={2.4} />
         </div>
         <div className="hook-text">
-          <span className="hook-title display">3. Trade & Win</span>
-          <span className="hook-sub">Leverage long/short to win</span>
+          <span className="hook-title">3. Trade & Win</span>
+          <span className="hook-sub">Long or short the market</span>
         </div>
       </div>
     </section>

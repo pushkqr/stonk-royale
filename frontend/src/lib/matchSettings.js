@@ -69,7 +69,7 @@ export const PRESETS = [
   },
   {
     id: "whale_wars",
-    label: "⚔️ Whale Wars",
+    label: "Whale Wars",
     rounds: 4,
     roundSeconds: 60,
     intermissionSeconds: 20,

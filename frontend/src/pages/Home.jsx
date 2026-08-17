@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Gamepad2, SlidersHorizontal, Zap, Bot, Heart } from "lucide-react";
 import { createMatch, joinMatch, practiceMatch, quickMatch } from "../lib/api";
 import { authAvailable, signIn } from "../lib/auth";
 import { saveSeat } from "../lib/session";
@@ -87,7 +88,8 @@ export default function Home() {
               className={`home-tab-btn ${homeMode === "play" ? "is-active" : ""}`}
               onClick={() => setHomeMode("play")}
             >
-              ⚔️ Play / Join
+              <Gamepad2 size={16} strokeWidth={2.4} />
+              <span>Play / Join</span>
             </button>
             <button
               type="button"
@@ -96,7 +98,8 @@ export default function Home() {
               className={`home-tab-btn ${homeMode === "host" ? "is-active" : ""}`}
               onClick={() => setHomeMode("host")}
             >
-              🛠️ Host Lobby
+              <SlidersHorizontal size={16} strokeWidth={2.4} />
+              <span>Host Lobby</span>
             </button>
           </div>
 
@@ -104,11 +107,12 @@ export default function Home() {
             <div className="stack" style={{ gap: "0.85rem" }}>
               <div className="stack" style={{ gap: "0.25rem" }}>
                 <button
-                  className="btn btn-big btn-scream"
+                  className="btn btn-big btn-scream btn-icon-center"
                   onClick={() => go(() => quickMatch(nickname.trim(), token))}
                   disabled={busy}
                 >
-                  ⚡ Find a Game
+                  <Zap size={18} strokeWidth={2.5} />
+                  <span>Find a Game</span>
                 </button>
                 <span className="quick-match-sub">Quick match with players & bots</span>
               </div>
@@ -132,11 +136,12 @@ export default function Home() {
               </form>
 
               <button
-                className="link-btn muted"
+                className="link-btn muted link-btn-icon"
                 onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
                 disabled={busy}
               >
-                🤖 Or play solo vs bots
+                <Bot size={15} strokeWidth={2.2} />
+                <span>Or play solo vs bots</span>
               </button>
             </div>
           ) : (
@@ -172,7 +177,7 @@ export default function Home() {
             Fake tickers, fake money, real lying. Nothing here is investment advice.
           </p>
           <p className="footnote-watermark">
-            Made with <span className="credit-heart" aria-hidden="true">♥</span> by pushkqr
+            Made with <Heart size={11} className="credit-heart" aria-hidden="true" /> by pushkqr
           </p>
         </footer>
       </main>

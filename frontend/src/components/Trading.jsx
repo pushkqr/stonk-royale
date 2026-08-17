@@ -1,5 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TrendingUp, FileText, Trophy, MessageSquare } from "lucide-react";
+import {
+  TrendingUp,
+  FileText,
+  Trophy,
+  MessageSquare,
+  Flame,
+  Zap,
+  CheckCircle,
+  AlertTriangle,
+  Scale,
+  Target,
+  ShieldAlert,
+} from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { haptic } from "../lib/haptic";
@@ -250,7 +262,7 @@ export default function Trading() {
           <div className="intel-hud-top">
             {(lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1.0) >= 2.0 && (
               <span className="intel-whale-badge" title="High PvP Market Impact Active">
-                ⚔️ WHALE IMPACT ({(lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1.0).toFixed(1)}x)
+                <Flame size={12} strokeWidth={2.4} /> WHALE IMPACT ({(lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1.0).toFixed(1)}x)
               </span>
             )}
             {rumor?.claimedRegime && REGIME_BIAS[rumor.claimedRegime] ? (
@@ -271,7 +283,13 @@ export default function Trading() {
           </div>
           {crossCheckStatus && (
             <div className={`intel-cross-check tone-${crossCheckStatus.tone}`}>
-              <span className="cross-check-icon">{crossCheckStatus.icon}</span>
+              <span className="cross-check-icon">
+                {crossCheckStatus.status === "MATCHING" && <CheckCircle size={13} strokeWidth={2.4} />}
+                {crossCheckStatus.status === "CONFLICTING" && <AlertTriangle size={13} strokeWidth={2.4} />}
+                {crossCheckStatus.status === "MIXED" && <Scale size={13} strokeWidth={2.4} />}
+                {crossCheckStatus.status === "CONFIRMED" && <Target size={13} strokeWidth={2.4} />}
+                {crossCheckStatus.status === "EXPOSED" && <ShieldAlert size={13} strokeWidth={2.4} />}
+              </span>
               <span className="cross-check-text">{crossCheckStatus.text}</span>
             </div>
           )}
@@ -279,7 +297,9 @@ export default function Trading() {
 
         {latestNews && (
           <div className="in-chart-news-banner" role="alert">
-            <span className="news-badge">⚡ BREAKING NEWS</span>
+            <span className="news-badge">
+              <Zap size={12} strokeWidth={2.5} /> BREAKING NEWS
+            </span>
             <span className="news-text">{latestNews.text}</span>
           </div>
         )}

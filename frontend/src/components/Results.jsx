@@ -1,3 +1,4 @@
+import { Crown, Heart } from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import { pct, toneOf } from "../lib/format";
 import CountUp from "./CountUp";
@@ -37,7 +38,10 @@ export default function Results() {
             key={row.playerId}
             className={`podium-row ${row.playerId === session.playerId ? "is-me" : ""}`}
           >
-            <span className="podium-rank display">{row.rank}</span>
+            <span className="podium-rank display">
+              {row.rank === 1 && <Crown size={14} strokeWidth={2.6} className="podium-crown-icon" />}
+              {row.rank}
+            </span>
             <span className="podium-name">
               <span className="podium-player-wrap">
                 <Avatar
@@ -116,7 +120,7 @@ export default function Results() {
           Fake tickers, fake money, real lying. Nothing here is investment advice.
         </p>
         <p className="footnote-watermark">
-          Made with <span className="credit-heart" aria-hidden="true">♥</span> by pushkqr
+          Made with <Heart size={11} className="credit-heart" aria-hidden="true" /> by pushkqr
         </p>
       </footer>
     </main>

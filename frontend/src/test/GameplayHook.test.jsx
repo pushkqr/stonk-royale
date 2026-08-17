@@ -14,14 +14,14 @@ describe("GameplayHook.jsx", () => {
 
     // Step 1
     expect(screen.getByText("1. Secret Intel")).toBeInTheDocument();
-    expect(screen.getByText("You get private market info")).toBeInTheDocument();
+    expect(screen.getByText("Get private tips")).toBeInTheDocument();
 
     // Step 2
-    expect(screen.getByText("2. Bluff or Truth")).toBeInTheDocument();
-    expect(screen.getByText("Some tips are lies. Call bluffs.")).toBeInTheDocument();
+    expect(screen.getByText("2. Spot the Liar")).toBeInTheDocument();
+    expect(screen.getByText("Call out false rumors")).toBeInTheDocument();
 
     // Step 3
     expect(screen.getByText("3. Trade & Win")).toBeInTheDocument();
-    expect(screen.getByText("Leverage long/short to win")).toBeInTheDocument();
+    expect(screen.getByText("Long or short the market")).toBeInTheDocument();
   });
 });
