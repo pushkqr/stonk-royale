@@ -370,7 +370,7 @@
   font-family: var(--data);
   font-size: 0.72rem;
   color: var(--haze);
-  margin-top: -0.1rem;
+  margin-top: 0.5rem;
 }
 
 .btn-icon-center {
