@@ -4,7 +4,7 @@ services:
     expose:
       - "8080"
     environment:
-      ALLOWED_ORIGINS: "https://*.pushkqr.app,https://pushkqr.app,https://*.stonkroyale.me,https://stonkroyale.me,http://localhost:*"
+      ALLOWED_ORIGINS: "*"
       # Unlocks /admin. Set it in a .env file beside this one, never here — with no value
       # the panel does not exist at all, which is the safe default.
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
