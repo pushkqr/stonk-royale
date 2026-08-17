@@ -148,7 +148,9 @@ public final class Match {
             throw new IllegalStateException("Someone in this room is already called " + nickname);
         }
 
-        MatchPlayer player = new MatchPlayer(playerId, nickname, players.isEmpty());
+        boolean hasActiveHost = players.values().stream()
+                .anyMatch(p -> p.isHost() && !p.hasLeft());
+        MatchPlayer player = new MatchPlayer(playerId, nickname, !hasActiveHost);
         players.put(playerId, player);
         return player;
     }
@@ -639,7 +641,15 @@ public final class Match {
      */
     public synchronized boolean markConnected(String playerId, boolean connected, long now) {
         MatchPlayer player = players.get(playerId);
-        return player != null && player.setConnected(connected, now);
+        if (player == null) {
+            return false;
+        }
+        boolean changed = player.setConnected(connected, now);
+        if (connected && phase == MatchPhase.LOBBY && players.values().stream().noneMatch(p -> p.isHost() && !p.hasLeft())) {
+            nextHost().ifPresent(MatchPlayer::promoteToHost);
+            changed = true;
+        }
+        return changed;
     }
 
     /**

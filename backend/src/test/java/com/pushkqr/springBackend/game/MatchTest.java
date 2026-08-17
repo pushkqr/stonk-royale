@@ -1075,6 +1075,26 @@ class MatchTest {
         // Correct rather than unfortunate: there is nobody left who could press start, and
         // the abandonment clock is already running on this room.
         assertThat(match.players().stream().anyMatch(MatchPlayer::isHost)).isFalse();
+
+        // A new human arriving later through Quick Match must take the host badge.
+        MatchPlayer newcomer = match.join("p2", "bob");
+        assertThat(newcomer.isHost()).isTrue();
+    }
+
+    @Test
+    void reconnectingToHostlessLobbyRestoresHost() {
+        Match match = new Match("RECONNECT_HOST", CONFIG);
+        String host = match.join("p1", "alice").id();
+        match.addBot("bot:1", "Vega");
+        match.markConnected(host, false, 1_000);
+
+        // Suppose host status was lost or seat had left
+        match.player(host).retire();
+        assertThat(match.players().stream().anyMatch(p -> p.isHost() && !p.hasLeft())).isFalse();
+
+        // New human joining becomes host
+        String human = match.join("p2", "bob").id();
+        assertThat(match.player(human).isHost()).isTrue();
     }
 
     @Test
