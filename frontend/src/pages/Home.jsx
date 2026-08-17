@@ -11,6 +11,7 @@ import GameplayHook from "../components/GameplayHook";
 
 export default function Home() {
   const navigate = useNavigate();
+  const [homeMode, setHomeMode] = useState("play");
   const [nickname, setNickname] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -54,99 +55,127 @@ export default function Home() {
       <MuteToggle />
       <main className="center-page">
         <header className="hero">
-        <h1 className="display hero-title">
-          Stonk<span className="hero-title-break">Royale</span>
-        </h1>
-        <p className="hero-sub">
-          Ten minutes. Five rounds. Everyone gets a tip, and
-          <em> most of them are lies.</em>
-        </p>
-      </header>
+          <h1 className="display hero-title">
+            Stonk<span className="hero-title-break">Royale</span>
+          </h1>
+          <p className="hero-sub">
+            Ten minutes. Five rounds. Everyone gets a tip, and
+            <em> most of them are lies.</em>
+          </p>
+        </header>
 
-      <GameplayHook />
+        <GameplayHook />
 
-      <div className="panel sheet stack">
-        <label className="stack" style={{ gap: "0.35rem" }}>
-          <span className="eyebrow">Your name</span>
-          <input
-            className="field"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            placeholder="what should they call you"
-            maxLength={16}
-            autoFocus
-          />
-        </label>
+        <div className="panel sheet stack">
+          <label className="stack" style={{ gap: "0.35rem" }}>
+            <span className="eyebrow">Your name</span>
+            <input
+              className="field"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="what should they call you"
+              maxLength={16}
+              autoFocus
+            />
+          </label>
 
-        <MatchSettings
-          settings={settings}
-          onChange={setSettings}
-          open={showSettings}
-          onToggle={() => setShowSettings((v) => !v)}
-        />
+          <div className="home-tab-switcher" role="tablist" aria-label="Game Modes">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={homeMode === "play"}
+              className={`home-tab-btn ${homeMode === "play" ? "is-active" : ""}`}
+              onClick={() => setHomeMode("play")}
+            >
+              ⚔️ Play / Join
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={homeMode === "host"}
+              className={`home-tab-btn ${homeMode === "host" ? "is-active" : ""}`}
+              onClick={() => setHomeMode("host")}
+            >
+              🛠️ Host Lobby
+            </button>
+          </div>
 
-        <button className="btn btn-big btn-scream" onClick={host} disabled={busy}>
-          Start a game
-        </button>
+          {homeMode === "play" ? (
+            <div className="stack" style={{ gap: "0.85rem" }}>
+              <div className="stack" style={{ gap: "0.25rem" }}>
+                <button
+                  className="btn btn-big btn-scream"
+                  onClick={() => go(() => quickMatch(nickname.trim(), token))}
+                  disabled={busy}
+                >
+                  ⚡ Find a Game
+                </button>
+                <span className="quick-match-sub">Quick match with players & bots</span>
+              </div>
 
-        <div className="or">
-          <span className="eyebrow">or join one</span>
+              <div className="or">
+                <span className="eyebrow">or enter room code</span>
+              </div>
+
+              <form className="join-row" onSubmit={join}>
+                <input
+                  className="field field-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
+                  placeholder="CODE"
+                  maxLength={5}
+                  aria-label="Game code"
+                />
+                <button className="btn btn-big" type="submit" disabled={busy}>
+                  Join
+                </button>
+              </form>
+
+              <button
+                className="link-btn muted"
+                onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
+                disabled={busy}
+              >
+                🤖 Or play solo vs bots
+              </button>
+            </div>
+          ) : (
+            <div className="stack" style={{ gap: "0.85rem" }}>
+              <MatchSettings
+                settings={settings}
+                onChange={setSettings}
+                open={showSettings}
+                onToggle={() => setShowSettings((v) => !v)}
+              />
+
+              <button className="btn btn-big btn-scream" onClick={host} disabled={busy}>
+                Create Lobby
+              </button>
+            </div>
+          )}
+
+          {error && <p className="notice notice-bad">{error}</p>}
+
+          {authAvailable && (
+            <button
+              className="link-btn muted"
+              onClick={async () => setToken(await signIn())}
+              disabled={busy}
+            >
+              {token ? "Signed in — your stats will stick" : "Sign in to keep your stats"}
+            </button>
+          )}
         </div>
 
-        <form className="join-row" onSubmit={join}>
-          <input
-            className="field field-code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
-            placeholder="CODE"
-            maxLength={5}
-            aria-label="Game code"
-          />
-          <button className="btn btn-big" type="submit" disabled={busy}>
-            Join
-          </button>
-        </form>
-
-        <button
-          className="btn btn-big"
-          onClick={() => go(() => quickMatch(nickname.trim(), token))}
-          disabled={busy}
-        >
-          Find me a game
-        </button>
-
-        {error && <p className="notice notice-bad">{error}</p>}
-
-        {/* Without this, arriving with nobody else around is a dead end — the lobby needs
-            a second player, so an unaccompanied visitor never sees the game at all. */}
-        <button
-          className="link-btn muted"
-          onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
-          disabled={busy}
-        >
-          Or play a few rounds on your own
-        </button>
-
-        {authAvailable && (
-          <button
-            className="link-btn muted"
-            onClick={async () => setToken(await signIn())}
-            disabled={busy}
-          >
-            {token ? "Signed in — your stats will stick" : "Sign in to keep your stats"}
-          </button>
-        )}
-      </div>
-
-      <footer className="footer-credit muted">
-        <p className="footnote-disclaimer">
-          Fake tickers, fake money, real lying. Nothing here is investment advice.
-        </p>
-        <p className="footnote-watermark">
-          Made with <span className="credit-heart" aria-hidden="true">♥</span> by pushkqr
-        </p>
-      </footer>
-    </main>
+        <footer className="footer-credit muted">
+          <p className="footnote-disclaimer">
+            Fake tickers, fake money, real lying. Nothing here is investment advice.
+          </p>
+          <p className="footnote-watermark">
+            Made with <span className="credit-heart" aria-hidden="true">♥</span> by pushkqr
+          </p>
+        </footer>
+      </main>
     </>
   );
 }
