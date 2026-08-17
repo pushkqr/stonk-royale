@@ -159,7 +159,7 @@ export default function Trading() {
     }, 1500);
   }, []);
 
-  const roundIndex = phase?.roundIndex;
+  const roundIndex = phase?.roundIndex ?? 0;
   const prevRoundRef = useRef(roundIndex);
   if (roundIndex !== prevRoundRef.current) {
     prevRoundRef.current = roundIndex;
@@ -169,7 +169,12 @@ export default function Trading() {
 
   const seenLiqMapRef = useRef(new Set());
   useEffect(() => {
-    const liqEvents = feed.filter((f) => f.kind === "LIQUIDATION");
+    seenLiqMapRef.current.clear();
+  }, [roundIndex]);
+
+  useEffect(() => {
+    // Only track liquidations that occurred in the CURRENT round
+    const liqEvents = feed.filter((f) => f.kind === "LIQUIDATION" && f.round === roundIndex);
     if (liqEvents.length === 0) return;
 
     let hasNew = false;
@@ -194,7 +199,7 @@ export default function Trading() {
     if (hasNew) {
       setLiquidations((prev) => [...prev, ...newMarkers]);
     }
-  }, [feed, left, roundMillis, session.playerId, startPrice, me?.nickname]);
+  }, [feed, left, roundMillis, roundIndex, session.playerId, startPrice, me?.nickname]);
 
   const prevJoltRef = useRef(0);
   useEffect(() => {
