@@ -2030,6 +2030,7 @@
   z-index: 30;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   /* Was 0.25rem/0.6rem at 0.6rem type — a tap target under 24px on a phone and fiddly
      with a mouse. These are the only always-available controls in a match, so they are
@@ -2070,6 +2071,9 @@
 .leave-tab {
   left: 0;
   width: var(--leave-tab);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   white-space: nowrap;
   border-left: 0;
