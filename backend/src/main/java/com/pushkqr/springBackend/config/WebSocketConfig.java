@@ -60,20 +60,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        String[] patterns;
-        if (allowedOrigins == null || allowedOrigins.isBlank() || "*".equals(allowedOrigins.trim())) {
-            patterns = new String[] { "*" };
-        } else {
-            patterns = Arrays.stream(allowedOrigins.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toArray(String[]::new);
-            if (patterns.length == 0) {
-                patterns = new String[] { "*" };
-            }
-        }
         registry.addEndpoint("/api/ws")
-                .setAllowedOriginPatterns(patterns);
+                .setAllowedOrigins("*");
         registry.setErrorHandler(new StompSubProtocolErrorHandler() {
             @Override
             public Message<byte[]> handleClientMessageProcessingError(
