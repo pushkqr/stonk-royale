@@ -180,4 +180,21 @@ describe("Home.jsx Tabbed Switcher & Micro-Interactions", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/m/HOST1");
     });
   });
+
+  it("triggers practiceMatch when clicking Play solo vs bots", async () => {
+    api.practiceMatch.mockResolvedValueOnce({ code: "SOLO1", playerId: "pSolo", token: "tokSolo" });
+
+    render(<Home />);
+    const nameInput = screen.getByPlaceholderText("what should they call you");
+    fireEvent.change(nameInput, { target: { value: "Soloplayer" } });
+
+    const soloBtn = screen.getByRole("button", { name: /Play solo vs bots/i });
+    expect(soloBtn).toHaveClass("solo-pill-btn");
+    fireEvent.click(soloBtn);
+
+    await waitFor(() => {
+      expect(api.practiceMatch).toHaveBeenCalledWith("Soloplayer", null);
+      expect(mockNavigate).toHaveBeenCalledWith("/m/SOLO1");
+    });
+  });
 });

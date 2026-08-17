@@ -12,22 +12,22 @@ describe("GameplayHook.jsx", () => {
   it("renders all 3 tactical cards with phase tags, titles, descriptions, and telemetry chips", () => {
     render(<GameplayHook />);
 
-    // Card 1: 01 / DOSSIER
-    expect(screen.getByText("01 / DOSSIER")).toBeInTheDocument();
-    expect(screen.getByText("Secret Intel")).toBeInTheDocument();
-    expect(screen.getByText("One private tip per round")).toBeInTheDocument();
-    expect(screen.getByText("CONFIDENTIAL")).toBeInTheDocument();
+    // Card 1: 01 / GET A TIP
+    expect(screen.getByText("01 / GET A TIP")).toBeInTheDocument();
+    expect(screen.getByText("You Get Intel")).toBeInTheDocument();
+    expect(screen.getByText("A private tip on the coin")).toBeInTheDocument();
+    expect(screen.getByText("PRIVATE")).toBeInTheDocument();
 
-    // Card 2: 02 / THE WIRE
-    expect(screen.getByText("02 / THE WIRE")).toBeInTheDocument();
-    expect(screen.getByText("Bluff & Snoop")).toBeInTheDocument();
-    expect(screen.getByText("Chat and spot the lies")).toBeInTheDocument();
-    expect(screen.getByText("70% LIE CHANCE")).toBeInTheDocument();
+    // Card 2: 02 / SPOT LIES
+    expect(screen.getByText("02 / SPOT LIES")).toBeInTheDocument();
+    expect(screen.getByText("Everyone Lies")).toBeInTheDocument();
+    expect(screen.getByText("Chat and spot who is fake")).toBeInTheDocument();
+    expect(screen.getByText("MOSTLY FAKE")).toBeInTheDocument();
 
-    // Card 3: 03 / THE PIT
-    expect(screen.getByText("03 / THE PIT")).toBeInTheDocument();
-    expect(screen.getByText("10x Execution")).toBeInTheDocument();
-    expect(screen.getByText("Squeeze prices & profit")).toBeInTheDocument();
-    expect(screen.getByText("LONG / SHORT")).toBeInTheDocument();
+    // Card 3: 03 / TRADE IT
+    expect(screen.getByText("03 / TRADE IT")).toBeInTheDocument();
+    expect(screen.getByText("Trade & Win")).toBeInTheDocument();
+    expect(screen.getByText("Long or short to take cash")).toBeInTheDocument();
+    expect(screen.getByText("TAKE PROFIT")).toBeInTheDocument();
   });
 });

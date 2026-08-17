@@ -369,8 +369,8 @@
   text-align: center;
   font-family: var(--data);
   font-size: 0.72rem;
-  color: var(--haze);
-  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.68);
+  margin-top: 0.45rem;
 }
 
 .btn-icon-center {
@@ -417,6 +417,15 @@
 .join-row .field-code {
   flex: 1;
   min-width: 0;
+}
+
+.join-row button {
+  height: 2.8rem;
+  border-radius: 6px;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* --- segmented 5-slot code keypad ---------------------------------------- */
@@ -525,6 +534,9 @@
     height: 2.5rem;
     font-size: 1.15rem;
   }
+  .join-row button {
+    height: 2.5rem;
+  }
 }
 
 .link-btn {
@@ -534,6 +546,38 @@
   font-size: 0.85rem;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.solo-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  font-family: var(--data);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--haze);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+  margin: 0.2rem auto 0;
+  transition: all 0.15s ease;
+}
+
+.solo-pill-btn:hover:not(:disabled) {
+  color: var(--scream);
+  border-color: rgba(255, 222, 89, 0.4);
+  background: rgba(255, 222, 89, 0.08);
+  box-shadow: 0 0 12px rgba(255, 222, 89, 0.15);
+  transform: translateY(-1px);
+}
+
+.solo-pill-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 /* --- host settings ------------------------------------------------------- */

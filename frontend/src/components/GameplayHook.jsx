@@ -5,38 +5,38 @@ export default function GameplayHook() {
     <section className="tactical-flow" aria-label="How the game loop works">
       <div className="tactical-card">
         <div className="tactical-head">
-          <span className="tactical-phase">01 / DOSSIER</span>
+          <span className="tactical-phase">01 / GET A TIP</span>
           <FileText size={15} strokeWidth={2.4} className="tactical-icon tactical-icon-intel" aria-hidden="true" />
         </div>
         <div className="tactical-body">
-          <div className="tactical-title">Secret Intel</div>
-          <div className="tactical-desc">One private tip per round</div>
+          <div className="tactical-title">You Get Intel</div>
+          <div className="tactical-desc">A private tip on the coin</div>
         </div>
-        <span className="tactical-tag tag-intel">CONFIDENTIAL</span>
+        <span className="tactical-tag tag-intel">PRIVATE</span>
       </div>
 
       <div className="tactical-card">
         <div className="tactical-head">
-          <span className="tactical-phase">02 / THE WIRE</span>
+          <span className="tactical-phase">02 / SPOT LIES</span>
           <MessageSquare size={15} strokeWidth={2.4} className="tactical-icon tactical-icon-bluff" aria-hidden="true" />
         </div>
         <div className="tactical-body">
-          <div className="tactical-title">Bluff & Snoop</div>
-          <div className="tactical-desc">Chat and spot the lies</div>
+          <div className="tactical-title">Everyone Lies</div>
+          <div className="tactical-desc">Chat and spot who is fake</div>
         </div>
-        <span className="tactical-tag tag-bluff">70% LIE CHANCE</span>
+        <span className="tactical-tag tag-bluff">MOSTLY FAKE</span>
       </div>
 
       <div className="tactical-card">
         <div className="tactical-head">
-          <span className="tactical-phase">03 / THE PIT</span>
+          <span className="tactical-phase">03 / TRADE IT</span>
           <TrendingUp size={15} strokeWidth={2.4} className="tactical-icon tactical-icon-trade" aria-hidden="true" />
         </div>
         <div className="tactical-body">
-          <div className="tactical-title">10x Execution</div>
-          <div className="tactical-desc">Squeeze prices & profit</div>
+          <div className="tactical-title">Trade & Win</div>
+          <div className="tactical-desc">Long or short to take cash</div>
         </div>
-        <span className="tactical-tag tag-trade">LONG / SHORT</span>
+        <span className="tactical-tag tag-trade">TAKE PROFIT</span>
       </div>
     </section>
   );

@@ -220,12 +220,12 @@ export default function Home() {
                 </form>
 
                 <button
-                  className="link-btn muted link-btn-icon"
+                  className="link-btn solo-pill-btn"
                   onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
                   disabled={busy}
                 >
-                  <Bot size={15} strokeWidth={2.2} />
-                  <span>Or play solo vs bots</span>
+                  <Bot size={14} strokeWidth={2.2} />
+                  <span>Play solo vs bots</span>
                 </button>
               </div>
             ) : (
