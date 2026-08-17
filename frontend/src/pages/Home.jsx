@@ -102,6 +102,7 @@ export default function Home() {
       <MuteToggle />
       <main className="center-page">
         <header className="hero">
+          <div className="hero-aura" aria-hidden="true" />
           <h1 className="display hero-title">
             Stonk<span className="hero-title-break">Royale</span>
           </h1>
@@ -162,84 +163,86 @@ export default function Home() {
             </button>
           </div>
 
-          {homeMode === "play" ? (
-            <div className="stack" style={{ gap: "0.85rem" }}>
-              <div className="stack" style={{ gap: "0.25rem" }}>
-                <button
-                  className="btn btn-big btn-scream btn-icon-center btn-arcade-cta"
-                  onClick={() => go(() => quickMatch(nickname.trim(), token))}
-                  disabled={busy}
-                >
-                  <Zap size={18} strokeWidth={2.5} />
-                  <span>Find a Game</span>
-                </button>
-                <span className="quick-match-sub">Quick match with players & bots</span>
-              </div>
-
-              <div className="or">
-                <span className="eyebrow">or enter room code</span>
-              </div>
-
-              <form className="join-row" onSubmit={join}>
-                <div className="code-slots-container">
-                  <input
-                    className="field field-code code-real-input"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
-                    placeholder="CODE"
-                    maxLength={5}
-                    aria-label="Game code"
-                    autoComplete="off"
-                    spellCheck="false"
-                  />
-                  <div className="code-slots" aria-hidden="true">
-                    {Array.from({ length: 5 }).map((_, i) => {
-                      const char = code[i] || "";
-                      const isFilled = Boolean(char);
-                      const isActive = i === code.length && code.length < 5;
-                      return (
-                        <div
-                          key={i}
-                          className={`code-slot ${isFilled ? "is-filled" : ""} ${isActive ? "is-active" : ""}`}
-                        >
-                          {char || "·"}
-                        </div>
-                      );
-                    })}
-                  </div>
+          <div key={homeMode} className="home-mode-panel">
+            {homeMode === "play" ? (
+              <div className="stack" style={{ gap: "0.85rem" }}>
+                <div className="stack" style={{ gap: "0.25rem" }}>
+                  <button
+                    className="btn btn-big btn-scream btn-icon-center btn-arcade-cta"
+                    onClick={() => go(() => quickMatch(nickname.trim(), token))}
+                    disabled={busy}
+                  >
+                    <Zap size={18} strokeWidth={2.5} />
+                    <span>Find a Game</span>
+                  </button>
+                  <span className="quick-match-sub">Quick match with players & bots</span>
                 </div>
+
+                <div className="or">
+                  <span className="eyebrow">or enter room code</span>
+                </div>
+
+                <form className="join-row" onSubmit={join}>
+                  <div className="code-slots-container">
+                    <input
+                      className="field field-code code-real-input"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
+                      placeholder="CODE"
+                      maxLength={5}
+                      aria-label="Game code"
+                      autoComplete="off"
+                      spellCheck="false"
+                    />
+                    <div className="code-slots" aria-hidden="true">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const char = code[i] || "";
+                        const isFilled = Boolean(char);
+                        const isActive = i === code.length && code.length < 5;
+                        return (
+                          <div
+                            key={i}
+                            className={`code-slot ${isFilled ? "is-filled" : ""} ${isActive ? "is-active" : ""}`}
+                          >
+                            {char || "·"}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <button
+                    className={`btn btn-big ${code.trim().length === 5 ? "btn-join-armed" : ""}`}
+                    type="submit"
+                    disabled={busy}
+                  >
+                    Join
+                  </button>
+                </form>
+
                 <button
-                  className={`btn btn-big ${code.trim().length === 5 ? "btn-join-armed" : ""}`}
-                  type="submit"
+                  className="link-btn muted link-btn-icon"
+                  onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
                   disabled={busy}
                 >
-                  Join
+                  <Bot size={15} strokeWidth={2.2} />
+                  <span>Or play solo vs bots</span>
                 </button>
-              </form>
+              </div>
+            ) : (
+              <div className="stack" style={{ gap: "0.85rem" }}>
+                <MatchSettings
+                  settings={settings}
+                  onChange={setSettings}
+                  open={showSettings}
+                  onToggle={() => setShowSettings((v) => !v)}
+                />
 
-              <button
-                className="link-btn muted link-btn-icon"
-                onClick={() => go(() => practiceMatch(nickname.trim() || "you", token))}
-                disabled={busy}
-              >
-                <Bot size={15} strokeWidth={2.2} />
-                <span>Or play solo vs bots</span>
-              </button>
-            </div>
-          ) : (
-            <div className="stack" style={{ gap: "0.85rem" }}>
-              <MatchSettings
-                settings={settings}
-                onChange={setSettings}
-                open={showSettings}
-                onToggle={() => setShowSettings((v) => !v)}
-              />
-
-              <button className="btn btn-big btn-scream" onClick={host} disabled={busy}>
-                Create Lobby
-              </button>
-            </div>
-          )}
+                <button className="btn btn-big btn-scream" onClick={host} disabled={busy}>
+                  Create Lobby
+                </button>
+              </div>
+            )}
+          </div>
 
           {error && <p className="notice notice-bad">{error}</p>}
 

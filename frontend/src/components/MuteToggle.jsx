@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { isMuted, setMuted, sound } from "../lib/sound";
 
 export default function MuteToggle() {
@@ -20,7 +21,17 @@ export default function MuteToggle() {
       aria-pressed={off}
       title={off ? "Turn sound on" : "Turn sound off"}
     >
-      {off ? "SOUND OFF" : "SOUND ON"}
+      {off ? (
+        <>
+          <VolumeX size={12} strokeWidth={2.4} aria-hidden="true" />
+          <span>SOUND OFF</span>
+        </>
+      ) : (
+        <>
+          <Volume2 size={12} strokeWidth={2.4} aria-hidden="true" />
+          <span>SOUND ON</span>
+        </>
+      )}
     </button>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BookOpen } from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import RulesContent from "./RulesContent";
 
@@ -32,7 +33,8 @@ export default function RulesTab() {
         onClick={() => setOpen(true)}
         title="How the game works"
       >
-        RULES
+        <BookOpen size={12} strokeWidth={2.4} aria-hidden="true" />
+        <span>RULES</span>
       </button>
 
       {open && (
