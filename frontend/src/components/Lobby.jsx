@@ -194,8 +194,7 @@ export default function Lobby() {
       </div>
 
       <p className="footnote muted">
-        {lobby?.totalRounds ?? 5} rounds · {lobby?.roundSeconds ?? 90} seconds each · everyone
-        starts each round with the same stack
+        Equal starting stack every round · Highest total profit takes the crown
       </p>
 
       {showPicker && (
