@@ -7,6 +7,7 @@ import { DEFAULTS } from "../lib/matchSettings";
 import MatchSettings from "../components/MatchSettings";
 import RulesTab from "../components/RulesTab";
 import MuteToggle from "../components/MuteToggle";
+import GameplayHook from "../components/GameplayHook";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -61,6 +62,8 @@ export default function Home() {
           <em> most of them are lies.</em>
         </p>
       </header>
+
+      <GameplayHook />
 
       <div className="panel sheet stack">
         <label className="stack" style={{ gap: "0.35rem" }}>
