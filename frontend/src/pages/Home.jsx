@@ -166,7 +166,7 @@ export default function Home() {
             <div className="stack" style={{ gap: "0.85rem" }}>
               <div className="stack" style={{ gap: "0.25rem" }}>
                 <button
-                  className="btn btn-big btn-scream btn-icon-center"
+                  className="btn btn-big btn-scream btn-icon-center btn-arcade-cta"
                   onClick={() => go(() => quickMatch(nickname.trim(), token))}
                   disabled={busy}
                 >
@@ -181,15 +181,38 @@ export default function Home() {
               </div>
 
               <form className="join-row" onSubmit={join}>
-                <input
-                  className="field field-code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
-                  placeholder="CODE"
-                  maxLength={5}
-                  aria-label="Game code"
-                />
-                <button className="btn btn-big" type="submit" disabled={busy}>
+                <div className="code-slots-container">
+                  <input
+                    className="field field-code code-real-input"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 5))}
+                    placeholder="CODE"
+                    maxLength={5}
+                    aria-label="Game code"
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                  <div className="code-slots" aria-hidden="true">
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const char = code[i] || "";
+                      const isFilled = Boolean(char);
+                      const isActive = i === code.length && code.length < 5;
+                      return (
+                        <div
+                          key={i}
+                          className={`code-slot ${isFilled ? "is-filled" : ""} ${isActive ? "is-active" : ""}`}
+                        >
+                          {char || "·"}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button
+                  className={`btn btn-big ${code.trim().length === 5 ? "btn-join-armed" : ""}`}
+                  type="submit"
+                  disabled={busy}
+                >
                   Join
                 </button>
               </form>

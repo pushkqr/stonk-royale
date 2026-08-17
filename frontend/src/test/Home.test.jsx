@@ -35,9 +35,40 @@ describe("Home.jsx Tabbed Switcher & Micro-Interactions", () => {
     expect(playTab).toHaveClass("is-active");
     expect(hostTab).not.toHaveClass("is-active");
 
-    expect(screen.getByRole("button", { name: /Find a Game/i })).toBeInTheDocument();
+    const findBtn = screen.getByRole("button", { name: /Find a Game/i });
+    expect(findBtn).toBeInTheDocument();
+    expect(findBtn).toHaveClass("btn-arcade-cta");
     expect(screen.getByPlaceholderText("CODE")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Create Lobby/i })).not.toBeInTheDocument();
+  });
+
+  it("renders segmented 5-slot code keypad and arms join button on 5 characters", () => {
+    render(<Home />);
+
+    const codeInput = screen.getByPlaceholderText("CODE");
+    const joinBtn = screen.getByRole("button", { name: /^Join$/i });
+
+    expect(joinBtn).not.toHaveClass("btn-join-armed");
+
+    // Check 5 slots
+    const slots = document.querySelectorAll(".code-slot");
+    expect(slots).toHaveLength(5);
+    expect(slots[0]).toHaveClass("is-active");
+
+    // Enter 2 chars
+    fireEvent.change(codeInput, { target: { value: "AB" } });
+    expect(slots[0]).toHaveTextContent("A");
+    expect(slots[0]).toHaveClass("is-filled");
+    expect(slots[1]).toHaveTextContent("B");
+    expect(slots[1]).toHaveClass("is-filled");
+    expect(slots[2]).toHaveClass("is-active");
+    expect(joinBtn).not.toHaveClass("btn-join-armed");
+
+    // Enter 5 chars
+    fireEvent.change(codeInput, { target: { value: "XYZ12" } });
+    expect(slots[0]).toHaveTextContent("X");
+    expect(slots[4]).toHaveTextContent("2");
+    expect(joinBtn).toHaveClass("btn-join-armed");
   });
 
   it("switches to Host Lobby tab and displays preset options", () => {

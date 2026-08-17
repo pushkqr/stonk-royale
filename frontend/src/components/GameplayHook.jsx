@@ -1,45 +1,44 @@
-import { FileText, MessageSquare, TrendingUp, ChevronRight } from "lucide-react";
+import { FileText, MessageSquare, TrendingUp } from "lucide-react";
 
 export default function GameplayHook() {
   return (
-    <section className="gameplay-hook" aria-label="How the game works">
-      <div className="hook-step">
-        <div className="hook-icon-wrap hook-icon-intel">
-          <FileText size={16} strokeWidth={2.4} />
+    <section className="tactical-flow" aria-label="How the game loop works">
+      <div className="tactical-card">
+        <div className="tactical-head">
+          <span className="tactical-phase">01 / DOSSIER</span>
+          <FileText size={15} strokeWidth={2.4} className="tactical-icon tactical-icon-intel" aria-hidden="true" />
         </div>
-        <div className="hook-text">
-          <span className="hook-title">1. Secret Intel</span>
-          <span className="hook-sub">Get private tips</span>
+        <div className="tactical-body">
+          <div className="tactical-title">Secret Intel</div>
+          <div className="tactical-desc">One private tip per round</div>
         </div>
+        <span className="tactical-tag tag-intel">CONFIDENTIAL</span>
       </div>
 
-      <div className="hook-connector" aria-hidden="true">
-        <ChevronRight size={16} strokeWidth={2} />
+      <div className="tactical-card">
+        <div className="tactical-head">
+          <span className="tactical-phase">02 / THE WIRE</span>
+          <MessageSquare size={15} strokeWidth={2.4} className="tactical-icon tactical-icon-bluff" aria-hidden="true" />
+        </div>
+        <div className="tactical-body">
+          <div className="tactical-title">Bluff & Snoop</div>
+          <div className="tactical-desc">Chat and spot the lies</div>
+        </div>
+        <span className="tactical-tag tag-bluff">70% LIE CHANCE</span>
       </div>
 
-      <div className="hook-step">
-        <div className="hook-icon-wrap hook-icon-bluff">
-          <MessageSquare size={16} strokeWidth={2.4} />
+      <div className="tactical-card">
+        <div className="tactical-head">
+          <span className="tactical-phase">03 / THE PIT</span>
+          <TrendingUp size={15} strokeWidth={2.4} className="tactical-icon tactical-icon-trade" aria-hidden="true" />
         </div>
-        <div className="hook-text">
-          <span className="hook-title">2. Spot the Liar</span>
-          <span className="hook-sub">Call out false rumors</span>
+        <div className="tactical-body">
+          <div className="tactical-title">10x Execution</div>
+          <div className="tactical-desc">Squeeze prices & profit</div>
         </div>
-      </div>
-
-      <div className="hook-connector" aria-hidden="true">
-        <ChevronRight size={16} strokeWidth={2} />
-      </div>
-
-      <div className="hook-step">
-        <div className="hook-icon-wrap hook-icon-trade">
-          <TrendingUp size={16} strokeWidth={2.4} />
-        </div>
-        <div className="hook-text">
-          <span className="hook-title">3. Trade & Win</span>
-          <span className="hook-sub">Long or short the market</span>
-        </div>
+        <span className="tactical-tag tag-trade">LONG / SHORT</span>
       </div>
     </section>
   );
 }
+
