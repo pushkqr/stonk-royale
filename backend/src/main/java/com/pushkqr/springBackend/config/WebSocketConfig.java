@@ -1,6 +1,7 @@
 package com.pushkqr.springBackend.config;
 
 import com.pushkqr.springBackend.server.StompAuthInterceptor;
+import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,8 +60,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] patterns = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toArray(String[]::new);
         registry.addEndpoint("/api/ws")
-                .setAllowedOriginPatterns(allowedOrigins.split(","));
+                .setAllowedOriginPatterns(patterns.length == 0 ? new String[]{"*"} : patterns);
         registry.setErrorHandler(new StompSubProtocolErrorHandler() {
             @Override
             public Message<byte[]> handleClientMessageProcessingError(
