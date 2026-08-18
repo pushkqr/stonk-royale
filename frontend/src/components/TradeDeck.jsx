@@ -1,9 +1,8 @@
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { money, price as fmtPrice } from "../lib/format";
 import LivePnl from "./LivePnl";
 import FillEstimate from "./FillEstimate";
 import { getLivePrice } from "../state/livePrice";
-import { sound } from "../lib/sound";
 import { haptic } from "../lib/haptic";
 import { unrealisedPnl } from "../lib/pnl";
 
@@ -12,6 +11,13 @@ const PRESETS = [
   { label: "Standard", lev: 4, sz: 50 },
   { label: "YOLO", lev: 10, sz: 100 },
 ];
+
+/**
+ * Long enough to swallow a physical double-click, short enough that nobody deliberately
+ * trading fast will ever meet it. Not a server-confirmation wait — see the note on
+ * the in-flight lock being gone.
+ */
+const ACTION_LOCK_MS = 150;
 
 /**
  * Four controls, and no more. Direction, leverage, size, and the nerve to close — those
@@ -24,7 +30,6 @@ const PRESETS = [
 function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   const [leverage, setLeverage] = useState(3);
   const [size, setSize] = useState(50);
-  const [pending, setPending] = useState(false);
   const [closing, setClosing] = useState(false);
   const [optimisticPos, setOptimisticPos] = useState(null);
   const [prevPosition, setPrevPosition] = useState(me?.position);
@@ -33,19 +38,29 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
     setPrevPosition(me?.position);
     setOptimisticPos(null);
     setClosing(false);
-    setPending(false);
   }
 
-  // Safety fallback: guarantee pending/closing are never stuck for > 2000ms
+  // A double-click lands on whatever the optimistic swap just moved under the cursor, so
+  // the two actions still need separating — but by a fixed 150ms, not by the server.
+  const lastActionAt = useRef(0);
+  const takeActionLock = useCallback(() => {
+    const now = Date.now();
+    if (now - lastActionAt.current < ACTION_LOCK_MS) return false;
+    lastActionAt.current = now;
+    return true;
+  }, []);
+
+  // An optimistic overlay the server never contradicts must not stick. A rejected open is
+  // the case that matters: `me.position` stays null, so the reconciliation above never
+  // fires and the phantom card would otherwise live forever.
   useEffect(() => {
-    if (pending || closing) {
-      const timer = setTimeout(() => {
-        setPending(false);
-        setClosing(false);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [pending, closing]);
+    if (!optimisticPos && !closing) return;
+    const timer = setTimeout(() => {
+      setOptimisticPos(null);
+      setClosing(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [optimisticPos, closing]);
 
   const position = closing ? null : (optimisticPos || me?.position);
 
@@ -57,6 +72,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 
   const handleOpen = useCallback(
     (side) => {
+      if (!takeActionLock()) return;
       const livePrice = getLivePrice() || 1;
       const available = Math.max(0, me?.cash ?? me?.equity ?? 0);
       const margin = (available * size) / 100;
@@ -70,16 +86,15 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         liquidationPrice: liqPrice,
         unrealisedPnl: 0,
       });
-      setPending(true);
       setClosing(false);
       haptic.trade();
-      sound.trade(side === "LONG");
       onOpen(side, size / 100, leverage);
     },
-    [onOpen, size, leverage, me?.cash, me?.equity]
+    [onOpen, size, leverage, me?.cash, me?.equity, takeActionLock]
   );
 
   const handleClose = useCallback(() => {
+    if (!takeActionLock()) return;
     const livePrice = getLivePrice();
     if (position) {
       const pnlVal = livePrice != null ? unrealisedPnl(position, livePrice) : (position.unrealisedPnl ?? 0);
@@ -93,12 +108,11 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
     }
     setClosing(true);
     setOptimisticPos(null);
-    setPending(true);
-    onClose();
-  }, [onClose, position]);
+    onClose(position, livePrice);
+  }, [onClose, position, takeActionLock]);
 
   useEffect(() => {
-    if (disabled || pending) return;
+    if (disabled) return;
 
     const handleKeyDown = (e) => {
       const tag = e.target?.tagName;
@@ -133,7 +147,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [disabled, pending, position, handleClose, handleOpen, applyPreset]);
+  }, [disabled, position, handleClose, handleOpen, applyPreset]);
 
   if (position) {
     return (
@@ -160,15 +174,9 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         <button
           className="btn btn-big btn-scream deck-close"
           onClick={handleClose}
-          disabled={disabled || pending}
+          disabled={disabled}
         >
-          {pending ? (
-            "Closing…"
-          ) : (
-            <>
-              Close Position <kbd className="keycap">Space</kbd>
-            </>
-          )}
+          Close Position <kbd className="keycap">Space</kbd>
         </button>
       </div>
     );
@@ -254,29 +262,17 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         <button
           className="btn btn-big btn-pump"
           onClick={() => handleOpen("LONG")}
-          disabled={disabled || pending || availableCash <= 0}
+          disabled={disabled || availableCash <= 0}
         >
-          {pending ? (
-            "Filling…"
-          ) : (
-            <>
-              Long <kbd className="keycap">L</kbd>
-            </>
-          )}
+          Long <kbd className="keycap">L</kbd>
           <FillEstimate side="LONG" notional={notional} impact={impact} />
         </button>
         <button
           className="btn btn-big btn-dump"
           onClick={() => handleOpen("SHORT")}
-          disabled={disabled || pending || availableCash <= 0}
+          disabled={disabled || availableCash <= 0}
         >
-          {pending ? (
-            "Filling…"
-          ) : (
-            <>
-              Short <kbd className="keycap">S</kbd>
-            </>
-          )}
+          Short <kbd className="keycap">S</kbd>
           <FillEstimate side="SHORT" notional={notional} impact={impact} />
         </button>
       </div>

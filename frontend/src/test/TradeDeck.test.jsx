@@ -105,5 +105,36 @@ describe("TradeDeck.jsx", () => {
     fireEvent.keyDown(input, { key: "l" });
     expect(handleOpen).not.toHaveBeenCalled();
   });
+
+  it("keeps the close button live immediately after opening, with no server round trip", () => {
+    render(<TradeDeck me={defaultMe} onOpen={vi.fn()} onClose={vi.fn()} disabled={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Long/i }));
+
+    // `me` never updates here, so this passes only if the optimistic path alone leaves the
+    // control enabled — which is the whole point of the change.
+    expect(screen.getByRole("button", { name: /Close Position/i })).toBeEnabled();
+  });
+
+  it("hands the closing position to onClose so the PnL floater can be drawn", () => {
+    const meWithPosition = {
+      cash: 5000,
+      equity: 5500,
+      position: {
+        side: "LONG",
+        leverage: 5,
+        margin: 5000,
+        entryPrice: 100,
+        liquidationPrice: 82,
+        unrealisedPnl: 500,
+      },
+    };
+    const handleClose = vi.fn();
+    render(<TradeDeck me={meWithPosition} onOpen={vi.fn()} onClose={handleClose} disabled={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Close Position/i }));
+
+    expect(handleClose).toHaveBeenCalledWith(meWithPosition.position, expect.any(Number));
+  });
 });
 

@@ -214,6 +214,10 @@ export default function Trading() {
   }, [jolt, addFloater]);
 
   const handleClosePosition = useCallback((pos, closePrice) => {
+    // Publish first: the floater below is visual feedback and has no business sitting
+    // between the click and the socket.
+    close();
+
     if (pos) {
       const price = closePrice || getLivePrice() || startPrice;
       const realized = unrealisedPnl(pos, price);
@@ -227,7 +231,6 @@ export default function Trading() {
         tone: isProfit ? "pump" : "dump",
       });
     }
-    close();
   }, [close, addFloater, startPrice]);
 
   return (

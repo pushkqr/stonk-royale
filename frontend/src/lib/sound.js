@@ -625,18 +625,6 @@ export const sound = {
     });
   },
 
-  /** Instant trade feedback click */
-  trade: (isLong = true) => {
-    duckBgm(0.35, 0.2);
-    note({
-      from: isLong ? 440 : 330,
-      to: isLong ? 660 : 220,
-      type: "sine",
-      duration: 0.06,
-      gain: 0.05,
-    });
-  },
-
   /** Position closed. Chord color reflects whether it was green or red. */
   close: (pnl) => {
     duckBgm(0.25, 0.35);

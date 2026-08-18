@@ -50,8 +50,6 @@ describe("sound.js", () => {
       sound.tick(5);
       sound.open("LONG");
       sound.open("SHORT");
-      sound.trade(true);
-      sound.trade(false);
       sound.close(100);
       sound.close(-50);
       sound.liquidation(true);
