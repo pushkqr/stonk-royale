@@ -6,14 +6,21 @@ import { hasSeenBriefing } from "./briefing";
 const BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 async function post(path, body, token) {
-  const res = await fetch(BASE + path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
+  let res;
+  try {
+    res = await fetch(BASE + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    // fetch only rejects when the request never completed at all — offline, DNS, server
+    // down. Every browser words that differently and none of them word it for a player.
+    throw new Error("Can't reach the server. Check your connection and try again.");
+  }
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -55,7 +62,12 @@ export function reportTelemetry(payload) {
 }
 
 export async function getLobby(code) {
-  const res = await fetch(`${BASE}/match/${code}`);
+  let res;
+  try {
+    res = await fetch(`${BASE}/match/${code}`);
+  } catch {
+    throw new Error("Can't reach the server. Check your connection and try again.");
+  }
   if (!res.ok) {
     throw new Error("That code doesn't match a game.");
   }
