@@ -136,5 +136,11 @@ describe("TradeDeck.jsx", () => {
 
     expect(handleClose).toHaveBeenCalledWith(meWithPosition.position, expect.any(Number));
   });
+
+  it("shows the arrow keycaps that the keyboard bindings actually use", () => {
+    render(<TradeDeck me={defaultMe} onOpen={vi.fn()} onClose={vi.fn()} disabled={false} />);
+    expect(screen.getByRole("button", { name: /Long/i })).toHaveTextContent("↑");
+    expect(screen.getByRole("button", { name: /Short/i })).toHaveTextContent("↓");
+  });
 });
 

@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { money, price as fmtPrice } from "../lib/format";
-import LivePnl from "./LivePnl";
+import { money } from "../lib/format";
+import PositionCard from "./PositionCard";
 import FillEstimate from "./FillEstimate";
 import { getLivePrice } from "../state/livePrice";
 import { haptic } from "../lib/haptic";
@@ -150,36 +150,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   }, [disabled, position, handleClose, handleOpen, applyPreset]);
 
   if (position) {
-    return (
-      <div className="deck deck-open">
-        <div className="deck-open-header">
-          <div className="deck-open-info">
-            <span className="eyebrow">Your position</span>
-            <span className="display deck-open-side">
-              <span className={position.side === "LONG" ? "pump" : "dump"}>
-                {position.leverage}x {position.side}
-              </span>
-            </span>
-            <span className="mono muted">
-              in at {fmtPrice(position.entryPrice)} · liquidated at {fmtPrice(position.liquidationPrice)}
-            </span>
-          </div>
-
-          <div className="deck-open-pnl">
-            <span className="eyebrow">Unrealised</span>
-            <LivePnl position={position} />
-          </div>
-        </div>
-
-        <button
-          className="btn btn-big btn-scream deck-close"
-          onClick={handleClose}
-          disabled={disabled}
-        >
-          Close Position <kbd className="keycap">Space</kbd>
-        </button>
-      </div>
-    );
+    return <PositionCard position={position} onClose={handleClose} disabled={disabled} />;
   }
 
   const availableCash = Math.max(0, me?.cash ?? me?.equity ?? 0);
@@ -258,13 +229,15 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
         <span className={`risk-tag ${riskClass}`}>{riskTier}</span>
       </div>
 
+      <p className="deck-hint">Long = bet it goes up · Short = bet it goes down</p>
+
       <div className="deck-sides">
         <button
           className="btn btn-big btn-pump"
           onClick={() => handleOpen("LONG")}
           disabled={disabled || availableCash <= 0}
         >
-          Long <kbd className="keycap">L</kbd>
+          Long <kbd className="keycap">↑</kbd>
           <FillEstimate side="LONG" notional={notional} impact={impact} />
         </button>
         <button
@@ -272,7 +245,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
           onClick={() => handleOpen("SHORT")}
           disabled={disabled || availableCash <= 0}
         >
-          Short <kbd className="keycap">S</kbd>
+          Short <kbd className="keycap">↓</kbd>
           <FillEstimate side="SHORT" notional={notional} impact={impact} />
         </button>
       </div>

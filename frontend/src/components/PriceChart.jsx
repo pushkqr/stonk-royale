@@ -33,6 +33,20 @@ function colors() {
  */
 function draw(canvas, size, state) {
   const { series, position, startPrice, roundMillis } = state;
+  /**
+   * How far this match sits above the standard settings, as 0 to 1. Volatility widens the
+   * base path and market impact rides on top of it, so the two compound — and near the top
+   * of both ranges every hundred-millisecond kick lands as its own visible jerk. Nothing
+   * here touches the simulation: it only stops the display from reporting each kick as a
+   * separate event. At the standard settings this is exactly 0 and the chart is unchanged.
+   */
+  const chaos = Math.min(
+    1,
+    Math.max(
+      0,
+      Math.max(((state.volatility ?? 1) - 1) / 0.8, ((state.impactMultiplier ?? 1) - 1) / 4),
+    ),
+  );
   const points = series?.points;
   const count = series?.count ?? 0;
   if (!canvas || size.w === 0 || size.h === 0 || count === 0 || !points) return true;
@@ -73,7 +87,7 @@ function draw(canvas, size, state) {
   }
   if (min === Infinity || max === -Infinity) return true;
 
-  const pad = (max - min || max * 0.02) * 0.12;
+  const pad = (max - min || max * 0.02) * (0.12 + 0.08 * chaos);
   min -= pad;
   max += pad;
 
@@ -96,7 +110,7 @@ function draw(canvas, size, state) {
     state.smoothP = targetP;
     state.smoothT = targetT;
   } else {
-    const lambda = 18;
+    const lambda = 18 - 5 * chaos;
     const factor = 1 - Math.exp(-lambda * dt);
     state.smoothP += (targetP - state.smoothP) * factor;
     state.smoothT += (targetT - state.smoothT) * factor;
@@ -278,6 +292,8 @@ function PriceChart({
   startPrice,
   liquidations = [],
   floaters = [],
+  volatility = 1,
+  impactMultiplier = 1,
 }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
@@ -292,6 +308,8 @@ function PriceChart({
     position,
     startPrice,
     liquidations,
+    volatility,
+    impactMultiplier,
     smoothP: null,
     smoothT: null,
     lastFrameTime: 0,
@@ -331,11 +349,13 @@ function PriceChart({
     live.startPrice = startPrice;
     live.series = series;
     live.liquidations = liquidations;
+    live.volatility = volatility;
+    live.impactMultiplier = impactMultiplier;
     sizeRef.current = size;
 
     start();
     return undefined;
-  }, [series, size, position, startPrice, roundMillis, liquidations, start]);
+  }, [series, size, position, startPrice, roundMillis, liquidations, volatility, impactMultiplier, start]);
 
   useEffect(() => {
     const wake = () => {

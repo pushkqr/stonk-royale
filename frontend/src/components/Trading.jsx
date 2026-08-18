@@ -318,6 +318,8 @@ export default function Trading() {
           startPrice={startPrice}
           liquidations={liquidations}
           floaters={floaters}
+          volatility={lobby?.volatilityMultiplier ?? 1}
+          impactMultiplier={lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1}
         />
 
         {waiting && (
