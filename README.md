@@ -20,7 +20,7 @@ The entire stack runs in-memory as a single JAR on **Spring Boot 4.1 / Java 26**
 - **Precomputed Seeded Markets:** Prices evolve via seeded Geometric Brownian Motion (GBM) precalculated during intermissions, ensuring rumours are verifiably true and breaking news headlines appear 2–4s before price shocks.
 - **Transient Order Flow Impact:** Player orders and liquidation margin calls push prices dynamically with a 4.0s exponential decay ($\tau = 4.0\text{s}$), clamping at $\pm 4\%$ to create realistic market chop without altering baseline regime truths.
 - **Autonomous Practice Bots:** Solo mode features deterministic scripted opponent bots (`SHARP`, `MARK`, `CHOPPER`) that trade, react to news in chat, and bluff on the end-of-round social ledger.
-- **Zero-Asset Web Audio:** Game countdowns, liquidation buzzers, and victory fanfares are procedurally synthesized at runtime via the Web Audio API without external audio file downloads.
+- **Near-Zero-Asset Web Audio:** Game countdowns, victory fanfares and every other cue are procedurally synthesized at runtime via the Web Audio API. The one exception is the liquidation sting, a 33kB sample fetched once and cached; nothing else is downloaded.
 
 ---
 

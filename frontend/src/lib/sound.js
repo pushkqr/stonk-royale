@@ -1,5 +1,9 @@
 /**
- * Synthesized procedural audio engine — 0KB audio assets, zero network fetches.
+ * Procedural audio engine — every cue synthesized at runtime, with one exception.
+ *
+ * The liquidation sting is a recorded sample, fetched once and cached. Everything else
+ * here is oscillators and generated noise, and that is still worth keeping: it is why the
+ * game has no audio payload to speak of and no cue that can fail to arrive.
  *
  * Architecture:
  * - Master Bus: Soft-clipping shaper -> 3.2kHz lowpass roll-off -> Master Gain -> Destination.
@@ -116,6 +120,91 @@ function softClip(amount = 2.2) {
   return curve;
 }
 
+/**
+ * The one recorded sound in the game.
+ *
+ * No oscillator stack reads as a person, and a liquidation is the single moment the game
+ * wants a human noise rather than a machine one. Served from public/ rather than inlined,
+ * so it is one cached fetch instead of ~44kB of base64 sitting in the JS bundle being
+ * parsed on every load by every player, most of whom never hear it.
+ */
+const FAH_URL = "/fah.wav";
+let fahBuffer = null;
+let fahLoading = false;
+let fahUnavailable = false;
+let fahSource = null;
+
+/**
+ * Fetched on the first sound of the session, which is already behind a user gesture, so it
+ * never touches the first paint. Exactly one attempt: if it fails, the synthesized dive
+ * stays as the cue for the rest of the session rather than retrying on every blow-up.
+ */
+function primeFah(a) {
+  if (fahBuffer || fahLoading || fahUnavailable || typeof fetch === "undefined") return;
+  fahLoading = true;
+  fetch(FAH_URL)
+    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(`HTTP ${res.status}`))))
+    .then((raw) => a.decodeAudioData(raw))
+    .then((buffer) => {
+      fahBuffer = buffer;
+    })
+    .catch((err) => {
+      fahUnavailable = true;
+      console.debug("stonk: liquidation sample unavailable, using the synth cue", err);
+    })
+    .finally(() => {
+      fahLoading = false;
+    });
+}
+
+/**
+ * Plays it, and only ever one at a time.
+ *
+ * Liquidations arrive in bursts — one sharp move takes several players out on the same
+ * tick — and overlapping copies of the same sample stack into the soft clipper as mud
+ * rather than reading as several blow-ups. Restarting the single voice keeps every
+ * liquidation audible as its own event without the pile-up.
+ *
+ * Returns false when there is nothing loaded to play, which is the caller's signal to fall
+ * back to the synthesized dive.
+ */
+function playFah(a, gain) {
+  if (!fahBuffer) return false;
+  try {
+    if (fahSource) {
+      try {
+        fahSource.stop();
+      } catch {
+        // stop() on an already-finished source throws; nothing to do about it.
+      }
+    }
+
+    const src = a.createBufferSource();
+    src.buffer = fahBuffer;
+
+    const g = a.createGain();
+    g.gain.value = gain;
+
+    src.connect(g).connect(bus);
+    src.onended = () => {
+      // Guarded: stopping the previous voice fires this *after* the new one is installed.
+      if (fahSource === src) fahSource = null;
+      try {
+        src.disconnect();
+        g.disconnect();
+      } catch {
+        // Already torn down.
+      }
+    };
+
+    fahSource = src;
+    src.start();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function audio() {
   if (muted || (typeof document !== "undefined" && document.hidden)) return null;
 
@@ -151,6 +240,7 @@ function audio() {
   }
 
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
+  primeFah(ctx);
   return ctx;
 }
 
@@ -642,7 +732,16 @@ export const sound = {
    * noise, cutting hard into the soft-clipper.
    */
   liquidation: (isMine = false) => {
+    const a = audio();
+    if (!a) return;
     duckBgm(0.12, 0.65);
+
+    // Quieter when it is not you — the same distinction the synthesized cue drew below.
+    // Somebody else blowing up is news; your own is something happening to you.
+    if (playFah(a, isMine ? 0.55 : 0.28)) return;
+
+    // Everything past here is the fallback, for the first blow-up of a session before the
+    // sample has finished loading, or for a session where it never arrives at all.
     if (!isMine) {
       // Somebody else blew up. Distinct, but quieter so it does not startle the player.
       note({ from: 180, to: 65, type: "sawtooth", duration: 0.35, gain: 0.06 });
