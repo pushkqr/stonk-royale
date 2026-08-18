@@ -227,7 +227,7 @@ function draw(canvas, size, state) {
 
   if (position) {
     hLine(position.entryPrice, paint.paper, [5, 3], "entry");
-    hLine(position.liquidationPrice, paint.dump, [7, 3], "LIQ", true);
+    hLine(position.liquidationPrice, paint.dump, [7, 3], "WIPED", true);
 
     if (head) {
       const livePnlVal = unrealisedPnl(position, head.p);

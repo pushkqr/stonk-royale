@@ -30,7 +30,7 @@ describe("TradeDeck.jsx", () => {
     const yoloBtn = screen.getByText("YOLO");
     fireEvent.click(yoloBtn);
     expect(screen.getByText("10x")).toBeInTheDocument();
-    expect(screen.getByText("High Risk / Scalp")).toBeInTheDocument();
+    expect(screen.getByText("High Risk")).toBeInTheDocument();
   });
 
   it("calls onOpen with side, sizeFraction, and leverage when Long is clicked", () => {
@@ -141,6 +141,17 @@ describe("TradeDeck.jsx", () => {
     render(<TradeDeck me={defaultMe} onOpen={vi.fn()} onClose={vi.fn()} disabled={false} />);
     expect(screen.getByRole("button", { name: /Long/i })).toHaveTextContent("↑");
     expect(screen.getByRole("button", { name: /Short/i })).toHaveTextContent("↓");
+  });
+
+  it("states the risk in money and plain words rather than desk shorthand", () => {
+    render(<TradeDeck me={defaultMe} onOpen={vi.fn()} onClose={vi.fn()} disabled={false} />);
+
+    // Default is 3x on 50% of a 10,000 stack: 5,000 margin, 90% of it at risk, wiped by a
+    // 30% move. The wording matters as much as the numbers — "Liq" told a new player
+    // nothing, and it is the number that decides whether they lose the round.
+    expect(screen.getByText(/Risking/)).toBeInTheDocument();
+    expect(screen.getByText(/wiped out on a/)).toBeInTheDocument();
+    expect(screen.queryByText(/Liq at/)).not.toBeInTheDocument();
   });
 });
 

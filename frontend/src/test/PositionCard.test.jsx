@@ -46,4 +46,10 @@ describe("PositionCard.jsx", () => {
     render(<PositionCard position={longPosition} onClose={vi.fn()} disabled={false} />);
     expect(header()).toHaveClass("is-near-liq");
   });
+
+  it("names the liquidation price in the same words the deck used", () => {
+    live.price = 100;
+    render(<PositionCard position={longPosition} onClose={vi.fn()} disabled={false} />);
+    expect(screen.getByText(/wiped out at/)).toBeInTheDocument();
+  });
 });

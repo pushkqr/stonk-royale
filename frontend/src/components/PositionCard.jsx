@@ -56,7 +56,7 @@ export default function PositionCard({ position, onClose, disabled }) {
           <span className="mono muted">
             in at {fmtPrice(position.entryPrice)} ·{" "}
             <span className={nearLiq ? "dump" : undefined}>
-              liquidated at {fmtPrice(position.liquidationPrice)}
+              wiped out at {fmtPrice(position.liquidationPrice)}
             </span>
           </span>
         </div>

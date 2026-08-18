@@ -162,7 +162,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
   let riskTier = "Low Risk";
   let riskClass = "risk-safe";
   if (leverage >= 6) {
-    riskTier = "High Risk / Scalp";
+    riskTier = "High Risk";
     riskClass = "risk-high";
   } else if (leverage >= 3) {
     riskTier = "Moderate Risk";
@@ -224,7 +224,8 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 
       <div className="deck-preview">
         <span className="deck-preview-text mono">
-          Liq at <strong>±{liqMovePct.toFixed(0)}%</strong> · Max loss <strong>{money(maxLoss)}</strong>
+          Risking <strong>{money(maxLoss)}</strong> · wiped out on a{" "}
+          <strong>{liqMovePct.toFixed(0)}%</strong> move
         </span>
         <span className={`risk-tag ${riskClass}`}>{riskTier}</span>
       </div>
