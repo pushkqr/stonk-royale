@@ -130,8 +130,9 @@ public final class Match {
      * sits it out and starts scoring from the next one — see {@link #beginTrading}.
      */
     public synchronized MatchPlayer join(String playerId, String nickname) {
-        if (players.containsKey(playerId)) {
-            return players.get(playerId);
+        MatchPlayer existing = players.get(playerId);
+        if (existing != null && !existing.hasLeft()) {
+            return existing;
         }
         if (activePlayerIds().size() >= config.maxPlayers()) {
             throw new IllegalStateException("Match is full");
@@ -148,10 +149,20 @@ public final class Match {
             throw new IllegalStateException("Someone in this room is already called " + nickname);
         }
 
+        // A retired seat is spent — see leave() — and its record is what the standings still
+        // read that player's score out of. Somebody who quit mid-match and came back is
+        // therefore seated as a newcomer under an id of their own, rather than reoccupying
+        // the seat they gave up and erasing the score that went with it. Scanned for a free
+        // slot rather than counted, the same way Bots.seat picks a bot id.
+        String seatId = playerId;
+        for (int i = 1; players.containsKey(seatId); i++) {
+            seatId = playerId + ":r" + i;
+        }
+
         boolean hasActiveHost = players.values().stream()
                 .anyMatch(p -> p.isHost() && !p.hasLeft());
-        MatchPlayer player = new MatchPlayer(playerId, nickname, !hasActiveHost);
-        players.put(playerId, player);
+        MatchPlayer player = new MatchPlayer(seatId, nickname, !hasActiveHost);
+        players.put(seatId, player);
         return player;
     }
 

@@ -10,8 +10,10 @@ public final class Requests {
     /**
      * Every setting is optional; anything omitted falls back to {@link MatchConfig#standard()}.
      *
-     * @param deviceId a value the browser generated and keeps, used only to count how many
-     *                 distinct people have played. Never used to identify anyone in game.
+     * @param deviceId a value the browser generated and keeps. It identifies a guest across
+     *                 requests, which is what lets somebody who lost their tab be given
+     *                 their own seat back, and it counts distinct players for the admin
+     *                 stats. It authorises nothing — the session token does that.
      * @param isPublic whether quick match may put strangers in this room. Null means no.
      */
     public record Create(String nickname, Integer rounds, Integer roundSeconds,

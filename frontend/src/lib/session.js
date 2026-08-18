@@ -39,11 +39,21 @@ function sweep(now) {
 
 export function saveSeat(seat) {
   try {
-    const now = Date.now();
-    sweep(now);
-    localStorage.setItem(key(seat.code), JSON.stringify({ savedAt: now, seat }));
-  } catch {
-    // A blocked or full store must not stop somebody taking their seat.
+    localStorage.setItem(key(seat.code), JSON.stringify({ savedAt: Date.now(), seat }));
+  } catch (err) {
+    // The seat is the one piece of stored state whose loss a player feels directly: they
+    // land on a join form in the middle of a match they are still seated in. Swallowing
+    // this without a word once cost an evening of guessing which of four things had failed.
+    console.debug("stonk: could not save seat", err);
+  }
+
+  // Housekeeping, deliberately after the write and in a try of its own. It used to run
+  // first, inside the same try, which meant an old key that would not clear could stop the
+  // current seat from ever being stored.
+  try {
+    sweep(Date.now());
+  } catch (err) {
+    console.debug("stonk: could not sweep expired seats", err);
   }
 }
 
@@ -56,7 +66,8 @@ export function loadSeat(code) {
       return null;
     }
     return raw.seat;
-  } catch {
+  } catch (err) {
+    console.debug("stonk: could not read seat", err);
     return null;
   }
 }

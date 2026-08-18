@@ -13,8 +13,10 @@ import java.util.UUID;
  * Turns an optional bearer token into a player id.
  *
  * Signing in is never required — the design treats a login wall as the single biggest
- * reason someone never tries the game. A signed-in player gets a stable id across matches;
- * a guest gets a fresh one. Everything downstream treats them identically.
+ * reason someone never tries the game. A signed-in player gets a stable id across matches.
+ * A guest gets one that lasts as long as their browser keeps its device id, which is what
+ * lets somebody whose tab died be handed their own seat back instead of being told their
+ * own name is taken. Everything downstream treats them identically.
  */
 @Service
 public class PlayerIdentity {
@@ -31,10 +33,21 @@ public class PlayerIdentity {
         }
     }
 
-    public String resolve(String authorizationHeader) {
+    public String resolve(String authorizationHeader, String deviceId) {
         return verifiedUid(authorizationHeader)
                 .map(uid -> "user:" + uid)
-                .orElseGet(() -> "guest:" + UUID.randomUUID());
+                .orElseGet(() -> guest(deviceId));
+    }
+
+    /**
+     * A guest is recognised by the id their own browser generated and kept. Without one
+     * there is nothing to recognise them by, so they get a fresh identity — the old
+     * behaviour, and still the right one for a client that sends no device id at all.
+     */
+    private static String guest(String deviceId) {
+        return deviceId == null || deviceId.isBlank()
+                ? "guest:" + UUID.randomUUID()
+                : "guest:" + deviceId;
     }
 
     private Optional<String> verifiedUid(String authorizationHeader) {

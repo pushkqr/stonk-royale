@@ -296,4 +296,31 @@ class MatchSeatLifecycleTest {
         // able to take the seat they gave up.
         assertThat(match.join("newcomer", "Newcomer")).isNotNull();
     }
+
+    @Test
+    void aReturningPlayerIsHandedTheirOwnSeatRatherThanTheirNameBeingTaken() {
+        Match match = lobby();
+
+        MatchPlayer back = match.join("guest", "Guest");
+
+        assertThat(back.id()).isEqualTo("guest");
+        assertThat(match.players()).hasSize(2);
+    }
+
+    @Test
+    void somebodyWhoQuitMidMatchComesBackWithoutErasingTheScoreTheyLeftBehind() {
+        Match match = lobby();
+        // Out of the lobby, so leave() retires the seat instead of removing it outright.
+        match.start(0);
+        match.leave("guest", 1_000);
+        assertThat(match.player("guest").hasLeft()).isTrue();
+
+        MatchPlayer back = match.join("guest", "Guest");
+
+        assertThat(back.id()).isNotEqualTo("guest");
+        assertThat(back.hasLeft()).isFalse();
+        // The retired record is what the standings read a departed player's score from.
+        assertThat(match.player("guest")).isNotNull();
+        assertThat(match.player("guest").hasLeft()).isTrue();
+    }
 }

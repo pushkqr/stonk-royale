@@ -224,17 +224,13 @@ export function MatchProvider({ session, children }) {
       const body = frame.body ?? "";
       const full = `${raw} ${body}`.toLowerCase();
 
-      // The server no longer knows this token, or the room/session has expired while the socket was down.
-      // Retrying can never succeed, so drop the dead seat and reload cleanly into the JoinGate
-      // instead of exposing internal channel errors or looping forever.
-      if (
-        full.includes("token") ||
-        full.includes("session") ||
-        full.includes("expired") ||
-        full.includes("unknown") ||
-        full.includes("channel") ||
-        full.includes("executorsubscribable")
-      ) {
+      // The one failure that means the seat is really gone: StompAuthInterceptor rejects the
+      // CONNECT with "Unknown or expired session token" because the registry no longer holds
+      // it. Retrying that can never succeed, so drop the dead seat and reload cleanly into
+      // the JoinGate. Matched narrowly on purpose — this once tested six loose substrings,
+      // and "session" and "channel" match plenty of Spring messaging errors that have
+      // nothing to do with the seat, every one of which threw a live player out of the room.
+      if (full.includes("session token")) {
         clearSeat(code);
         window.location.reload();
         return;

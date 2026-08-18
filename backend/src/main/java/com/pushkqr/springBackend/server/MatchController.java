@@ -143,7 +143,7 @@ public class MatchController {
     private Views.JoinResult seat(Match match, String requestedNickname, String authorization,
             String deviceId) {
         String nickname = Text.nickname(requestedNickname);
-        MatchPlayer player = match.join(identity.resolve(authorization), nickname);
+        MatchPlayer player = match.join(identity.resolve(authorization, deviceId), nickname);
         PlayerSession session = sessions.create(match.code(), player.id(), nickname);
         stats.seatTaken(deviceId);
 
