@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Client } from "@stomp/stompjs";
 import { getLobby, socketUrl } from "../lib/api";
 import { clearSeat } from "../lib/session";
+import { isSeatExpired } from "../lib/stompError";
 import { sound } from "../lib/sound";
 
 import { setLivePrice } from "./livePrice";
@@ -220,17 +221,13 @@ export function MatchProvider({ session, children }) {
 
     client.onWebSocketClose = () => setConnected(false);
     client.onStompError = (frame) => {
-      const raw = frame.headers?.message ?? "";
-      const body = frame.body ?? "";
-      const full = `${raw} ${body}`.toLowerCase();
-
-      // The one failure that means the seat is really gone: StompAuthInterceptor rejects the
-      // CONNECT with "Unknown or expired session token" because the registry no longer holds
-      // it. Retrying that can never succeed, so drop the dead seat and reload cleanly into
-      // the JoinGate. Matched narrowly on purpose — this once tested six loose substrings,
-      // and "session" and "channel" match plenty of Spring messaging errors that have
-      // nothing to do with the seat, every one of which threw a live player out of the room.
-      if (full.includes("session token")) {
+      // The one failure that means the seat is really gone: the registry no longer holds
+      // the token, so retrying can never succeed. Drop the dead seat and reload cleanly
+      // into the JoinGate. Matched on a code rather than on the sentence it used to carry —
+      // this once tested six loose substrings, and "session" and "channel" match plenty of
+      // Spring messaging errors that have nothing to do with the seat, every one of which
+      // threw a live player out of the room.
+      if (isSeatExpired(frame)) {
         clearSeat(code);
         window.location.reload();
         return;

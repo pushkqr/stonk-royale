@@ -1,8 +1,8 @@
 /**
  * Whether this browser has read the rules.
  *
- * localStorage rather than the sessionStorage seats use: the whole point is that someone
- * coming back for a second match is not made to sit through it again.
+ * localStorage, and not scoped to a match code: the whole point is that someone coming
+ * back for a second game is not made to sit through it again.
  */
 const KEY = "stonk:briefed";
 
