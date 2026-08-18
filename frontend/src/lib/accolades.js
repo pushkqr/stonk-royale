@@ -9,7 +9,7 @@ import { pct } from "./format";
  * @param {Array} feed Feed events history
  * @returns {Array} List of accolade objects [{ id, title, icon, player, subtitle }]
  */
-export function computeAccolades(standings = [], settled = null, feed = []) {
+export function computeAccolades(standings = [], settled = null, feed = [], matchLiquidations = {}) {
   if (!standings || standings.length === 0) return [];
 
   const accolades = [];
@@ -27,13 +27,16 @@ export function computeAccolades(standings = [], settled = null, feed = []) {
     });
   }
 
-  // 2. The Rekt: Most liquidations in final round or across match feed
-  const liquidationCounts = {};
-  feed
-    .filter((f) => f.kind === "LIQUIDATION")
-    .forEach((f) => {
-      liquidationCounts[f.playerId] = (liquidationCounts[f.playerId] || 0) + 1;
-    });
+  // 2. The Rekt: Most liquidations across the match
+  const liquidationCounts = { ...matchLiquidations };
+  // Fallback to feed if matchLiquidations is empty (e.g. tests or direct calls)
+  if (Object.keys(liquidationCounts).length === 0 && feed) {
+    feed
+      .filter((f) => f.kind === "LIQUIDATION" && f.playerId)
+      .forEach((f) => {
+        liquidationCounts[f.playerId] = (liquidationCounts[f.playerId] || 0) + 1;
+      });
+  }
 
   let mostRektId = null;
   let maxLiqs = 0;

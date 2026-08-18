@@ -9,7 +9,7 @@ import Avatar from "./Avatar";
 import { getAvatarForPlayer, getMood } from "../lib/avatars";
 
 export default function Results() {
-  const { standings, session, rematch, lobby, settled, quit, feed, suspects } = useMatch();
+  const { standings, session, rematch, lobby, settled, quit, feed, suspects, matchLiquidations } = useMatch();
   const winner = standings[0];
   const iWon = winner?.playerId === session.playerId;
   // Bots fill the practice room, so a headcount no longer tells you whether anyone was
@@ -66,7 +66,7 @@ export default function Results() {
         ))}
       </ol>
 
-      <Accolades standings={standings} settled={settled} feed={feed} />
+      <Accolades standings={standings} settled={settled} feed={feed} matchLiquidations={matchLiquidations} />
 
       {/* The last round has no intermission behind it, so this is the only place its lies
           ever surface — and it is the round people lie hardest in. Same reason this is also

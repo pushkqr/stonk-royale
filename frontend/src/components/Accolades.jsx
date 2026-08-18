@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { computeAccolades } from "../lib/accolades";
 
-function Accolades({ standings, settled, feed }) {
-  const awards = computeAccolades(standings, settled, feed);
+function Accolades({ standings, settled, feed, matchLiquidations }) {
+  const awards = computeAccolades(standings, settled, feed, matchLiquidations);
   if (awards.length === 0) return null;
 
   return (

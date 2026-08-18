@@ -48,6 +48,14 @@ describe("accolades.js", () => {
     expect(awards.some((a) => a.id === "mastermind" && a.player === "Bob")).toBe(true);
   });
 
+  it("accurately uses matchLiquidations map when provided, even if feed is truncated", () => {
+    const awards = computeAccolades(standings, settled, [], { p3: 4 });
+    const rekt = awards.find((a) => a.id === "rekt");
+    expect(rekt).toBeDefined();
+    expect(rekt.player).toBe("Charlie");
+    expect(rekt.subtitle).toBe("4 liquidations suffered");
+  });
+
   it("handles empty standings gracefully", () => {
     expect(computeAccolades([], null, [])).toEqual([]);
   });

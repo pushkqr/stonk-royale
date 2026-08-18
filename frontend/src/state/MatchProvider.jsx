@@ -47,6 +47,7 @@ export function MatchProvider({ session, children }) {
   const [lastRumor, setLastRumor] = useState(null);
   const [settled, setSettled] = useState(null);
   const [standings, setStandings] = useState([]);
+  const [matchLiquidations, setMatchLiquidations] = useState({});
   const [lobby, setLobby] = useState(null);
   const [error, setError] = useState(null);
   const [readyState, setReadyState] = useState(null);
@@ -166,6 +167,12 @@ export function MatchProvider({ session, children }) {
       });
 
       on(topic("feed"), (item) => {
+        if (item.kind === "LIQUIDATION" && item.playerId) {
+          setMatchLiquidations((prev) => ({
+            ...prev,
+            [item.playerId]: (prev[item.playerId] || 0) + 1,
+          }));
+        }
         setFeed((prev) => {
           const last = prev[prev.length - 1];
           if (last && last.kind === item.kind && last.text === item.text && last.playerId === item.playerId) {
@@ -327,7 +334,13 @@ export function MatchProvider({ session, children }) {
 
   const ready = useCallback(() => publish("ready"), [publish]);
   const start = useCallback(() => publish("start"), [publish]);
-  const rematch = useCallback((sameMarket) => publish("rematch", { sameMarket }), [publish]);
+  const rematch = useCallback(
+    (sameMarket) => {
+      setMatchLiquidations({});
+      publish("rematch", { sameMarket });
+    },
+    [publish],
+  );
   const kick = useCallback((playerId) => publish("kick", { playerId }), [publish]);
   const addBot = useCallback(() => publish("bot"), [publish]);
   const configure = useCallback((settings) => publish("config", settings), [publish]);
@@ -371,6 +384,7 @@ export function MatchProvider({ session, children }) {
       lastRumor,
       settled,
       standings,
+      matchLiquidations,
       lobby,
       error,
       dismissError,
@@ -390,7 +404,7 @@ export function MatchProvider({ session, children }) {
       suspects,
       toggleSuspect,
     }),
-    [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, lobby,
+    [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, matchLiquidations, lobby,
       error, me, serverNow, dismissError, quit, readyState, ready, start, rematch, open,
       close, say, kick, addBot, configure, suspects, toggleSuspect],
   );
