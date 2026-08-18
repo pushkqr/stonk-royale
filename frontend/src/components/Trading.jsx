@@ -295,7 +295,7 @@ export default function Trading() {
                 {crossCheckStatus.status === "MATCHING" && <CheckCircle size={13} strokeWidth={2.4} />}
                 {crossCheckStatus.status === "CONFLICTING" && <AlertTriangle size={13} strokeWidth={2.4} />}
                 {crossCheckStatus.status === "MIXED" && <Scale size={13} strokeWidth={2.4} />}
-                {crossCheckStatus.status === "CONFIRMED" && <Target size={13} strokeWidth={2.4} />}
+                {crossCheckStatus.status === "ALIGNED" && <Target size={13} strokeWidth={2.4} />}
                 {crossCheckStatus.status === "EXPOSED" && <ShieldAlert size={13} strokeWidth={2.4} />}
               </span>
               <span className="cross-check-text">{crossCheckStatus.text}</span>

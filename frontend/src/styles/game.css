@@ -2745,6 +2745,25 @@
     flex-shrink: 0;
   }
 
+  /* The tip is the one thing on this screen nobody else can see, and in the base layout it
+     is the only child of this row that is allowed to shrink — the bias badge and the
+     truthful count either side of it are both flex-shrink: 0. On a phone that left it
+     about fifteen characters and an ellipsis. Give it the full width of its own line
+     instead; one extra line of text is a cheaper trade than the tip being unreadable. */
+  .intel-hud-top {
+    flex-wrap: wrap;
+    gap: 0.25rem 0.45rem;
+  }
+
+  .intel-pill {
+    order: 3;
+    flex: 1 0 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+  }
+
   .left-rail {
     height: 100%;
     overflow: hidden;

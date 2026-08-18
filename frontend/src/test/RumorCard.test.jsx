@@ -12,7 +12,7 @@ describe("RumorCard.jsx", () => {
     );
     expect(screen.getByText(/whale is accumulating/i)).toBeInTheDocument();
     expect(screen.getByText(/Claims: PUMP/i)).toBeInTheDocument();
-    expect(screen.getByText("BIAS: GO LONG")).toBeInTheDocument();
+    expect(screen.getByText("BET IT GOES UP")).toBeInTheDocument();
   });
 
   it("renders TRUE stamp with 3D flip class", () => {

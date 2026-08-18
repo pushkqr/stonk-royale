@@ -25,19 +25,19 @@ describe("regime.js", () => {
   });
 
   it("provides primers for all core market regimes", () => {
-    expect(REGIME_PRIMER.PUMP).toBe("steady upward drift");
-    expect(REGIME_PRIMER.DUMP).toBe("steady bleed");
-    expect(REGIME_PRIMER.CHOP).toBe("no drift, high volatility");
-    expect(REGIME_PRIMER.RUG).toBe("grinds up, then dumps hard");
-    expect(REGIME_PRIMER.SQUEEZE).toBe("slow bleed, then rips");
+    expect(REGIME_PRIMER.PUMP).toBe("goes up steadily");
+    expect(REGIME_PRIMER.DUMP).toBe("goes down steadily");
+    expect(REGIME_PRIMER.CHOP).toBe("jumps around, ends flat");
+    expect(REGIME_PRIMER.RUG).toBe("creeps up, then crashes");
+    expect(REGIME_PRIMER.SQUEEZE).toBe("drifts down, then rockets");
   });
 
   it("provides trade bias definitions for all core market regimes", () => {
-    expect(REGIME_BIAS.PUMP.label).toBe("BIAS: GO LONG");
-    expect(REGIME_BIAS.DUMP.label).toBe("BIAS: GO SHORT");
-    expect(REGIME_BIAS.CHOP.label).toBe("BIAS: SCALP ONLY");
-    expect(REGIME_BIAS.RUG.label).toBe("WARNING: RUG PULL");
-    expect(REGIME_BIAS.SQUEEZE.label).toBe("ALERT: SHORT SQUEEZE");
+    expect(REGIME_BIAS.PUMP.label).toBe("BET IT GOES UP");
+    expect(REGIME_BIAS.DUMP.label).toBe("BET IT GOES DOWN");
+    expect(REGIME_BIAS.CHOP.label).toBe("GET IN AND OUT FAST");
+    expect(REGIME_BIAS.RUG.label).toBe("IT RISES, THEN CRASHES");
+    expect(REGIME_BIAS.SQUEEZE.label).toBe("IT FALLS, THEN ROCKETS");
   });
 
   it("classifies market headlines into matching regimes", () => {
@@ -73,13 +73,15 @@ describe("regime.js", () => {
     expect(mixed.status).toBe("MIXED");
     expect(mixed.tone).toBe("scream");
 
-    // 2 matching headlines (confirmed alpha)
-    const confirmed = evaluateCrossCheck("PUMP", [
+    // 2 matching headlines. Never a confirmation: one of a round's two headlines is
+    // always the planted lie, so this must not read as conviction.
+    const aligned = evaluateCrossCheck("PUMP", [
       "$NVDA NAMED TOP PICK BY MAJOR DESK",
       "INSTITUTIONAL INFLOWS INTO $NVDA HIT RECORD",
     ]);
-    expect(confirmed.status).toBe("CONFIRMED");
-    expect(confirmed.tone).toBe("pump");
+    expect(aligned.status).toBe("ALIGNED");
+    expect(aligned.tone).toBe("scream");
+    expect(aligned.text).toMatch(/always fake/i);
 
     // 2 conflicting headlines (exposed lie)
     const exposed = evaluateCrossCheck("PUMP", [

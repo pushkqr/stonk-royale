@@ -19,22 +19,22 @@ export const REGIME_VERDICT = {
  * tip's claim so reading it is one step instead of three.
  */
 export const REGIME_PRIMER = {
-  PUMP: "steady upward drift",
-  DUMP: "steady bleed",
-  CHOP: "no drift, high volatility",
-  RUG: "grinds up, then dumps hard",
-  SQUEEZE: "slow bleed, then rips",
+  PUMP: "goes up steadily",
+  DUMP: "goes down steadily",
+  CHOP: "jumps around, ends flat",
+  RUG: "creeps up, then crashes",
+  SQUEEZE: "drifts down, then rockets",
 };
 
 /**
  * Actionable trading bias prescribed by a rumor claim.
  */
 export const REGIME_BIAS = {
-  PUMP: { label: "BIAS: GO LONG", tone: "pump", desc: "Long on dips" },
-  DUMP: { label: "BIAS: GO SHORT", tone: "dump", desc: "Short on pops" },
-  CHOP: { label: "BIAS: SCALP ONLY", tone: "muted", desc: "Quick in and out" },
-  RUG: { label: "WARNING: RUG PULL", tone: "dump", desc: "Pumps then collapses" },
-  SQUEEZE: { label: "ALERT: SHORT SQUEEZE", tone: "pump", desc: "Bleeds then violent rip" },
+  PUMP: { label: "BET IT GOES UP", tone: "pump", desc: "Long on dips" },
+  DUMP: { label: "BET IT GOES DOWN", tone: "dump", desc: "Short on pops" },
+  CHOP: { label: "GET IN AND OUT FAST", tone: "muted", desc: "Quick in and out" },
+  RUG: { label: "IT RISES, THEN CRASHES", tone: "dump", desc: "Pumps then collapses" },
+  SQUEEZE: { label: "IT FALLS, THEN ROCKETS", tone: "pump", desc: "Bleeds then violent rip" },
 };
 
 /**
@@ -82,34 +82,38 @@ export function evaluateCrossCheck(claimedRegime, headlines = []) {
         status: "MATCHING",
         tone: "pump",
         icon: "🟢",
-        text: "Headline corroborates your tip.",
+        text: "The news backs up your tip.",
       };
     }
     return {
       status: "CONFLICTING",
       tone: "dump",
       icon: "⚠️",
-      text: `Headline claims ${classified[0]} (conflicts with your tip).`,
+      text: `The news points to ${classified[0]} — your tip says otherwise.`,
     };
   }
 
-  // 2 or more headlines (both round headlines dropped: 1 true, 1 lie)
+  // Two or more headlines. A round drops exactly one true headline and one false one.
   if (matches > 0 && conflicts > 0) {
     const conflictingRegime = classified.find((r) => r !== claimedRegime);
     return {
       status: "MIXED",
       tone: "scream",
       icon: "⚖️",
-      text: `Mixed signals: 1 confirms ${claimedRegime}, 1 claims ${conflictingRegime}.`,
+      text: `One headline backs your tip, one points to ${conflictingRegime}. One of them is fake.`,
     };
   }
 
+  // Both headlines read the same way, which cannot mean confirmation: one of the two is
+  // always the round's planted lie, so this pattern means one was misread, not that the
+  // tip is proven. It previously sent people in with full
+  // conviction on rounds where the tip was false.
   if (matches >= 2) {
     return {
-      status: "CONFIRMED",
-      tone: "pump",
+      status: "ALIGNED",
+      tone: "scream",
       icon: "🎯",
-      text: "CONFIRMED ALPHA: News items align with your tip!",
+      text: "Both headlines back your tip — but one headline is always fake.",
     };
   }
 
@@ -117,7 +121,7 @@ export function evaluateCrossCheck(claimedRegime, headlines = []) {
     status: "EXPOSED",
     tone: "dump",
     icon: "🚨",
-    text: `PROVEN LIE: Headlines contradict ${claimedRegime}. Fade your tip!`,
+    text: `Both headlines point away from ${claimedRegime}. Your tip looks fake.`,
   };
 }
 
