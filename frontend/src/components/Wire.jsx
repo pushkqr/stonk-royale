@@ -16,22 +16,30 @@ import { avatarOf, getMood } from "../lib/avatars";
 const NO_AVATARS = new Map();
 
 /**
- * The speech acts that matter: claim a tip, state a position, accuse.
+ * The five lines the game actually holds you to.
  *
- * Every regime gets a line, because a claim is checked against the tip you were dealt at
- * settle — leaving one out would mean a player holding it could not tell the truth in one
- * tap while the liars could.
+ * Tapping one files a claim against your seat, and the Ledger prints it at settle beside the
+ * tip you were really dealt, under "Said" and "Held" — with a SUS tag turning into "Caught!"
+ * if the two disagree. Every regime gets a line, because a claim is checked against the tip
+ * you were dealt: leaving one out would mean a player holding it could not tell the truth in
+ * one tap while the liars could.
+ *
+ * The button shows the regime alone and the group heading carries the rest of the sentence.
+ * Printed in full, five buttons differing only in their last word scanned as one block of
+ * noise sitting in the same row as eight that bind you to nothing — so players were going on
+ * the record without noticing, and finding out they had been caught lying about a tip they
+ * thought they had only reacted to.
  */
-const QUICK_LINES = [
-  { text: "my tip says PUMP", claim: "PUMP" },
-  { text: "my tip says DUMP", claim: "DUMP" },
-  { text: "my tip says CHOP", claim: "CHOP" },
-  { text: "it's a rug", claim: "RUG" },
-  { text: "it's a squeeze", claim: "SQUEEZE" },
-  { text: "i'm long" },
-  { text: "i'm short" },
-  { text: "liar" },
+const CLAIM_LINES = [
+  { label: "PUMP", text: "my tip says PUMP", claim: "PUMP" },
+  { label: "DUMP", text: "my tip says DUMP", claim: "DUMP" },
+  { label: "CHOP", text: "my tip says CHOP", claim: "CHOP" },
+  { label: "RUG", text: "it's a rug", claim: "RUG" },
+  { label: "SQUEEZE", text: "it's a squeeze", claim: "SQUEEZE" },
 ];
+
+/** Talk that costs nothing: said out loud, recorded nowhere, checked against nothing. */
+const ASIDE_LINES = ["i'm long", "i'm short", "liar"];
 
 const QUICK_ICONS = [
   { icon: Rocket, label: "🚀 PUMP", title: "Pump (Rocket)" },
@@ -69,11 +77,24 @@ const TAP_REFILL_MS = 1200;
  * and it changes on every board broadcast, twice a second. The screens that render this
  * one already re-render then anyway, so the lookup is built there and passed down.
  */
-function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, className = "" }) {
+function Wire({ feed, onSay, disabled, roundIndex, suspects = {}, avatars = NO_AVATARS,
+  className = "" }) {
   const [draft, setDraft] = useState("");
   const [cooling, setCooling] = useState(false);
+  const [onRecord, setOnRecord] = useState(null);
+  const [recordRound, setRecordRound] = useState(roundIndex);
   const listRef = useRef(null);
   const bucketRef = useRef({ tokens: TAP_CAPACITY, lastRefill: 0, timer: null });
+
+  // The server wipes every claim the moment the next intermission deals a new tip, so this
+  // mirror has to forget at the same instant or it would keep showing a record that no
+  // longer exists. Keying on the round is what makes that exact: an intermission and the
+  // round it opens share a roundIndex, which is also why a claim made while the market is
+  // still shut correctly stands once it opens.
+  if (recordRound !== roundIndex) {
+    setRecordRound(roundIndex);
+    setOnRecord(null);
+  }
 
   useEffect(() => {
     const bucket = bucketRef.current;
@@ -131,6 +152,9 @@ function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, clas
   const handleQuick = (text, claim) => {
     if (!spend()) return;
     onSay(text, claim);
+    // Mirrored only once the token is spent, and the local bucket is a token tighter than
+    // the server's — so anything counted here is something the server will accept.
+    if (claim) setOnRecord(claim);
   };
 
   const submit = (event) => {
@@ -188,14 +212,50 @@ function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, clas
       </ul>
 
       {/* A round leaves no time to read a chart, size a position and type a convincing
-          lie. One tap keeps the talking going while the market moves. */}
+          lie. One tap keeps the talking going while the market moves.
+
+          Split in two because the two halves have different stakes and used to look
+          identical. The heading is doing the teaching: it says what a tap costs before the
+          tap, which is the only moment the warning is any use — the Ledger already says it
+          afterwards, when it is a verdict rather than a choice. */}
+      <p className="eyebrow quick-head">
+        Go on record
+        <span className="quick-head-note">the room sees this at settle</span>
+      </p>
       <div className="quick-row">
-        {QUICK_LINES.map(({ text, claim }) => (
+        {CLAIM_LINES.map(({ label, text, claim }) => (
+          <button
+            key={claim}
+            type="button"
+            className={`quick quick-claim ${onRecord === claim ? "is-claimed" : ""}`}
+            onClick={() => handleQuick(text, claim)}
+            disabled={disabled || cooling}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Stays up for the rest of the round. Knowing you are on the record is what makes
+          lying a decision instead of an accident, and it is the one thing a player cannot
+          read back off the feed once a few messages have pushed it out of sight. */}
+      {onRecord && (
+        <p className="on-record" role="status">
+          <span className="on-record-stamp">On record</span>
+          <span className="on-record-text">
+            You told the room your tip says {onRecord}
+          </span>
+        </p>
+      )}
+
+      <p className="eyebrow quick-head">Off the record</p>
+      <div className="quick-row">
+        {ASIDE_LINES.map((text) => (
           <button
             key={text}
             type="button"
             className="quick"
-            onClick={() => handleQuick(text, claim)}
+            onClick={() => handleQuick(text)}
             disabled={disabled || cooling}
           >
             {text}

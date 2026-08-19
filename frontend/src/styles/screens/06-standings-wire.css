@@ -243,6 +243,85 @@
   cursor: not-allowed;
 }
 
+.quick-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0.2rem 0 0;
+}
+
+/* Drops the eyebrow's tracking and caps: it is an aside about the row, not a second label
+   competing with the one beside it. */
+.quick-head-note {
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 0.8;
+}
+
+/*
+  A square chip rather than a round pill, because a claim is not a reaction.
+
+  Everything else in these rows is a 999px pill in --haze, and the five buttons that put you
+  on the record were drawn exactly the same way — so the tap that the Ledger later prints
+  under "Said", and stamps "Caught!" when it disagrees with the tip you held, looked like the
+  tap that sends a clown face. Corners, weight and paper-white ink separate the two classes
+  of speech before the tap rather than after it.
+*/
+.quick-claim {
+  border-radius: 3px;
+  border-color: var(--void-lift);
+  color: var(--paper);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.22rem 0.5rem;
+}
+
+.quick-claim:hover:not(:disabled) {
+  background: var(--scream);
+  border-color: var(--scream);
+  color: var(--void-deep);
+}
+
+/* Both selectors on purpose. The base .quick:hover sets colour to --scream and nothing else,
+   which over a filled chip would print yellow on yellow — so the claimed state has to outrank
+   hover rather than merely follow it. */
+.quick-claim.is-claimed,
+.quick-claim.is-claimed:hover:not(:disabled) {
+  background: var(--scream);
+  border-color: var(--scream);
+  color: var(--void-deep);
+}
+
+.on-record {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0.45rem;
+  border-left: 3px solid var(--scream);
+  background: var(--void-wash);
+  font-size: 0.7rem;
+  color: var(--paper);
+}
+
+.on-record-stamp {
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  background: var(--scream);
+  color: var(--void-deep);
+}
+
+.on-record-text {
+  min-width: 0;
+}
+
 .icon-reactions-row {
   margin-top: -0.1rem;
 }

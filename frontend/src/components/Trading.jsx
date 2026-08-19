@@ -329,7 +329,8 @@ export default function Trading() {
         />
       </section>
 
-      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} avatars={avatars} />
+      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} avatars={avatars}
+        roundIndex={phase?.roundIndex} />
 
       {/* A tab list rather than a nav landmark: these four switch which panel of this one
           screen is showing, they do not navigate anywhere. Marked up only this far on

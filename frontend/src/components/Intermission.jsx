@@ -144,7 +144,7 @@ export default function Intermission() {
       {/* Outside the beat switch on purpose: it stays mounted across the reveal, so nobody
           loses a half-typed accusation the moment the ledger names them. */}
       <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} avatars={avatars}
-        className="wire-talk" />
+        roundIndex={phase?.roundIndex} className="wire-talk" />
     </main>
   );
 }

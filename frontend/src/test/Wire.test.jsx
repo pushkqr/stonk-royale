@@ -30,7 +30,7 @@ describe("Wire", () => {
     const onSay = vi.fn();
     render(<Wire feed={[]} onSay={onSay} />);
 
-    const btn = screen.getByRole("button", { name: /^my tip says PUMP$/i });
+    const btn = screen.getByRole("button", { name: /^PUMP$/i });
     fireEvent.click(btn);
 
     expect(onSay).toHaveBeenCalledWith("my tip says PUMP", "PUMP");
@@ -92,7 +92,7 @@ describe("Wire", () => {
       const onSay = vi.fn();
       render(<Wire feed={[]} onSay={onSay} />);
 
-      const btn = screen.getByRole("button", { name: /^my tip says PUMP$/i });
+      const btn = screen.getByRole("button", { name: /^PUMP$/i });
 
       // Click 5 times (TAP_CAPACITY)
       for (let i = 0; i < 5; i++) {
@@ -127,7 +127,7 @@ describe("Wire", () => {
       const onSay = vi.fn();
       render(<Wire feed={[]} onSay={onSay} />);
 
-      const quickBtn = screen.getByRole("button", { name: /^my tip says PUMP$/i });
+      const quickBtn = screen.getByRole("button", { name: /^PUMP$/i });
       for (let i = 0; i < 5; i++) {
         fireEvent.click(quickBtn);
       }
@@ -147,5 +147,68 @@ describe("Wire", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  /**
+   * Going on record is the one tap the game holds a player to, and until now it looked
+   * exactly like the eight that hold them to nothing. These cover the telling, not the
+   * styling — that the claim is named back while it can still be acted on, that talk which
+   * binds nobody stays silent, and that the notice dies with the round the way the server's
+   * copy does.
+   */
+  describe("the record", () => {
+    it("names the claim back to the player who made it", () => {
+      render(<Wire feed={[]} onSay={vi.fn()} roundIndex={0} />);
+
+      // By role, not by text: the heading above the buttons also says "go on record", and
+      // that is the point of it — the warning has to be readable before anyone taps.
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /^PUMP$/i }));
+
+      const notice = screen.getByRole("status");
+      expect(notice).toHaveTextContent(/on record/i);
+      expect(notice).toHaveTextContent(/your tip says PUMP/i);
+    });
+
+    it("keeps quiet for talk that binds nobody", () => {
+      render(<Wire feed={[]} onSay={vi.fn()} roundIndex={0} />);
+
+      fireEvent.click(screen.getByRole("button", { name: /^i'm long$/i }));
+      fireEvent.click(screen.getByRole("button", { name: "Rekt (Skull)" }));
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("replaces the record when the player changes their story", () => {
+      render(<Wire feed={[]} onSay={vi.fn()} roundIndex={0} />);
+
+      fireEvent.click(screen.getByRole("button", { name: /^PUMP$/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^DUMP$/i }));
+
+      // Last claim wins on the server too — recordTipClaim is a put, not an add.
+      expect(screen.getByRole("status")).toHaveTextContent(/your tip says DUMP/i);
+      expect(screen.getByRole("status")).not.toHaveTextContent(/PUMP/i);
+    });
+
+    it("forgets the record when the next round deals a new tip", () => {
+      const { rerender } = render(<Wire feed={[]} onSay={vi.fn()} roundIndex={0} />);
+      fireEvent.click(screen.getByRole("button", { name: /^PUMP$/i }));
+      expect(screen.getByRole("status")).toBeInTheDocument();
+
+      // Match.planRound bumps roundIndex immediately before enterIntermission wipes every
+      // claim, so this is the same instant the server stops holding anyone to anything.
+      rerender(<Wire feed={[]} onSay={vi.fn()} roundIndex={1} />);
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("still sends the full sentence the room reads, not the button's face", () => {
+      const onSay = vi.fn();
+      render(<Wire feed={[]} onSay={onSay} roundIndex={0} />);
+
+      fireEvent.click(screen.getByRole("button", { name: /^SQUEEZE$/i }));
+
+      expect(onSay).toHaveBeenCalledWith("it's a squeeze", "SQUEEZE");
+    });
   });
 });
