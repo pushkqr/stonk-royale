@@ -7,13 +7,15 @@ import { pct } from "./format";
  * @param {Array} standings List of standing rows [{ playerId, nickname, totalScore, bestRound, bot }]
  * @param {Object} settled Final round settled object { regime, results: [{ playerId, nickname, roundScore, totalScore, liquidations, rumorClaimed, tipClaim }] }
  * @param {Array} feed Feed events history
+ * @param {Object} matchLiquidations Match liquidations count map
+ * @param {Array} roundHistory List of all settled round objects across the match
  * @returns {Array} List of accolade objects [{ id, title, icon, player, subtitle }]
  */
-export function computeAccolades(standings = [], settled = null, feed = [], matchLiquidations = {}) {
+export function computeAccolades(standings = [], settled = null, feed = [],
+    matchLiquidations = {}, roundHistory = []) {
   if (!standings || standings.length === 0) return [];
 
   const accolades = [];
-  const results = settled?.results ?? [];
 
   // 1. The Oracle: Highest best single round
   const bestRoundPlayer = [...standings].sort((a, b) => (b.bestRound ?? 0) - (a.bestRound ?? 0))[0];
@@ -60,15 +62,42 @@ export function computeAccolades(standings = [], settled = null, feed = [], matc
     }
   }
 
-  // 3. The Mastermind: Caught or successful liar
-  const liar = results.find((r) => r.tipClaim && r.tipClaim !== r.rumorClaimed);
-  if (liar) {
+  /**
+   * 3. The Mastermind: the most persistent liar of the match.
+   *
+   * This used to read the final round only, and to take the first liar in array order —
+   * so a player who lied in every round but the last was invisible, and when several
+   * people lied in the last round the award went to whoever happened to sort first.
+   * Falls back to the single settled round when no history was passed, which is what
+   * keeps the older call shape working.
+   */
+  const rounds = roundHistory.length > 0 ? roundHistory : (settled ? [settled] : []);
+  const liars = new Map();
+  for (const round of rounds) {
+    for (const r of round.results ?? []) {
+      if (r.tipClaim && r.tipClaim !== r.rumorClaimed) {
+        const seen = liars.get(r.playerId) ?? { count: 0, nickname: r.nickname, last: r };
+        liars.set(r.playerId, { count: seen.count + 1, nickname: r.nickname, last: r });
+      }
+    }
+  }
+
+  const totalOf = (playerId) =>
+    standings.find((p) => p.playerId === playerId)?.totalScore ?? 0;
+
+  const topLiar = [...liars.entries()].sort(
+    (a, b) => b[1].count - a[1].count || totalOf(b[0]) - totalOf(a[0]),
+  )[0]?.[1];
+
+  if (topLiar) {
     accolades.push({
       id: "mastermind",
       title: "THE MASTERMIND",
       icon: Drama,
-      player: liar.nickname,
-      subtitle: `Claimed ${liar.tipClaim}, held ${liar.rumorClaimed}`,
+      player: topLiar.nickname,
+      subtitle: rounds.length > 1
+        ? `Lied in ${topLiar.count} of ${rounds.length} rounds`
+        : `Claimed ${topLiar.last.tipClaim}, held ${topLiar.last.rumorClaimed}`,
     });
   }
 

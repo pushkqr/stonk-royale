@@ -1,0 +1,349 @@
+/* --- standings rail ------------------------------------------------------ */
+
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rank {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius);
+  background: var(--void);
+}
+
+.rank-me {
+  outline: 2px solid var(--scream);
+}
+
+.rank-no {
+  font-size: 1.1rem;
+  color: var(--haze);
+}
+
+.rank-num-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+}
+
+.rank-shift {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--data);
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: -0.1rem;
+}
+
+.rank-shift.is-up {
+  color: var(--pump);
+}
+
+.rank-shift.is-down {
+  color: var(--dump);
+}
+
+.rank-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rank-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.rank-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.rank-name .tag,
+.rank-name .badge-suspect {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.rank-scores {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.rank-score {
+  font-size: 0.78rem;
+}
+
+.rank-total {
+  font-size: 0.62rem;
+}
+
+.rank-cash {
+  font-size: 0.72rem;
+}
+
+/* --- the wire ------------------------------------------------------------ */
+
+.wire-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+/* Talk settles against the input it is answered from, the way every chat does — rather than
+   stranding three lines at the top of a tall empty column. Pushing the first item down
+   keeps the list scrollable, which `justify-content: flex-end` would not. */
+.wire-list > li:first-child {
+  margin-top: auto;
+}
+
+.wire-empty {
+  font-style: italic;
+}
+
+.wire-item {
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+.wire-chat {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  line-height: 1.3;
+}
+
+.wire-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 800;
+  color: var(--scream);
+  flex-shrink: 0;
+}
+
+.wire-text {
+  color: var(--paper);
+}
+
+.wire-news {
+  background: var(--scream);
+  color: var(--void-deep);
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.wire-news .wire-text {
+  color: var(--void-deep);
+  font-weight: 800;
+}
+
+.wire-liquidation {
+  background: var(--dump);
+  color: var(--void-deep);
+  font-family: var(--display);
+  font-size: 1rem;
+  text-transform: uppercase;
+  animation: shove 0.3s ease-out both;
+}
+
+.wire-liquidation .wire-text {
+  color: var(--void-deep);
+  font-family: var(--display);
+}
+
+@keyframes shove {
+  from {
+    transform: translateX(-14px);
+    opacity: 0;
+  }
+}
+
+.wire-trade {
+  color: var(--haze);
+  font-family: var(--data);
+  font-size: 0.75rem;
+}
+
+/* Deliberately unlike .wire-news: a headline can be a lie, this never is. Sharing that
+   solid-yellow treatment would teach players to start doubting it the way they doubt a
+   headline, which would be exactly wrong. */
+.wire-flow {
+  border: 2px solid var(--edge);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  color: var(--paper);
+  font-family: var(--data);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.quick {
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--void);
+  color: var(--haze);
+  font-family: var(--data);
+  font-size: 0.66rem;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+.quick:hover:not(:disabled) {
+  color: var(--scream);
+  border-color: var(--scream);
+}
+
+.quick:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.icon-reactions-row {
+  margin-top: -0.1rem;
+}
+
+.quick-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  color: var(--haze);
+  transition: all 0.12s ease;
+}
+
+.quick-icon-btn:hover:not(:disabled) {
+  color: var(--scream);
+  border-color: var(--scream);
+  background: var(--void-wash);
+}
+
+/* Read aloud to invite people, so it needs to be legible at a glance. */
+.room-code {
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  padding-left: 0.18em;
+}
+
+.mobile-dock {
+  display: none;
+}
+
+/* Clipped to the page's top corners rather than floating over them. As free pills they
+   landed on the masthead's rounded corner and read as browser artifacts; as tabs with the
+   content cleared below, they belong to the sheet. */
+.corner-tab {
+  position: fixed;
+  top: 0;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  /* Was 0.25rem/0.6rem at 0.6rem type — a tap target under 24px on a phone and fiddly
+     with a mouse. These are the only always-available controls in a match, so they are
+     worth the pixels. */
+  padding: 0.5rem 0.9rem 0.55rem;
+  border: 2px solid var(--edge);
+  border-top: 0;
+  background: var(--void-deep);
+  color: var(--haze);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: color 0.14s ease, border-color 0.14s ease;
+}
+
+.corner-tab:hover {
+  color: var(--scream);
+  border-color: var(--scream);
+}
+
+.mute {
+  right: 0;
+  border-right: 0;
+  border-radius: 0 0 0 var(--radius);
+}
+
+/* Wide enough for the armed label, always — and the rules tab is positioned from the same
+   value below, so the two cannot drift apart when either label changes.
+
+   Reserved rather than fitted to the content: the tab is a fixed element sitting a few
+   pixels from the rules tab, so growing when armed both collided with it and moved a
+   control under a thumb already travelling toward it. Costs a slightly roomy LEAVE at
+   rest, which is the cheaper of the two. */
+:root {
+  --leave-tab: 6.8rem;
+}
+
+.leave-tab {
+  left: 0;
+  width: var(--leave-tab);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  border-left: 0;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+/* Armed and waiting for the second press. Solid danger fill for unmistakable visibility. */
+.leave-tab.is-armed,
+.leave-tab.is-armed:hover {
+  background: var(--dump);
+  color: var(--void-deep);
+  border-color: var(--dump);
+  font-weight: 700;
+}
+
+.wire-form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.wire-form .field {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+}

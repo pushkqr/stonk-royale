@@ -1,0 +1,671 @@
+/* --- the table (trading screen) ------------------------------------------ */
+
+.table {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  /* No allowance for the corner tabs: they are hidden for the whole TRADING phase, which
+     is the only phase this element exists in. */
+  padding: var(--gap);
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr) minmax(17rem, 21rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "strip strip strip"
+    "left  floor wire";
+}
+
+.strip {
+  grid-area: strip;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--scream);
+  color: var(--void-deep);
+  border-radius: var(--radius);
+}
+
+.strip .eyebrow {
+  color: rgba(27, 10, 40, 0.65);
+}
+
+.strip-ticker {
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.strip-clock {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.strip-clock.is-urgent {
+  color: var(--dump);
+  animation: countbeat 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  transform-origin: center;
+}
+
+@keyframes countbeat {
+  0% {
+    transform: scale(1.16);
+  }
+  45%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+.jolt {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 35%, var(--dump) 140%);
+  animation: jolt 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes jolt {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.strip-me {
+  text-align: right;
+}
+
+.strip-score {
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.strip-score.pump {
+  color: #0c6b3a;
+}
+.strip-score.dump {
+  color: #a81026;
+}
+.strip-score.muted {
+  color: var(--void-deep);
+}
+
+.left-rail {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.rail {
+  flex: 1 1 50%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wire {
+  grid-area: wire;
+  overflow: hidden;
+}
+
+.dossier {
+  flex: 1 1 50%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-y: auto;
+}
+
+.dossier-count {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--scream);
+}
+
+/* Two headlines is the cap in practice, but a long ticker wraps and a resync can repeat
+   one, so the list is bounded rather than trusted. */
+.dossier-news {
+  min-height: 0;
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.dossier-news-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.dossier-headline {
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  background: var(--scream);
+  color: var(--void-deep);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.dossier-quiet {
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.dossier-suspects {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--edge);
+  padding-top: 0.5rem;
+}
+
+.dossier-subhead {
+  margin: 0 0 0.4rem;
+  color: var(--haze);
+  font-size: 0.65rem;
+}
+
+.suspect-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+.suspect-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.suspect-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suspect-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.suspect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-family: var(--data);
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  color: var(--haze);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.suspect-btn.btn-trust.is-active {
+  background: rgba(33, 224, 122, 0.18);
+  border-color: var(--pump);
+  color: var(--pump);
+}
+
+.suspect-btn.btn-sus.is-active {
+  background: rgba(255, 59, 84, 0.18);
+  border-color: var(--dump);
+  color: var(--dump);
+}
+
+.badge-suspect {
+  display: inline-block;
+  font-family: var(--data);
+  font-size: 0.52rem;
+  font-weight: 800;
+  padding: 0.05rem 0.25rem;
+  border-radius: 2px;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.badge-trust {
+  background: rgba(33, 224, 122, 0.15);
+  color: var(--pump);
+  border: 1px solid var(--pump);
+}
+
+.badge-sus {
+  background: rgba(255, 59, 84, 0.15);
+  color: var(--dump);
+  border: 1px solid var(--dump);
+}
+
+.badge-caught {
+  background: var(--dump);
+  color: var(--void-deep);
+  font-weight: 900;
+}
+
+.badge-betrayed {
+  background: #ff8800;
+  color: var(--void-deep);
+  font-weight: 900;
+}
+
+/* On the intermission the wire sits in a centred column instead of a grid rail, so it needs
+   its own width and a ceiling on the backlog — otherwise a busy round pushes the tip card
+   and the countdown off the screen. */
+.wire-talk {
+  width: min(30rem, 100%);
+  overflow: visible;
+}
+
+.wire-talk .wire-list {
+  max-height: 11rem;
+}
+
+.pane-title {
+  font-size: 1.15rem;
+  margin: 0;
+  color: var(--haze);
+}
+
+.floor {
+  grid-area: floor;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.9rem;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.panel.floor.is-surging-pump {
+  border-color: var(--pump);
+  box-shadow: 0 0 16px rgba(33, 224, 122, 0.25), inset 0 0 12px rgba(33, 224, 122, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel.floor.is-surging-dump {
+  border-color: var(--dump);
+  box-shadow: 0 0 16px rgba(255, 59, 84, 0.25), inset 0 0 12px rgba(255, 59, 84, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floor-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+}
+
+.price-now {
+  font-size: clamp(2.4rem, 6vw, 3.8rem);
+  line-height: 1;
+}
+
+.price-move {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* --- in-chart thesis hud ------------------------------------------------- */
+
+.floor-intel-hud {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  font-size: 0.76rem;
+}
+
+.intel-hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.intel-bias-badge {
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: var(--void-deep);
+  color: var(--scream);
+  border: 1px solid var(--edge);
+}
+
+.intel-bias-badge.tone-pump {
+  background: rgba(0, 230, 153, 0.18);
+  color: var(--pump);
+  border: 1px solid rgba(0, 230, 153, 0.4);
+}
+
+.intel-bias-badge.tone-dump {
+  background: rgba(255, 59, 84, 0.18);
+  color: var(--dump);
+  border: 1px solid rgba(255, 59, 84, 0.4);
+}
+
+.intel-bias-badge.tone-muted {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--paper);
+  border: 1px solid var(--edge);
+}
+
+.intel-pill {
+  color: var(--paper);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.intel-label {
+  font-family: var(--display);
+  font-weight: 800;
+  color: var(--scream);
+  letter-spacing: 0.04em;
+  margin-right: 0.25rem;
+}
+
+.intel-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--scream);
+  background: rgba(255, 222, 89, 0.12);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 222, 89, 0.25);
+}
+
+.intel-cross-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  background: var(--void-deep);
+  border: 1px solid var(--edge);
+}
+
+.intel-cross-check.tone-pump {
+  background: rgba(0, 230, 153, 0.12);
+  border-color: rgba(0, 230, 153, 0.3);
+  color: var(--pump);
+}
+
+.intel-cross-check.tone-dump {
+  background: rgba(255, 59, 84, 0.12);
+  border-color: rgba(255, 59, 84, 0.3);
+  color: var(--dump);
+}
+
+.intel-cross-check.tone-scream {
+  background: rgba(255, 222, 89, 0.12);
+  border-color: rgba(255, 222, 89, 0.3);
+  color: var(--scream);
+}
+
+.cross-check-text {
+  font-weight: 600;
+}
+
+/* --- in-chart breaking news banner ---------------------------------------- */
+
+.in-chart-news-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  background: rgba(255, 59, 84, 0.15);
+  border: 1px solid var(--dump);
+  border-radius: var(--radius);
+  box-shadow: 0 0 16px rgba(255, 59, 84, 0.2);
+  animation: newsSlideIn 0.35s ease-out both;
+}
+
+@keyframes newsSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.news-badge {
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--dump);
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+  animation: pulseGlow 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+.news-text {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--paper);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- tip deduction breakdown --------------------------------------------- */
+
+.tip-deduction-card {
+  width: min(30rem, 100%);
+  margin: 0.6rem 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  text-align: left;
+}
+
+.tip-deduction-card.tone-pump {
+  border-color: rgba(0, 230, 153, 0.4);
+  background: rgba(0, 230, 153, 0.07);
+}
+
+.tip-deduction-card.tone-dump {
+  border-color: rgba(255, 59, 84, 0.4);
+  background: rgba(255, 59, 84, 0.07);
+}
+
+.deduction-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.deduction-tag {
+  font-family: var(--display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--scream);
+}
+
+.deduction-score {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.deduction-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--paper);
+  line-height: 1.35;
+}
+
+/* --- intermission tabs --------------------------------------------------- */
+
+.intermission-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+  width: 100%;
+  max-width: 32rem;
+}
+
+.btn-tab {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius);
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  color: var(--haze);
+  font-family: var(--display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-tab:hover {
+  border-color: var(--scream);
+  color: var(--scream);
+}
+
+.btn-tab.is-active {
+  background: var(--scream);
+  border-color: var(--scream);
+  color: var(--void-deep);
+  font-weight: 800;
+}
+
+.chart-wrap {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 4.5rem;
+  width: 100%;
+}
+
+/* --- Floating PnL Floaters --- */
+.pnl-floaters-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.pnl-floater {
+  position: absolute;
+  right: 1.5rem;
+  top: 32%;
+  transform: translateY(0);
+  pointer-events: none;
+  z-index: 20;
+  animation: pnl-float-up 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  font-family: var(--data);
+  font-weight: 800;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.pnl-floater-sub {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.pnl-floater.tone-pump {
+  background: var(--void-deep);
+  border: 2px solid var(--pump);
+  color: var(--pump);
+  box-shadow: 0 0 18px rgba(33, 224, 122, 0.4);
+}
+
+.pnl-floater.tone-dump {
+  background: var(--void-deep);
+  border: 2px solid var(--dump);
+  color: var(--dump);
+  box-shadow: 0 0 18px rgba(255, 59, 84, 0.4);
+}
+
+.pnl-floater.tone-rekt {
+  background: var(--dump);
+  border: 2px solid var(--paper);
+  color: var(--void-deep);
+  box-shadow: 0 0 24px rgba(255, 59, 84, 0.65);
+  font-size: 1.1rem;
+}
+
+@keyframes pnl-float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.85);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  30% {
+    transform: translateY(-4px) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(-24px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-48px) scale(0.92);
+  }
+}

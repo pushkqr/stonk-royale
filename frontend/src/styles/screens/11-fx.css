@@ -1,0 +1,41 @@
+/* --- celebratory confetti & particle fx ---------------------------------- */
+
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* --- liquidation shockwaves --------------------------------------------- */
+
+.liquidation-flash-shake {
+  animation: liqScreenShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes liqScreenShake {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  15%, 45%, 75% {
+    transform: translate3d(-6px, 3px, 0);
+  }
+  30%, 60%, 90% {
+    transform: translate3d(6px, -3px, 0);
+  }
+}
+
+.liquidation-room-ping {
+  animation: roomPingBorder 0.6s ease-out both;
+}
+
+@keyframes roomPingBorder {
+  0% {
+    box-shadow: inset 0 0 0 3px var(--dump), 0 0 20px rgba(255, 59, 84, 0.4);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 transparent, 0 0 0 transparent;
+  }
+}

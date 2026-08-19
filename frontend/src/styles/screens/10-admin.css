@@ -1,0 +1,183 @@
+/* --- back office --- */
+
+.admin {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--gap);
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: calc(var(--gap) + 1.4rem) var(--gap) var(--gap);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--gap);
+}
+
+.admin-figure {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.8rem 0.9rem;
+  border: 2px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--void-deep);
+}
+
+.admin-value {
+  font-size: 2rem;
+  color: var(--scream);
+}
+
+.admin-rooms {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-rooms li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.9rem;
+  padding: 0.45rem 0.6rem;
+  border-left: 3px solid var(--edge);
+  background: rgb(0 0 0 / 0.18);
+  font-size: 0.82rem;
+}
+
+/* --- admin gauges & inspector -------------------------------------------- */
+
+.admin-gauges {
+  background: var(--void-wash);
+}
+
+.admin-gauge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.8rem;
+}
+
+.admin-gauge-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.8rem;
+  background: var(--void-deep);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+}
+
+.admin-gauge-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.admin-gauge-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.admin-gauge-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.admin-stat-num {
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--scream);
+}
+
+.admin-gauge-val {
+  font-size: 0.72rem;
+  color: var(--haze);
+}
+
+.admin-room-row {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-room-row:hover {
+  background: rgba(255, 222, 89, 0.08);
+  border-left-color: var(--scream);
+}
+
+.admin-room-row.is-selected {
+  background: rgba(255, 222, 89, 0.14);
+  border-left-color: var(--scream);
+}
+
+.admin-room-drawer {
+  margin-top: 0.8rem;
+  border-top: 2px solid var(--edge);
+  padding-top: 0.8rem;
+}
+
+.admin-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-inspector-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.admin-inspector-table th {
+  padding: 0.4rem 0.6rem;
+  background: var(--void-wash);
+  color: var(--haze);
+  font-size: 0.7rem;
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--edge);
+}
+
+.admin-inspector-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.status-dot.is-online {
+  background: var(--pump);
+  box-shadow: 0 0 6px var(--pump);
+}
+
+.status-dot.is-offline {
+  background: var(--haze);
+  opacity: 0.5;
+}
+
+.btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}

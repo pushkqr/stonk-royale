@@ -1,0 +1,81 @@
+/* --- lobby --------------------------------------------------------------- */
+
+.lobby-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.lobby-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--void);
+  border-radius: var(--radius);
+}
+
+/* Held, not lost — the seat comes back if they do, and says so meanwhile. */
+.lobby-player.is-away,
+.rank.is-away {
+  opacity: 0.45;
+}
+
+.lobby-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.lobby-kick {
+  padding: 0.15rem 0.45rem;
+  border: 2px solid var(--edge);
+  border-radius: 4px;
+  background: none;
+  color: var(--haze);
+  font-family: var(--data);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.14s ease, border-color 0.14s ease;
+}
+
+.lobby-kick:hover {
+  color: var(--dump);
+  border-color: var(--dump);
+}
+
+.tag {
+  font-family: var(--data);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  background: var(--void-lift);
+  color: var(--haze);
+  white-space: nowrap;
+}
+
+.tag-scream {
+  background: var(--scream);
+  color: var(--void-deep);
+}
+.tag-pump {
+  background: var(--pump);
+  color: var(--void-deep);
+}
+.tag-dump {
+  background: var(--dump);
+  color: var(--void-deep);
+}
+.tag-bot {
+  background: var(--void-wash);
+  color: var(--ghost);
+  font-size: 0.55rem;
+  padding: 0.1rem 0.3rem;
+  letter-spacing: 0.08em;
+}

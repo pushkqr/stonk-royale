@@ -47,6 +47,12 @@ export function MatchProvider({ session, children }) {
   const [rumor, setRumor] = useState(null);
   const [lastRumor, setLastRumor] = useState(null);
   const [settled, setSettled] = useState(null);
+  /**
+   * Every round's settled result, in order. `settled` alone is replaced each round, which
+   * is why the Mastermind accolade could only ever see the final one — somebody who lied
+   * beautifully in rounds one to four and told the truth in round five won nothing.
+   */
+  const [roundHistory, setRoundHistory] = useState([]);
   const [standings, setStandings] = useState([]);
   const [matchLiquidations, setMatchLiquidations] = useState({});
   const [lobby, setLobby] = useState(null);
@@ -128,6 +134,7 @@ export function MatchProvider({ session, children }) {
           settleRef.current = null;
           readyRef.current = 0;
           setSettled(null);
+          setRoundHistory([]);
           setLastRumor(null);
           setRumor(null);
           setSeries({ points: [], count: 0 });
@@ -194,6 +201,8 @@ export function MatchProvider({ session, children }) {
       on(topic("settled"), (next) => {
         settleRef.current = next;
         setSettled(next);
+        setRoundHistory((prev) =>
+          prev.some((r) => r.roundIndex === next.roundIndex) ? prev : [...prev, next]);
         const mine = next.results.find((r) => r.playerId === playerId);
         sound.settle(mine?.roundScore ?? 0);
         if (rumorRef.current) {
@@ -377,6 +386,7 @@ export function MatchProvider({ session, children }) {
       rumor,
       lastRumor,
       settled,
+      roundHistory,
       standings,
       matchLiquidations,
       lobby,
@@ -399,7 +409,7 @@ export function MatchProvider({ session, children }) {
       suspects,
       toggleSuspect,
     }),
-    [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, matchLiquidations, lobby,
+    [session, connected, phase, board, feed, rumor, lastRumor, settled, roundHistory, standings, matchLiquidations, lobby,
       error, me, serverNow, dismissError, quit, readyState, ready, start, rematch, open,
       close, say, kick, addBot, configure, setAvatar, suspects, toggleSuspect],
   );

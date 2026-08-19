@@ -1,0 +1,221 @@
+/* --- results ------------------------------------------------------------- */
+
+.podium {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.podium-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--void);
+  border-radius: var(--radius);
+}
+
+.podium-row.is-me {
+  outline: 2px solid var(--scream);
+}
+
+.podium-row:first-child {
+  background: var(--scream);
+  color: var(--void-deep);
+}
+
+.podium-row:first-child .eyebrow {
+  color: rgba(27, 10, 40, 0.6);
+}
+
+.podium-row:first-child .podium-total.pump {
+  color: #0c6b3a;
+}
+.podium-row:first-child .podium-total.dump {
+  color: #a81026;
+}
+/* A flat round scores as neither, and the default haze is unreadable on yellow. */
+.podium-row:first-child .podium-total.muted {
+  color: var(--void-deep);
+}
+
+.podium-rank {
+  font-size: 1.6rem;
+  min-width: 1.5rem;
+}
+
+.podium-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.podium-scores {
+  text-align: right;
+}
+
+.podium-total {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+/* --- match accolades ------------------------------------------------------ */
+
+.accolades-section {
+  width: min(30rem, 100%);
+  margin: 0.4rem 0;
+}
+
+.accolades-title {
+  text-align: center;
+  color: var(--haze);
+  margin-bottom: 0.5rem;
+}
+
+.accolades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.accolade-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.accolade-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--void-wash);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  transition: border-color 0.2s ease;
+}
+
+.accolade-card:hover {
+  border-color: var(--scream);
+}
+
+.accolade-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--void);
+  border: 1px solid var(--edge);
+  color: var(--scream);
+  flex-shrink: 0;
+}
+
+.accolade-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.accolade-role {
+  font-size: 0.58rem;
+  color: var(--scream);
+  letter-spacing: 0.06em;
+}
+
+.accolade-player {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accolade-sub {
+  font-size: 0.65rem;
+  margin-top: 0.1rem;
+}
+
+/* --- rules panel ---------------------------------------------------------- */
+
+.rules-block + .rules-block {
+  margin-top: 1.1rem;
+}
+
+.rules-head {
+  font-size: 0.95rem;
+  color: var(--scream);
+  margin-bottom: 0.4rem;
+}
+
+.rules-list,
+.rules-regimes {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.1rem;
+}
+
+.rules-regimes {
+  padding-left: 0;
+  list-style: none;
+}
+
+.rules-regimes li {
+  display: grid;
+  grid-template-columns: 3rem 4.6rem 1fr;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rules-spark {
+  width: 3rem;
+  height: 1.4rem;
+  overflow: visible;
+}
+
+.rules-spark polyline {
+  fill: none;
+  stroke: var(--scream);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.rules-tab {
+  left: 0;
+  border-left: 0;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+.leave-tab + .rules-tab,
+.leave-tab ~ .rules-tab {
+  left: calc(var(--leave-tab) + 0.4rem);
+  border-left: 2px solid var(--edge);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.rules-scroll {
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.rules-end {
+  height: 1px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--gap);
+  background: rgb(0 0 0 / 0.72);
+}
+
+.overlay-sheet {
+  display: grid;
+  gap: 0.8rem;
+  width: min(34rem, 100%);
+}

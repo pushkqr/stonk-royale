@@ -59,4 +59,32 @@ describe("accolades.js", () => {
   it("handles empty standings gracefully", () => {
     expect(computeAccolades([], null, [])).toEqual([]);
   });
+
+  it("gives the Mastermind to the match's most persistent liar, not the last round's", () => {
+    // Alice lies in rounds 1 and 2 then goes straight; Bob lies only in the final round.
+    const history = [
+      {
+        roundIndex: 0,
+        results: [
+          { playerId: "p1", nickname: "Alice", rumorClaimed: "PUMP", tipClaim: "DUMP" },
+          { playerId: "p2", nickname: "Bob", rumorClaimed: "PUMP", tipClaim: "PUMP" },
+        ],
+      },
+      {
+        roundIndex: 1,
+        results: [
+          { playerId: "p1", nickname: "Alice", rumorClaimed: "DUMP", tipClaim: "PUMP" },
+          { playerId: "p2", nickname: "Bob", rumorClaimed: "PUMP", tipClaim: "PUMP" },
+        ],
+      },
+      settled,
+    ];
+
+    const awards = computeAccolades(standings, settled, feed, {}, history);
+    const mastermind = awards.find((a) => a.id === "mastermind");
+
+    expect(mastermind).toBeDefined();
+    expect(mastermind.player).toBe("Alice");
+    expect(mastermind.subtitle).toBe("Lied in 2 of 3 rounds");
+  });
 });

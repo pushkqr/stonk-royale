@@ -1,0 +1,554 @@
+/* --- compact height screens (laptops & short viewports) ------------------- */
+
+@media (min-width: 901px) and (max-height: 820px) {
+  .table {
+    padding: var(--gap);
+    gap: 0.5rem;
+  }
+
+  .strip {
+    padding: 0.35rem 0.8rem;
+  }
+
+  .strip-ticker,
+  .strip-score {
+    font-size: 1.35rem;
+  }
+
+  .strip-clock {
+    font-size: 1.8rem;
+  }
+
+  .price-now {
+    font-size: clamp(1.8rem, 3.8vh, 2.6rem);
+  }
+
+  .floor {
+    gap: 0.35rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .floor-intel-hud {
+    padding: 0.25rem 0.5rem;
+    gap: 0.2rem;
+    font-size: 0.7rem;
+  }
+
+  .intel-bias-badge {
+    font-size: 0.62rem;
+    padding: 0.1rem 0.35rem;
+  }
+
+  .in-chart-news-banner {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.72rem;
+    gap: 0.4rem;
+  }
+
+  /* The font-size above only ever applied to the badge. .news-text sets its own size on
+     the element, and a direct declaration beats an inherited one no matter which media
+     query the inherited value came from — so the headline stayed at 0.82rem and this
+     query's whole reason for existing (claw back vertical space in a short window) missed
+     the one element taking up the most of it. */
+  .news-text {
+    font-size: 0.72rem;
+  }
+
+  .deck-presets {
+    gap: 0.3rem;
+  }
+
+  .preset-btn {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.62rem;
+  }
+
+  .deck-dials {
+    gap: 0.35rem;
+  }
+
+  .dial b {
+    font-size: 0.72rem;
+  }
+
+  .deck-preview {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.62rem;
+  }
+
+  .deck-sides .btn {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.95rem;
+  }
+
+  .deck-open-header {
+    padding: 0.35rem 0.6rem;
+  }
+
+  .deck-open-side {
+    font-size: 1.15rem;
+  }
+
+  .deck-pnl {
+    font-size: 1.25rem;
+  }
+
+  .deck-close {
+    padding: 0.55rem;
+  }
+}
+
+/* --- narrow screens ------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .table {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: var(--gap) var(--gap) 0;
+    gap: 0.45rem;
+  }
+
+  .table > .strip {
+    flex: 0 0 auto;
+  }
+
+  /* Desktop grid areas reset on mobile flex */
+  .table > .left-rail,
+  .table > .floor,
+  .table > .wire {
+    grid-area: auto;
+  }
+
+  /* --- Tab Viewport Routing (Fixed 100dvh, zero page scroll) --- */
+  .table.tab-trade > .left-rail,
+  .table.tab-trade > .wire {
+    display: none !important;
+  }
+  .table.tab-trade > .floor {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 0.35rem;
+  }
+
+  .table.tab-dossier > .floor,
+  .table.tab-dossier > .wire {
+    display: none !important;
+  }
+  .table.tab-dossier > .left-rail {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .table.tab-dossier > .left-rail > .rail {
+    display: none !important;
+  }
+  .table.tab-dossier > .left-rail > .dossier {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .table.tab-standings > .floor,
+  .table.tab-standings > .wire {
+    display: none !important;
+  }
+  .table.tab-standings > .left-rail {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .table.tab-standings > .left-rail > .dossier {
+    display: none !important;
+  }
+  .table.tab-standings > .left-rail > .rail {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .table.tab-wire > .floor,
+  .table.tab-wire > .left-rail {
+    display: none !important;
+  }
+  .table.tab-wire > .wire {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* The height that used to be here never applied: the base rule sets flex-basis: 0, which
+     wins over height in a column flex container, so the chart collapsed to its 4.5rem
+     min-height and the price — the thing the whole game is about — ran on 7% of a phone
+     screen, smaller than the controls and smaller than the static text above it. Resetting
+     the basis to auto is what makes a real height possible at all. The floor is only a
+     floor: with the deck's auto margin zeroed below, the chart takes whatever the rest of
+     the column leaves, so it is usually well above this. 190px is the point where the
+     liquidation markers and their nicknames stop being legible, and it is low enough that
+     the Long/Short buttons still fit once a browser URL bar takes its ~59px. */
+  .chart-wrap {
+    flex: 1 1 auto;
+    min-height: 190px;
+  }
+
+  /* The headline is one of the few things a play-tester reliably reads, and on a phone it
+     was being cut off mid-sentence. The badge is flex-shrink: 0 and eats ~110px of a
+     ~360px row, leaving ~250px for a headline that needs ~330px at the base size — so
+     nearly every headline in NewsCopy.java clipped, not just the one that got reported.
+
+     Wrapping to two lines is the fix, but a banner that changes height would shove the
+     chart below it every time news lands mid-round, which is the same free-space fight
+     that starved the chart before. So the height is pinned rather than fluid: min-height
+     reserves two lines whether the headline needs them or not, and line-clamp caps it at
+     two so a long one can never take a third. Short headlines sit centred in the reserved
+     box. The chart pays a fixed ~13px once instead of an unpredictable jolt on every news
+     beat. flex: 0 0 auto keeps the banner from being squeezed back under that reserved
+     height when the column is tight, which would re-introduce the clipping it fixes. */
+  .in-chart-news-banner {
+    flex: 0 0 auto;
+    padding: 0.35rem 0.6rem;
+    /* two 0.74rem lines at 1.3, plus vertical padding, plus both borders (border-box) */
+    min-height: calc(2 * 0.74rem * 1.3 + 0.7rem + 2px);
+  }
+
+  .news-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.74rem;
+    line-height: 1.3;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  /* The deck was 29% of the phone screen for controls most players set once and then only
+     read. Everything here is spacing: presets, both dials, the risk line, the hint and both
+     buttons all stay on screen, because play-testing found players do not understand
+     leverage yet and hiding the dial would make that worse rather than better. */
+  .deck {
+    gap: 0.3rem;
+    /* The base rule pushes the deck down with margin-top: auto. An auto margin swallows
+       free space *before* flex-grow ever sees it, so the chart above was never actually
+       growing — it sat on its min-height while the gap above the deck took everything
+       else. Zeroed here so the chart gets the surplus instead, which is what lets this
+       column re-fit itself when the browser's URL bar slides in and out. */
+    margin-top: 0;
+  }
+
+  /* "MODERATE RISK" is two words where "HIGH RISK" fitted on one line, so this row silently
+     doubled in height on some leverage settings and pushed the Long/Short buttons under the
+     dock. The tag no longer wraps, and the sentence beside it gets the smaller type it needs
+     to stay beside it. */
+  .deck-preview {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.62rem;
+  }
+
+  .risk-tag {
+    white-space: nowrap;
+    font-size: 0.58rem;
+  }
+
+  .deck-dials {
+    gap: 0.35rem;
+  }
+
+  .preset-btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.68rem;
+  }
+
+  /* Still the biggest tap targets on the screen and still the primary action — just no
+     longer 155px tall apiece. */
+  .deck-sides .btn {
+    padding: 0.6rem 0.5rem;
+  }
+
+  /* The tip is now the only thing in this row — the badges that used to squeeze it onto
+     about fifteen characters and an ellipsis moved to the Intel tab. The wrap stays because
+     a long tip still needs to run onto a second line rather than be clipped. */
+  .intel-hud-top {
+    flex-wrap: wrap;
+    gap: 0.25rem 0.45rem;
+  }
+
+  .intel-pill {
+    order: 3;
+    flex: 1 0 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+  }
+
+  .left-rail {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .rail,
+  .dossier {
+    flex: 1 1 auto;
+    height: 100%;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .wire-list {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .rank-list {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .dossier-news {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* --- Mobile Tactile Dock Bar --- */
+  .mobile-dock {
+    display: flex;
+    flex: 0 0 calc(3.4rem + env(safe-area-inset-bottom, 0));
+    height: calc(3.4rem + env(safe-area-inset-bottom, 0));
+    background: var(--void-deep);
+    border-top: 1px solid var(--edge);
+    margin-top: auto;
+    margin-left: calc(-1 * var(--gap));
+    margin-right: calc(-1 * var(--gap));
+    margin-bottom: 0;
+    padding: 0 0.5rem env(safe-area-inset-bottom, 0);
+    z-index: 100;
+    align-items: stretch;
+    justify-content: space-around;
+    box-sizing: border-box;
+  }
+
+  .mobile-dock-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    background: transparent;
+    border: none;
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--haze);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.05s ease, background 0.05s ease;
+    border-top: 2px solid transparent;
+  }
+
+  .mobile-dock-btn:hover {
+    color: var(--paper);
+  }
+
+  .mobile-dock-btn.is-active {
+    color: var(--scream);
+    background: var(--void-wash);
+    border-top: 2px solid var(--scream);
+  }
+
+  .dock-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dock-badge-dot {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--scream);
+    box-shadow: 0 0 6px var(--scream);
+  }
+}
+
+@media (max-width: 560px) {
+  .deck-dials {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Touch, not hover. A finger needs a bigger target than a cursor does, and these
+   three are the controls a phone player actually reaches for mid-round. */
+@media (pointer: coarse) {
+  .quick {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  :root {
+    --leave-tab: 6.2rem;
+  }
+
+  .corner-tab {
+    padding: 0.5rem 0.8rem 0.55rem;
+    font-size: 0.66rem;
+  }
+
+  .rules-tab {
+    left: 0;
+  }
+
+  .leave-tab + .rules-tab,
+  .leave-tab ~ .rules-tab {
+    left: calc(var(--leave-tab) + 0.35rem);
+  }
+
+  .center-page {
+    padding-top: calc(var(--gap) + 3rem);
+    padding-bottom: 2rem;
+  }
+
+  input[type="range"] {
+    height: 1.9rem;
+  }
+}
+
+/* Wraps whichever screen the phase currently is, so a change fades in rather than cutting.
+   Full height because .table and .center-page both measure against their parent.
+
+   Opacity and nothing else, deliberately: a transform here would make this element the
+   containing block for the fixed-position .jolt overlay inside Trading, and its inset:0
+   would quietly stop meaning the viewport. */
+.phase-swap {
+  height: 100%;
+  animation: phase-in 0.3s ease-out both;
+}
+
+@keyframes phase-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Nothing in this game conveys meaning through motion alone, so honouring the preference
+   costs nothing. The countdown's infinite pulse is the one most worth stopping. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* The briefing is the first thing a new player ever sees, so it opens with the rag's
+   nameplate rather than a bare panel. The rules themselves stay on the dark sheet: they
+   are also rendered by the corner tab over a live round, and one set of colours has to
+   work in both places. */
+.briefing-plate {
+  position: relative;
+  z-index: 1;
+  width: min(30rem, 100%);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.5rem 1rem 0.55rem;
+  background: var(--paper);
+  color: #1a1420;
+  border-radius: 2px;
+  box-shadow: 0 10px 0 -4px rgba(0, 0, 0, 0.3), 0 16px 30px rgba(0, 0, 0, 0.4);
+  animation: deal 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.briefing-plate-name {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.briefing-plate-sub {
+  font-family: var(--data);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.62;
+}
+
+/* Smaller than a hero verdict: this screen has a tall panel under it and has to survive
+   a short phone without pushing the Ready button below the fold. */
+.briefing-title {
+  font-size: clamp(1.7rem, 5.2vw, 2.6rem);
+  margin: 0 0 0.45rem;
+}
+
+.briefing-waiting {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.ready-pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.34rem;
+}
+
+.ready-pip {
+  width: 0.62rem;
+  height: 0.62rem;
+  border: 2px solid var(--edge);
+  border-radius: 50%;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.ready-pip.is-in {
+  background: var(--scream);
+  border-color: var(--scream);
+}
+
+/* Available to anything that needs to say a number out loud without printing it twice. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
