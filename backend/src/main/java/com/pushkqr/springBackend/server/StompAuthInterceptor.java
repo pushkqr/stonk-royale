@@ -28,7 +28,7 @@ public class StompAuthInterceptor implements ChannelInterceptor {
      * reads. It is what decides whether the client throws its stored seat away and starts
      * over or keeps retrying a token that will never work again — which makes rewording
      * this a functional change, not a cosmetic one. Pinned by a test here and by a second
-     * one in frontend/src/lib/stompError.js, both spelling it out in full.
+     * one in frontend/src/test/stompError.test.js, both spelling it out in full.
      */
     static final String SEAT_EXPIRED = "SEAT_EXPIRED";
 
