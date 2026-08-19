@@ -3,6 +3,7 @@ import { usePrice } from "../state/MatchProvider";
 import { telemetry } from "../lib/telemetry";
 import { unrealisedPnl } from "../lib/pnl";
 import { signedMoney } from "../lib/format";
+import { advance, createClock, sampleAt, strideFor } from "../lib/chartClock";
 
 const PAD_RIGHT = 54;
 const PAD_Y = 14;
@@ -28,7 +29,7 @@ function colors() {
 }
 
 /**
- * Draws one frame with continuous critically-damped exponential smoothing and direct canvas paths.
+ * Draws one frame with continuous wall-clock playhead interpolation and direct canvas paths.
  * Returns true when settled and parked.
  */
 function draw(canvas, size, state) {
@@ -91,38 +92,20 @@ function draw(canvas, size, state) {
   min -= pad;
   max += pad;
 
-  const elapsed = points[count - 1]?.t ?? 0;
-  const span = Math.max(elapsed, roundMillis * 0.12);
+  const now = performance.now();
+  const frameMs = state.lastFrameTime ? now - state.lastFrameTime : 16.67;
+  state.lastFrameTime = now;
+
+  const newestT = points[count - 1]?.t ?? 0;
+  const playhead = advance(state.clock, newestT, frameMs);
+  const head = sampleAt(points, count, playhead);
+
+  const span = Math.max(playhead, roundMillis * 0.12);
 
   const x = (t) => (t / span) * plotW;
   const y = (p) => PAD_Y + plotH - ((p - min) / (max - min)) * plotH;
 
-  // Continuous framerate-independent exponential smoothing (lambda ~ 18 gives snappy responsiveness)
-  const now = performance.now();
-  const dt = Math.min(0.1, Math.max(0.001, (now - (state.lastFrameTime || now)) / 1000));
-  state.lastFrameTime = now;
-
-  const target = points[count - 1];
-  const targetP = target.p;
-  const targetT = target.t;
-
-  if (state.smoothP == null) {
-    state.smoothP = targetP;
-    state.smoothT = targetT;
-  } else {
-    const lambda = 18 - 5 * chaos;
-    const factor = 1 - Math.exp(-lambda * dt);
-    state.smoothP += (targetP - state.smoothP) * factor;
-    state.smoothT += (targetT - state.smoothT) * factor;
-  }
-
-  const head = {
-    t: state.smoothT,
-    p: state.smoothP,
-  };
-
-  const isSettled =
-    Math.abs(state.smoothP - targetP) < 0.001 && Math.abs(state.smoothT - targetT) < 0.5;
+  const isSettled = playhead >= newestT;
 
   const lineColor = (head.p ?? startPrice) >= startPrice ? paint.pump : paint.dump;
 
@@ -168,11 +151,11 @@ function draw(canvas, size, state) {
       state.gradientH = plotH;
     }
 
-    const step = count > 240 ? Math.ceil(count / 200) : 1;
+    const step = strideFor(count);
 
     ctx.beginPath();
     ctx.moveTo(x(points[0].t), PAD_Y + plotH);
-    for (let i = 0; i < count - 1; i += step) {
+    for (let i = 0; i <= head.index; i += step) {
       ctx.lineTo(x(points[i].t), y(points[i].p));
     }
     ctx.lineTo(x(head.t), y(head.p));
@@ -184,7 +167,7 @@ function draw(canvas, size, state) {
     // 2. Stroke main price line
     ctx.beginPath();
     ctx.moveTo(x(points[0].t), y(points[0].p));
-    for (let i = step; i < count - 1; i += step) {
+    for (let i = step; i <= head.index; i += step) {
       ctx.lineTo(x(points[i].t), y(points[i].p));
     }
     ctx.lineTo(x(head.t), y(head.p));
@@ -248,7 +231,7 @@ function draw(canvas, size, state) {
     ctx.save();
     for (let i = 0; i < liquidations.length; i += 1) {
       const m = liquidations[i];
-      if (m.t > elapsed) continue;
+      if (m.t > playhead) continue;
       const mx = x(m.t);
       const my = y(m.p);
 
@@ -310,8 +293,7 @@ function PriceChart({
     liquidations,
     volatility,
     impactMultiplier,
-    smoothP: null,
-    smoothT: null,
+    clock: createClock(),
     lastFrameTime: 0,
   });
   const sizeRef = useRef(size);
@@ -321,6 +303,11 @@ function PriceChart({
   const start = useCallback(() => {
     if (runningRef.current) return;
     runningRef.current = true;
+    // Zeroed on every start, not just the first. The loop parks when it settles and is woken
+    // again by the next sample, and a stale timestamp across that gap makes the first frame
+    // back believe a tenth of a second passed — which used to land as a jump exactly when the
+    // chart was supposed to be picking up smoothly.
+    liveRef.current.lastFrameTime = 0;
     const loop = () => {
       telemetry.frame(liveRef.current.series?.count ?? 0);
       if (draw(canvasRef.current, sizeRef.current, liveRef.current)) {

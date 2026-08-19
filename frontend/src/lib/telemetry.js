@@ -31,10 +31,10 @@ let refreshMs = 0;
 /**
  * Times a short burst of raw animation frames to learn the display's interval.
  *
- * Deliberately not derived from the chart's own frame deltas: that loop is capped at
- * MIN_FRAME_MS, so its shortest frame is the cap rather than the panel. Without this the
- * median is unreadable — 16.7ms means "perfect" on a 60Hz screen and "dropping half its
- * frames" on a 120Hz one, and after the cap every machine reports it regardless.
+ * Deliberately not derived from the chart's own frame deltas: the chart loop parks when
+ * settled, so its timing reflects match activity rather than the display alone. Without
+ * this the median is unreadable — 16.7ms means "perfect" on a 60Hz screen and "dropping half
+ * its frames" on a 120Hz one.
  */
 function probeRefresh() {
   let seen = 0;
@@ -51,21 +51,26 @@ function probeRefresh() {
   requestAnimationFrame(step);
 }
 
-const frames = [];
+const frames = new Float64Array(MAX_SAMPLES);
+let frameCount = 0;
+let writeIndex = 0;
 let lastFrameAt = 0;
 let context = null;
 let timer = null;
 
 function flush() {
-  if (frames.length < 10 || !context) {
-    frames.length = 0;
+  const count = Math.min(frameCount, MAX_SAMPLES);
+  if (count < 10 || !context) {
+    frameCount = 0;
+    writeIndex = 0;
     return;
   }
 
-  const sorted = [...frames].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-  const worst = sorted[sorted.length - 1];
-  const longFrames = sorted.filter((ms) => ms > LONG_FRAME_MS).length;
+  const samples = Array.from(frames.subarray(0, count));
+  samples.sort((a, b) => a - b);
+  const median = samples[Math.floor(samples.length / 2)];
+  const worst = samples[samples.length - 1];
+  const longFrames = samples.filter((ms) => ms > LONG_FRAME_MS).length;
 
   reportTelemetry({
     matchCode: context.matchCode,
@@ -80,7 +85,8 @@ function flush() {
     points: context.points,
   });
 
-  frames.length = 0;
+  frameCount = 0;
+  writeIndex = 0;
 }
 
 export const telemetry = {
@@ -91,8 +97,9 @@ export const telemetry = {
       const delta = now - lastFrameAt;
       // A tab that was hidden produces one enormous gap that is not a stall.
       if (delta < 2000) {
-        if (frames.length >= MAX_SAMPLES) frames.shift();
-        frames.push(delta);
+        frames[writeIndex] = delta;
+        writeIndex = (writeIndex + 1) % MAX_SAMPLES;
+        frameCount += 1;
       }
       if (context) context.points = points;
     }
@@ -111,7 +118,8 @@ export const telemetry = {
     clearInterval(timer);
     timer = null;
     context = null;
-    frames.length = 0;
+    frameCount = 0;
+    writeIndex = 0;
     lastFrameAt = 0;
     refreshMs = 0;
   },
