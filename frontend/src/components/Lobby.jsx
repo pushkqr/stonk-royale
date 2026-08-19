@@ -5,14 +5,13 @@ import MatchSettings from "./MatchSettings";
 import { DEFAULTS } from "../lib/matchSettings";
 import Avatar from "./Avatar";
 import AvatarPicker from "./AvatarPicker";
-import { avatarOf, getMyAvatar } from "../lib/avatars";
+import { avatarOf } from "../lib/avatars";
 
 export default function Lobby() {
   const { lobby, session, start, kick, addBot, configure, setAvatar } = useMatch();
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const [, setMyAvatarState] = useState(() => getMyAvatar());
   const [advanced, setAdvanced] = useState(false);
   const [draft, setDraft] = useState(DEFAULTS);
 
@@ -200,7 +199,6 @@ export default function Lobby() {
       {showPicker && (
         <AvatarPicker
           onSelect={(id) => {
-            setMyAvatarState(id);
             setAvatar(id);
             setShowPicker(false);
           }}

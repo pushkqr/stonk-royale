@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
 import { useCountdown } from "../lib/useCountdown";
@@ -11,8 +11,14 @@ import Wire from "./Wire";
 const HOLD_ON_REVEAL_MS = 10000;
 
 export default function Intermission() {
-  const { phase, rumor, lastRumor, settled, standings, session, serverNow, feed, say, suspects } =
-    useMatch();
+  const { phase, rumor, lastRumor, settled, standings, session, serverNow, feed, say, suspects,
+    lobby } = useMatch();
+
+  // Same reason as on the trading screen: Wire is memoised and must not read context itself.
+  const avatars = useMemo(
+    () => new Map((lobby?.players ?? []).map((p) => [p.playerId, p])),
+    [lobby],
+  );
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
   // Two beats: what just happened to you, then what's coming next. Without the pause the
@@ -137,7 +143,8 @@ export default function Intermission() {
 
       {/* Outside the beat switch on purpose: it stays mounted across the reveal, so nobody
           loses a half-typed accusation the moment the ledger names them. */}
-      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} className="wire-talk" />
+      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} avatars={avatars}
+        className="wire-talk" />
     </main>
   );
 }

@@ -9,9 +9,11 @@ import {
   Gem,
   Drama,
 } from "lucide-react";
-import { useMatch } from "../state/MatchProvider";
 import Avatar from "./Avatar";
 import { avatarOf, getMood } from "../lib/avatars";
+
+/** Stable identity, so the default never breaks the memo below. */
+const NO_AVATARS = new Map();
 
 /**
  * The speech acts that matter: claim a tip, state a position, accuse.
@@ -49,9 +51,14 @@ const QUICK_ICONS = [
  * Memoised because it hangs off the trading screen, which re-renders on every price tick —
  * and re-rendering a text input the player may be mid-sentence in, ten times a second, to
  * show a feed that has not changed, is pure cost.
+ *
+ * `avatars` arrives as a prop, and must keep arriving as one. Reading it from the match
+ * context here would look tidier and would quietly undo the memo above: context is not
+ * subscribed per field, so any consumer re-renders whenever the context value changes —
+ * and it changes on every board broadcast, twice a second. The screens that render this
+ * one already re-render then anyway, so the lookup is built there and passed down.
  */
-function Wire({ feed, onSay, disabled, suspects = {}, className = "" }) {
-  const { board = [] } = useMatch() || {};
+function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, className = "" }) {
   const [draft, setDraft] = useState("");
   const listRef = useRef(null);
 
@@ -87,7 +94,7 @@ function Wire({ feed, onSay, disabled, suspects = {}, className = "" }) {
               <>
                 <span className="wire-name">
                   <Avatar
-                    archetypeId={avatarOf(board.find((p) => p.playerId === item.playerId))}
+                    archetypeId={avatarOf(avatars.get(item.playerId))}
                     mood={getMood({ wasLie: suspects[item.playerId] === "SUS" })}
                     size={18}
                   />

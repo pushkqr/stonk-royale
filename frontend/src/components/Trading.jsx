@@ -122,6 +122,14 @@ export default function Trading() {
     }
   }, [feed]);
 
+  // Built here rather than inside Wire so Wire can stay memoised — see the note on it.
+  // Keyed off the lobby, not the board: both carry the avatar, but the board is rebroadcast
+  // twice a second and the lobby only when the roster or somebody's pick actually changes.
+  const avatars = useMemo(
+    () => new Map((lobby?.players ?? []).map((p) => [p.playerId, p])),
+    [lobby],
+  );
+
   const { latestNews, crossCheckStatus } = useMemo(() => {
     const news = feed.filter(
       (f) => f.kind === "NEWS" && f.round === phase?.roundIndex
@@ -327,7 +335,7 @@ export default function Trading() {
         />
       </section>
 
-      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} />
+      <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} avatars={avatars} />
 
       {/* Mobile Dock Navigation */}
       <nav className="mobile-dock" aria-label="Mobile Navigation">
