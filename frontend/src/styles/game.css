@@ -2778,12 +2778,14 @@
      wins over height in a column flex container, so the chart collapsed to its 4.5rem
      min-height and the price — the thing the whole game is about — ran on 7% of a phone
      screen, smaller than the controls and smaller than the static text above it. Resetting
-     the basis to auto is what makes a real height possible at all. The 240px floor is what
-     keeps the liquidation markers and their nicknames legible; below that they go back to
-     reading as noise. */
+     the basis to auto is what makes a real height possible at all. The floor is only a
+     floor: with the deck's auto margin zeroed below, the chart takes whatever the rest of
+     the column leaves, so it is usually well above this. 190px is the point where the
+     liquidation markers and their nicknames stop being legible, and it is low enough that
+     the Long/Short buttons still fit once a browser URL bar takes its ~59px. */
   .chart-wrap {
     flex: 1 1 auto;
-    min-height: 240px;
+    min-height: 190px;
   }
 
   /* The deck was 29% of the phone screen for controls most players set once and then only
@@ -2792,6 +2794,26 @@
      leverage yet and hiding the dial would make that worse rather than better. */
   .deck {
     gap: 0.3rem;
+    /* The base rule pushes the deck down with margin-top: auto. An auto margin swallows
+       free space *before* flex-grow ever sees it, so the chart above was never actually
+       growing — it sat on its min-height while the gap above the deck took everything
+       else. Zeroed here so the chart gets the surplus instead, which is what lets this
+       column re-fit itself when the browser's URL bar slides in and out. */
+    margin-top: 0;
+  }
+
+  /* "MODERATE RISK" is two words where "HIGH RISK" fitted on one line, so this row silently
+     doubled in height on some leverage settings and pushed the Long/Short buttons under the
+     dock. The tag no longer wraps, and the sentence beside it gets the smaller type it needs
+     to stay beside it. */
+  .deck-preview {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.62rem;
+  }
+
+  .risk-tag {
+    white-space: nowrap;
+    font-size: 0.58rem;
   }
 
   .deck-dials {
