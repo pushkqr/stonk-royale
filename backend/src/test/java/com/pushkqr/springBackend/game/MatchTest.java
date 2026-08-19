@@ -30,6 +30,15 @@ class MatchTest {
         return match;
     }
 
+    private Match lobbyOfFive(String code) {
+        Match match = new Match(code, CONFIG);
+        for (int i = 1; i <= 5; i++) {
+            match.join("p" + i, "player" + i);
+            match.markConnected("p" + i, true, 0);
+        }
+        return match;
+    }
+
     private List<GameEvent> step(Match match, long from, long to) {
         List<GameEvent> events = new ArrayList<>();
         for (long t = from; t <= to; t += STEP) {
@@ -508,17 +517,20 @@ class MatchTest {
     }
 
     @Test
-    void tipCountStillVariesAboveTheGuaranteedOne() {
+    void tipCountStillVariesInsideItsBand() {
+        // Five seats, not two. The count is drawn from a band around half the room, and two
+        // seats have exactly one value that is neither nobody nor everybody — so a two-player
+        // room is now a constant by construction and proves nothing here. Five gives {2,3}.
         Set<Integer> seen = new HashSet<>();
         for (int i = 0; i < 500 && seen.size() < 2; i++) {
-            Match match = lobbyOfTwo("VARY" + i);
+            Match match = lobbyOfFive("VARY" + i);
             startPlaying(match, 0);
             seen.add(match.round().truthfulTipCount());
         }
 
-        // Forcing a floor must not flatten the count into a constant — if every round said
-        // "one of you", the number would stop being information.
-        assertEquals(Set.of(1, 2), seen);
+        // Pinning the count near half must not flatten it into a constant — if every round
+        // said the same number, it would stop being worth announcing.
+        assertEquals(Set.of(2, 3), seen);
     }
 
     @Test

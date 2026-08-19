@@ -16,9 +16,6 @@ import java.util.Random;
  */
 public final class InformationScripter {
 
-    /** Share of private rumors that describe the real regime. */
-    public static final double TRUE_RUMOR_PROBABILITY = 0.40;
-
     /** Events land inside this window: late enough to matter, early enough to trade. */
     private static final double WINDOW_START = 0.15;
     private static final double WINDOW_END = 0.85;
@@ -27,17 +24,21 @@ public final class InformationScripter {
     private static final long WARNING_LEAD_MIN_MILLIS = 2_000;
     private static final long WARNING_LEAD_SPREAD_MILLIS = 2_000;
 
-    public Rumor rumorFor(Regime actual, String ticker, Random random) {
-        if (random.nextDouble() < TRUE_RUMOR_PROBABILITY) {
-            return truthfulRumorFor(actual, ticker, random);
-        }
-        Regime claimed = otherThan(actual, random);
-        return new Rumor(NewsCopy.rumor(claimed, ticker, random), claimed, false);
-    }
-
-    /** Lets the planner guarantee a round holds at least one real tip. */
+    /**
+     * A tip that names the real regime.
+     *
+     * Truth and lies are dealt by name rather than drawn per player, because who holds a real
+     * tip is the planner's decision now — see RoundPlanner.truthfulTipCount for why leaving
+     * it to independent coin flips made half of all four-player rounds unplayable.
+     */
     public Rumor truthfulRumorFor(Regime actual, String ticker, Random random) {
         return new Rumor(NewsCopy.rumor(actual, ticker, random), actual, true);
+    }
+
+    /** A tip that names any regime but the real one. */
+    public Rumor falseRumorFor(Regime actual, String ticker, Random random) {
+        Regime claimed = otherThan(actual, random);
+        return new Rumor(NewsCopy.rumor(claimed, ticker, random), claimed, false);
     }
 
     /**

@@ -20,18 +20,18 @@ class InformationScripterTest {
 
     private final InformationScripter scripter = new InformationScripter();
 
+    /**
+     * There used to be a per-player probability here, and a test asserting it came out near
+     * 40%. Who holds a real tip is the planner's decision now, so what is left to check is
+     * that the two constructors actually mean what they say.
+     */
     @Test
-    void aboutFortyPercentOfRumorsAreTrue() {
+    void theTwoConstructorsDisagreeAboutTruthfulness() {
         Random random = new Random(1);
-        long truthful = 0;
         for (int i = 0; i < SAMPLES; i++) {
-            if (scripter.rumorFor(Regime.PUMP, TICKER, random).truthful()) {
-                truthful++;
-            }
+            assertTrue(scripter.truthfulRumorFor(Regime.PUMP, TICKER, random).truthful());
+            assertFalse(scripter.falseRumorFor(Regime.PUMP, TICKER, random).truthful());
         }
-
-        double rate = (double) truthful / SAMPLES;
-        assertTrue(rate > 0.36 && rate < 0.44, "true-rumor rate was " + rate);
     }
 
     @ParameterizedTest
@@ -39,15 +39,18 @@ class InformationScripterTest {
     void truthfulRumorsNameTheRealRegimeAndLiesDoNot(Regime actual) {
         Random random = new Random(2);
         for (int i = 0; i < 500; i++) {
-            Rumor rumor = scripter.rumorFor(actual, TICKER, random);
-            assertEquals(rumor.truthful(), rumor.claimedRegime() == actual,
-                    "truthfulness must match whether the claim is the real regime");
+            Rumor truth = scripter.truthfulRumorFor(actual, TICKER, random);
+            assertEquals(actual, truth.claimedRegime());
+
+            Rumor lie = scripter.falseRumorFor(actual, TICKER, random);
+            assertNotEquals(actual, lie.claimedRegime(),
+                    "a false tip must never name the regime that actually happens");
         }
     }
 
     @Test
     void rumorTextMentionsTheTicker() {
-        Rumor rumor = scripter.rumorFor(Regime.RUG, TICKER, new Random(3));
+        Rumor rumor = scripter.truthfulRumorFor(Regime.RUG, TICKER, new Random(3));
         assertTrue(rumor.text().contains(TICKER), "rumor was: " + rumor.text());
     }
 
@@ -63,11 +66,9 @@ class InformationScripterTest {
 
         for (int i = 0; i < SAMPLES; i++) {
             // A PUMP rumor is truthful in a PUMP round and a lie in a DUMP round.
-            Rumor asTruth = scripter.rumorFor(Regime.PUMP, TICKER, random);
-            if (asTruth.claimedRegime() == Regime.PUMP) {
-                truthfulText.add(asTruth.text());
-            }
-            Rumor asLie = scripter.rumorFor(Regime.DUMP, TICKER, random);
+            truthfulText.add(scripter.truthfulRumorFor(Regime.PUMP, TICKER, random).text());
+
+            Rumor asLie = scripter.falseRumorFor(Regime.DUMP, TICKER, random);
             if (asLie.claimedRegime() == Regime.PUMP) {
                 lyingText.add(asLie.text());
             }
