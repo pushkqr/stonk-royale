@@ -8,6 +8,43 @@
       name="description"
       content="A 10-minute multiplayer trading game. Everyone gets a rumour. Most of them are lies."
     />
+
+    <!-- This game spreads by someone pasting a room link into a group chat, so the link
+         preview is the real front door — it is seen before the join screen. The tags are
+         necessarily global: /m/{code} forwards to this same static file (SpaConfig.java)
+         and there is no SSR, so a crawler fetching a room link gets exactly this HTML.
+         og:url is deliberately absent — a static one would claim every room link is the
+         homepage, whereas omitting it lets crawlers use the URL they actually fetched.
+         The image URL must be absolute or it is ignored outright. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Stonk Royale" />
+    <meta property="og:title" content="Stonk Royale" />
+    <meta
+      property="og:description"
+      content="A 10-minute multiplayer trading game. Everyone gets a rumour. Most of them are lies."
+    />
+    <meta property="og:image" content="https://stonkroyale.me/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Stonk Royale — a price chart that climbs, then rugs."
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Stonk Royale" />
+    <meta
+      name="twitter:description"
+      content="A 10-minute multiplayer trading game. Everyone gets a rumour. Most of them are lies."
+    />
+    <meta name="twitter:image" content="https://stonkroyale.me/og-card.png" />
+
+    <!-- Without a manifest there is no install prompt, which means the phone URL bar (~59
+         CSS px) is permanently part of the viewport. That strip is what the last two mobile
+         layout passes were fighting; display: standalone is the only thing that removes it. -->
+    <meta name="theme-color" content="#1b0a28" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Stonk Royale</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
