@@ -4,7 +4,11 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  flex: 1;
+  /* An auto basis rather than `flex: 1`. The rail is content-sized now, and an item with a
+     zero basis makes its container's intrinsic height a question rather than a measurement —
+     sizing to the rows keeps that height plain. It still shrinks and scrolls once enough
+     players arrive to push the rail into its cap, which is the only case that needed growth. */
+  flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
   display: flex;

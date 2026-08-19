@@ -301,6 +301,10 @@
     overflow: hidden;
   }
 
+  /* Both of these undo the desktop rail's split rather than restate it: there, Standings is
+     content-sized under a 50% cap so it cannot strand space above a cramped Dossier. Here
+     only one of the two is ever on screen at a time, so each takes the whole panel. Do not
+     prune `max-height` as dead — it is what releases that cap. */
   .rail,
   .dossier {
     flex: 1 1 auto;
@@ -357,7 +361,7 @@
     gap: 0.2rem;
     background: transparent;
     border: none;
-    font-family: var(--sans);
+    font-family: var(--body);
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.03em;

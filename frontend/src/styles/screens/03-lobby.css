@@ -74,7 +74,7 @@
 }
 .tag-bot {
   background: var(--void-wash);
-  color: var(--ghost);
+  color: var(--haze);
   font-size: 0.55rem;
   padding: 0.1rem 0.3rem;
   letter-spacing: 0.08em;
