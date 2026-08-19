@@ -13,6 +13,16 @@
   --void-lift: #3d1a55;
   --edge: #56287a;
 
+  /* A wash, not a fill: the raised surface every panel in the app sits on. Translucent so
+     the halftone grain on body::before still reads through, which is the difference between
+     a printed sheet and a flat rectangle.
+
+     Thirteen rules across nine stylesheets have referenced this since before those files
+     were split apart, and it has never once been declared — `background: var(--void-wash)`
+     with no fallback resolves to nothing, so every one of those surfaces has been rendering
+     transparent. */
+  --void-wash: rgba(61, 26, 85, 0.55);
+
   --scream: #ffe81a;
   --pump: #21e07a;
   --dump: #ff3b54;

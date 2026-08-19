@@ -166,4 +166,18 @@ describe("Trading.jsx Mobile Dock", () => {
 
     mockMatch.feed = originalFeed;
   });
+
+  it("renders the player's private tip in full", () => {
+    const tipText = "$VOID is done. Everyone's heading for the exit.";
+    const originalRumor = mockMatch.rumor;
+    mockMatch.rumor = {
+      text: tipText,
+      claimedRegime: "DUMP",
+    };
+    const { container } = render(<Trading />);
+    const pill = container.querySelector(".intel-pill");
+    expect(pill).toBeInTheDocument();
+    expect(pill).toHaveTextContent(tipText);
+    mockMatch.rumor = originalRumor;
+  });
 });
