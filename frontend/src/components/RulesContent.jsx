@@ -86,6 +86,40 @@ export default function RulesContent() {
         </p>
       </section>
 
+      {/*
+        Hidden from touch devices in CSS, where none of it is reachable.
+
+        The deck already prints these on its buttons, at 0.55rem, which is the only place
+        they have ever appeared — so the players who trade in two keystrokes are simply the
+        ones who happened to look closely, and everyone else reaches for a pointer for the
+        whole match. That is a gap in what people were told, not in how well they play, and
+        the briefing every new player is made to scroll through is where it closes.
+      */}
+      <section className="rules-block rules-keys">
+        <h3 className="display rules-head">Keys</h3>
+        <p className="muted">
+          The market moves while your hand does. These do the same job as the buttons,
+          without leaving the chart.
+        </p>
+        <ul className="rules-key-list">
+          {[
+            { keys: ["1", "2", "3"], does: "Load a preset" },
+            { keys: ["L", "↑"], does: "Go long" },
+            { keys: ["S", "↓"], does: "Go short" },
+            { keys: ["Space", "C"], does: "Close the position" },
+          ].map(({ keys, does }) => (
+            <li key={does}>
+              <span className="rules-key-caps">
+                {keys.map((k) => (
+                  <kbd className="keycap" key={k}>{k}</kbd>
+                ))}
+              </span>
+              <span className="muted">{does}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section className="rules-block">
         <h3 className="display rules-head">Winning</h3>
         <p>

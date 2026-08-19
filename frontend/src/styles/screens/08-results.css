@@ -160,6 +160,33 @@
   list-style: none;
 }
 
+.rules-key-list {
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.rules-key-list li {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rules-key-caps {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* Nothing in this section is reachable without a keyboard, and a phone player reading a
+   list of keys they cannot press learns only that the game was built for somebody else. */
+@media (pointer: coarse) {
+  .rules-keys {
+    display: none;
+  }
+}
+
 .rules-regimes li {
   display: grid;
   grid-template-columns: 3rem 4.6rem 1fr;

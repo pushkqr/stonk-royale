@@ -20,6 +20,7 @@ import Dossier from "./Dossier";
 import Standings from "./Standings";
 import TradeDeck from "./TradeDeck";
 import Wire from "./Wire";
+import LiveRank from "./LiveRank";
 import LiveFloorPrice from "./LiveFloorPrice";
 import LiveRoundScore from "./LiveRoundScore";
 
@@ -246,6 +247,8 @@ export default function Trading() {
         </div>
 
         <div className={`strip-clock display ${urgent ? "is-urgent" : ""}`}>{clock(left)}</div>
+
+        <LiveRank rows={board} meId={session.playerId} />
 
         <LiveRoundScore
           me={me}

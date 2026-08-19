@@ -78,6 +78,23 @@
   }
 }
 
+/* Deliberately the same two-line shape as .strip-me beside it — an eyebrow over one big
+   number — because it answers the same kind of question and a third shape in a bar this
+   short would read as clutter rather than hierarchy. */
+.strip-rank {
+  text-align: right;
+}
+
+.strip-place {
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.strip-place-of {
+  font-size: 0.9rem;
+}
+
 .strip-me {
   text-align: right;
 }

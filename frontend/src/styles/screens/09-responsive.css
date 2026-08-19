@@ -6,11 +6,16 @@
     gap: 0.5rem;
   }
 
+  /* Four blocks share this bar on a phone now rather than three, and the widest of them is
+     a 1.8rem clock. The gap comes down so the standing fits beside them instead of pushing
+     the round score onto a second line. */
   .strip {
     padding: 0.35rem 0.8rem;
+    gap: 0.6rem;
   }
 
   .strip-ticker,
+  .strip-place,
   .strip-score {
     font-size: 1.35rem;
   }
