@@ -3,11 +3,9 @@ package com.pushkqr.springBackend.server;
 import com.pushkqr.springBackend.game.GameEvent;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
-import com.pushkqr.springBackend.game.MatchPlayer;
+import com.pushkqr.springBackend.game.PlayerSnapshot;
 import com.pushkqr.springBackend.game.RoundPlan;
 import com.pushkqr.springBackend.game.info.Rumor;
-import com.pushkqr.springBackend.game.model.PlayerRound;
-import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.sim.MarketImpact;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -36,7 +34,7 @@ public class MatchBroadcaster {
     public void ready(Match match) {
         Views.Ready view;
         synchronized (match) {
-            view = new Views.Ready(match.readyCount(), match.players().size());
+            view = new Views.Ready(match.readyCount(), match.playerCount());
         }
         send(match, "ready", view);
     }
@@ -51,14 +49,11 @@ public class MatchBroadcaster {
     }
 
     public void board(Match match, long now) {
-        List<Views.BoardRow> rows;
-        synchronized (match) {
-            double price = match.currentPrice(now);
-            rows = match.players().stream()
-                    .map(player -> boardRow(player, price))
-                    .sorted((a, b) -> Double.compare(b.equity(), a.equity()))
-                    .toList();
-        }
+        List<PlayerSnapshot> snapshots = match.playerSnapshots(now);
+        List<Views.BoardRow> rows = snapshots.stream()
+                .map(this::boardRow)
+                .sorted((a, b) -> Double.compare(b.equity(), a.equity()))
+                .toList();
         send(match, "board", rows);
     }
 
@@ -72,7 +67,7 @@ public class MatchBroadcaster {
                         r.playerId(), r.nickname(), round2(r.roundScore()), round2(r.totalScore()),
                         r.liquidations(), r.rumorClaimed().name(), r.rumorWasTrue(),
                         r.claimedTipAs() == null ? null : r.claimedTipAs().name(),
-                        isBot(match, r.playerId())))
+                        match.isBot(r.playerId())))
                 .toList();
         send(match, "settled", new Views.Settled(event.roundIndex(), event.regime().name(), results));
     }
@@ -80,15 +75,9 @@ public class MatchBroadcaster {
     public void standings(Match match) {
         List<Views.Standing> standings = match.standings().stream()
                 .map(s -> new Views.Standing(s.rank(), s.playerId(), s.nickname(),
-                        round2(s.totalScore()), round2(s.bestRound()), isBot(match, s.playerId())))
+                        round2(s.totalScore()), round2(s.bestRound()), match.isBot(s.playerId())))
                 .toList();
         send(match, "standings", standings);
-    }
-
-    /** Resolved by id because the game-side result records carry no seat, only a player. */
-    private boolean isBot(Match match, String playerId) {
-        MatchPlayer player = match.player(playerId);
-        return player != null && player.isBot();
     }
 
     public void lobby(Match match) {
@@ -104,8 +93,8 @@ public class MatchBroadcaster {
      * on a shared topic.
      */
     public void rumors(Match match) {
-        for (MatchPlayer player : match.players()) {
-            rumor(match, player.id());
+        for (String playerId : match.playerIds()) {
+            rumor(match, playerId);
         }
     }
 
@@ -141,8 +130,8 @@ public class MatchBroadcaster {
                 match.config().intermissionSeconds(),
                 match.config().startingCash(),
                 match.config().maxPlayers(),
-                match.players().stream()
-                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot(), p.isConnected(), p.avatar()))
+                match.playerSnapshots(System.currentTimeMillis()).stream()
+                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.host(), p.bot(), p.connected(), p.avatar()))
                         .toList(),
                 match.isPublic(),
                 new Views.Impact(
@@ -164,7 +153,7 @@ public class MatchBroadcaster {
         Views.Asset asset = round == null ? null : new Views.Asset(
                 round.asset().ticker(), round.asset().blurb(), round.path().startPrice());
 
-        Integer truthfulTips = round == null || match.players().size() < MIN_PLAYERS_FOR_TIP_COUNT
+        Integer truthfulTips = round == null || match.playerCount() < MIN_PLAYERS_FOR_TIP_COUNT
                 ? null
                 : round.truthfulTipCount();
 
@@ -178,39 +167,37 @@ public class MatchBroadcaster {
                 truthfulTips);
     }
 
-    Views.BoardRow boardRow(MatchPlayer player, double price) {
-        PlayerRound round = player.round();
-        if (round == null) {
+    Views.BoardRow boardRow(PlayerSnapshot player) {
+        if (!player.inRound()) {
             return new Views.BoardRow(player.id(), player.nickname(), 0, 0,
-                    round2(player.totalScore()), null, player.isBot(), false, 0,
-                    player.hasLeft(), player.avatar());
+                    round2(player.totalScore()), null, player.bot(), false, 0,
+                    player.left(), player.avatar());
         }
         return new Views.BoardRow(
                 player.id(),
                 player.nickname(),
-                round2(round.equity(price)),
-                round2(round.scoreAt(price)),
+                round2(player.equity()),
+                round2(player.scoreAt()),
                 round2(player.totalScore()),
-                positionView(round, price),
-                player.isBot(),
+                positionView(player.position()),
+                player.bot(),
                 true,
-                round2(round.cash()),
-                player.hasLeft(),
+                round2(player.cash()),
+                player.left(),
                 player.avatar());
     }
 
-    private Views.Position positionView(PlayerRound round, double price) {
-        Position position = round.position();
+    private Views.Position positionView(PlayerSnapshot.Open position) {
         if (position == null) {
             return null;
         }
         return new Views.Position(
-                position.side().name(),
+                position.side(),
                 round2(position.margin()),
                 position.leverage(),
                 position.entryPrice(),
                 position.liquidationPrice(),
-                round2(position.unrealisedPnl(price)));
+                round2(position.unrealisedPnl()));
     }
 
     private long roundElapsedBase(Match match, long now) {

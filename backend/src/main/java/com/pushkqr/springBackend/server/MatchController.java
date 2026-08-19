@@ -4,7 +4,7 @@ import com.pushkqr.springBackend.admin.Stats;
 import com.pushkqr.springBackend.game.Avatars;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
-import com.pushkqr.springBackend.game.MatchPlayer;
+import com.pushkqr.springBackend.game.PlayerSnapshot;
 import com.pushkqr.springBackend.game.model.MatchConfig;
 import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
 import org.springframework.http.HttpHeaders;
@@ -106,7 +106,7 @@ public class MatchController {
     }
 
     /**
-     * The public room worth joining, or null.
+     * The fullest public room that still has a slot.
      *
      * Lobby only — quick match never drops somebody into a round already running, even
      * though joining mid-match is allowed generally. Fullest first, so a group pressing the
@@ -117,14 +117,9 @@ public class MatchController {
         return matches.all().stream()
                 .filter(Match::isPublic)
                 .filter(match -> match.phase() == MatchPhase.LOBBY)
-                .filter(match -> match.players().size() < match.config().maxPlayers())
-                .max(Comparator.comparingLong(MatchController::humanCount))
+                .filter(match -> match.playerCount() < match.config().maxPlayers())
+                .max(Comparator.comparingLong(Match::humanCount))
                 .orElse(null);
-    }
-
-    /** Bots do not count towards how worth joining a room is — they are the filler. */
-    private static long humanCount(Match match) {
-        return match.players().stream().filter(player -> !player.isBot()).count();
     }
 
     @PostMapping("/{code}/join")
@@ -144,13 +139,13 @@ public class MatchController {
     private Views.JoinResult seat(Match match, String requestedNickname, String authorization,
             String deviceId, String avatar) {
         String nickname = Text.nickname(requestedNickname);
-        MatchPlayer player = match.join(identity.resolve(authorization, deviceId), nickname,
+        PlayerSnapshot snapshot = match.seat(identity.resolve(authorization, deviceId), nickname,
                 Avatars.sanitise(avatar));
-        PlayerSession session = sessions.create(match.code(), player.id(), nickname);
+        PlayerSession session = sessions.create(match.code(), snapshot.id(), nickname);
         stats.seatTaken(deviceId);
 
         return new Views.JoinResult(
-                match.code(), player.id(), player.nickname(), session.token(), player.isHost());
+                match.code(), snapshot.id(), snapshot.nickname(), session.token(), snapshot.host());
     }
 
     private Match require(String code) {

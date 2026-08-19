@@ -164,13 +164,10 @@ class MatchConcurrencyTest {
                         } catch (IllegalStateException | IllegalArgumentException ignored) {
                         }
                     } else {
-                        synchronized (match) {
-                            double price = match.currentPrice(now);
-                            for (MatchPlayer player : match.players()) {
-                                if (player.round() != null) {
-                                    double eq = player.round().equity(price);
-                                    assertThat(eq).isGreaterThanOrEqualTo(0);
-                                }
+                        for (PlayerSnapshot player : match.playerSnapshots(now)) {
+                            if (player.inRound()) {
+                                double eq = player.equity();
+                                assertThat(eq).isGreaterThanOrEqualTo(0);
                             }
                         }
                     }

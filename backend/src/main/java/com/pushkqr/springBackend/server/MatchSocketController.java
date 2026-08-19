@@ -4,7 +4,6 @@ import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
 import com.pushkqr.springBackend.game.Avatars;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
-import com.pushkqr.springBackend.game.MatchPlayer;
 import com.pushkqr.springBackend.game.model.MatchConfig;
 import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.model.Side;
@@ -239,9 +238,7 @@ public class MatchSocketController {
             Principal principal) {
         Match match = require(code, principal);
         PlayerSession session = session(principal);
-        MatchPlayer player = match.player(session.playerId());
-        if (player != null) {
-            player.setAvatar(Avatars.sanitise(request.avatar()));
+        if (match.setAvatar(session.playerId(), Avatars.sanitise(request.avatar()))) {
             broadcaster.lobby(match);
             broadcaster.board(match, System.currentTimeMillis());
         }
@@ -294,8 +291,10 @@ public class MatchSocketController {
     }
 
     private void requireHost(Match match, String playerId, String actionDescription) {
-        MatchPlayer player = match.player(playerId);
-        if (player == null || !player.isHost()) {
+        // Through Match rather than off a live player: `host` is a plain boolean that moves
+        // when the host leaves, and reading it from this thread without the monitor could
+        // miss a promotion and refuse the new host their own controls.
+        if (!match.isHost(playerId)) {
             throw new IllegalStateException("Only the host can " + actionDescription);
         }
     }

@@ -120,6 +120,12 @@ public final class Match {
         this.referenceNotional = config.startingCash() * Position.MAX_LEVERAGE;
     }
 
+    /*
+     * Package-private on purpose. These hand out live, unsynchronized MatchPlayer objects,
+     * which is safe inside this package where every caller is already holding the monitor,
+     * and was the whole bug outside it. Callers elsewhere get PlayerSnapshot instead.
+     */
+
     /**
      * Seats a player.
      *
@@ -129,11 +135,11 @@ public final class Match {
      * progress was planned for the roster that existed when it was planned, so a latecomer
      * sits it out and starts scoring from the next one — see {@link #beginTrading}.
      */
-    public synchronized MatchPlayer join(String playerId, String nickname) {
+    synchronized MatchPlayer join(String playerId, String nickname) {
         return join(playerId, nickname, null);
     }
 
-    public synchronized MatchPlayer join(String playerId, String nickname, String avatar) {
+    synchronized MatchPlayer join(String playerId, String nickname, String avatar) {
         MatchPlayer existing = players.get(playerId);
         if (existing != null && !existing.hasLeft()) {
             existing.setAvatar(avatar);
@@ -172,6 +178,15 @@ public final class Match {
         return player;
     }
 
+    /** Seats a player and returns only what a caller outside this package may hold. */
+    public synchronized PlayerSnapshot seat(String playerId, String nickname, String avatar) {
+        join(playerId, nickname, avatar);
+        return playerSnapshots(System.currentTimeMillis()).stream()
+                .filter(snapshot -> snapshot.id().equals(playerId))
+                .findFirst()
+                .orElseThrow();
+    }
+
     /**
      * Seats a scripted opponent.
      *
@@ -182,7 +197,7 @@ public final class Match {
      * Never host, whatever the seating order: the host badge carries the right to start the
      * match and retune the room, and nothing can press those buttons on a bot's behalf.
      */
-    public synchronized MatchPlayer addBot(String id, String nickname) {
+    synchronized MatchPlayer addBot(String id, String nickname) {
         if (phase != MatchPhase.LOBBY) {
             throw new IllegalStateException("Match has already started");
         }
@@ -190,6 +205,65 @@ public final class Match {
         bot.setAvatar(Avatars.forSeed(id));
         players.put(id, bot);
         return bot;
+    }
+
+    /**
+     * Seats one bot, atomically.
+     *
+     * The name and id searches and the insert all happen under one lock. They used to be
+     * three separate calls from Bots.seat with the lock released between each, so two
+     * threads scanning at once could both settle on the same free name — and quick match
+     * fills a room with bots on the same request other people are joining it.
+     *
+     * @param candidateNames tried in order; the first not already in the room wins
+     */
+    public synchronized MatchPlayer seatBot(List<String> candidateNames) {
+        if (players.size() >= config.maxPlayers()) {
+            throw new IllegalStateException("Match is full");
+        }
+
+        // The name check is against everybody present, humans and bots alike: the host can add
+        // these one at a time on top of whatever quick match already seated, so "the next name
+        // in the list" is not good enough on its own.
+        Set<String> takenNames = players.values().stream()
+                .map(player -> player.nickname().toLowerCase())
+                .collect(Collectors.toSet());
+
+        String name = candidateNames.stream()
+                .filter(n -> !takenNames.contains(n.toLowerCase()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No more bot names available"));
+
+        // Ids are scanned for the first free slot rather than counted, because a host can add a
+        // bot, kick it, and add another — a counter would hand out an id that is already taken.
+        Set<String> takenIds = players.keySet();
+
+        String id = null;
+        for (int i = 0; i < 1000; i++) {
+            String candidate = "bot:" + i;
+            if (!takenIds.contains(candidate)) {
+                id = candidate;
+                break;
+            }
+        }
+        return addBot(id, name);
+    }
+
+    /**
+     * The picker lives in the lobby, so a player can change their mark after being seated.
+     * Here rather than on MatchPlayer because the field is a plain String with no memory
+     * visibility of its own: written from a STOMP thread and read by the engine, it needs
+     * this monitor on both sides or the room can keep rendering the old mark indefinitely.
+     *
+     * @return whether a seat was actually found, so a caller can skip a pointless broadcast
+     */
+    public synchronized boolean setAvatar(String playerId, String avatar) {
+        MatchPlayer player = players.get(playerId);
+        if (player == null) {
+            return false;
+        }
+        player.setAvatar(avatar);
+        return true;
     }
 
     /**
@@ -863,11 +937,88 @@ public final class Match {
         return round;
     }
 
-    public synchronized Collection<MatchPlayer> players() {
+    /**
+     * Every player, frozen against one price.
+     *
+     * The price is taken once inside this critical section rather than passed in, so a
+     * caller cannot accidentally mix a stale price with fresh positions — which is what a
+     * board assembled from separate getters used to do.
+     *
+     * Builds the round fields even for a lobby, where they are all zero. Cheaper than a
+     * second method: a full pass over 150 rooms of game logic measures 169µs against a
+     * 100ms budget, so this is not where any time goes.
+     */
+    public synchronized List<PlayerSnapshot> playerSnapshots(long now) {
+        double price = currentPrice(now);
+        List<PlayerSnapshot> snapshots = new ArrayList<>(players.size());
+        for (MatchPlayer player : players.values()) {
+            PlayerRound round = player.round();
+            snapshots.add(new PlayerSnapshot(
+                    player.id(),
+                    player.nickname(),
+                    player.isHost(),
+                    player.isBot(),
+                    player.isConnected(),
+                    player.hasLeft(),
+                    player.avatar(),
+                    player.totalScore(),
+                    round != null,
+                    round == null ? 0 : round.cash(),
+                    round == null ? 0 : round.equity(price),
+                    round == null ? 0 : round.scoreAt(price),
+                    round == null ? null : openOf(round, price)));
+        }
+        return List.copyOf(snapshots);
+    }
+
+    private static PlayerSnapshot.Open openOf(PlayerRound round, double price) {
+        Position position = round.position();
+        if (position == null) {
+            return null;
+        }
+        return new PlayerSnapshot.Open(
+                position.side().name(),
+                position.margin(),
+                position.leverage(),
+                position.entryPrice(),
+                position.liquidationPrice(),
+                position.unrealisedPnl(price));
+    }
+
+    public synchronized int playerCount() {
+        return players.size();
+    }
+
+    public synchronized List<String> playerIds() {
+        return List.copyOf(players.keySet());
+    }
+
+    public synchronized boolean isHost(String playerId) {
+        MatchPlayer player = players.get(playerId);
+        return player != null && player.isHost();
+    }
+
+    public synchronized boolean isBot(String playerId) {
+        MatchPlayer player = players.get(playerId);
+        return player != null && player.isBot();
+    }
+
+    /**
+     * People who are actually here: bots are filler and a player who pressed Leave has gone.
+     * Both callers — the peak-concurrent counter and quick match's room ranking — want the
+     * same answer, and quick match was previously counting the ones who left.
+     */
+    public synchronized long humanCount() {
+        return players.values().stream()
+                .filter(player -> !player.isBot() && !player.hasLeft())
+                .count();
+    }
+
+    synchronized Collection<MatchPlayer> players() {
         return List.copyOf(players.values());
     }
 
-    public synchronized MatchPlayer player(String playerId) {
+    synchronized MatchPlayer player(String playerId) {
         return players.get(playerId);
     }
 

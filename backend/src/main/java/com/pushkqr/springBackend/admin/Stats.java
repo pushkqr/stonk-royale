@@ -1,6 +1,7 @@
 package com.pushkqr.springBackend.admin;
 
 import com.pushkqr.springBackend.game.Match;
+import com.pushkqr.springBackend.game.PlayerSnapshot;
 import com.pushkqr.springBackend.server.MatchRegistry;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ public class Stats {
     private final StatsStore store;
     private final TickMeter tickMeter;
     private final Totals totals;
+
     private final Deque<Telemetry> reports = new ArrayDeque<>();
 
     private final long startedAtMillis = System.currentTimeMillis();
@@ -93,9 +95,8 @@ public class Stats {
 
     public synchronized void checkPeakConcurrent() {
         int playersNow = (int) matches.all().stream()
-                .flatMap(m -> m.players().stream())
-                .filter(p -> !p.isBot() && !p.hasLeft())
-                .count();
+                .mapToLong(Match::humanCount)
+                .sum();
         if (playersNow > totals.peakConcurrentPlayers) {
             totals.peakConcurrentPlayers = playersNow;
             dirty = true;
@@ -150,6 +151,14 @@ public class Stats {
                 new ArrayList<>(reports));
     }
 
+    /**
+     * One snapshot for the whole room rather than three passes over the roster.
+     *
+     * This method used to read PlayerRound directly from the admin's own request thread
+     * while the engine was mutating it — close() writes cash and nulls the position without
+     * either being atomic, so a refresh landing mid-close could read a position that had
+     * already been paid out.
+     */
     private AdminViews.Room roomOf(Match match) {
         long now = System.currentTimeMillis();
         double livePrice = match.currentPrice(now);
@@ -157,33 +166,36 @@ public class Stats {
                 ? match.round().asset().ticker()
                 : "—";
 
-        List<AdminViews.PlayerDetail> playerDetails = match.players().stream()
-                .filter(p -> !p.hasLeft())
+        List<PlayerSnapshot> snapshots = match.playerSnapshots(now);
+        List<PlayerSnapshot> activeSnapshots = snapshots.stream()
+                .filter(p -> !p.left())
+                .toList();
+
+        List<AdminViews.PlayerDetail> playerDetails = activeSnapshots.stream()
                 .map(p -> {
-                    com.pushkqr.springBackend.game.model.PlayerRound pr = p.round();
-                    com.pushkqr.springBackend.game.model.Position pos = pr != null ? pr.position() : null;
+                    PlayerSnapshot.Open pos = p.position();
                     return new AdminViews.PlayerDetail(
                             p.id(),
                             p.nickname(),
-                            p.isBot(),
-                            p.isConnected(),
-                            pr != null ? pr.cash() : 0.0,
-                            pr != null ? pr.equity(livePrice) : 0.0,
-                            pr != null ? pr.scoreAt(livePrice) : p.totalScore(),
-                            pos != null ? pos.side().name() : null,
+                            p.bot(),
+                            p.connected(),
+                            p.inRound() ? p.cash() : 0.0,
+                            p.inRound() ? p.equity() : 0.0,
+                            p.inRound() ? p.scoreAt() : p.totalScore(),
+                            pos != null ? pos.side() : null,
                             pos != null ? pos.leverage() : 0,
                             pos != null ? pos.entryPrice() : 0.0,
-                            pos != null ? pos.unrealisedPnl(livePrice) : 0.0);
+                            pos != null ? pos.unrealisedPnl() : 0.0);
                 })
                 .toList();
 
-        int humanCount = (int) match.players().stream()
-                .filter(player -> !player.isBot() && !player.hasLeft())
+        int humanCount = (int) activeSnapshots.stream()
+                .filter(p -> !p.bot())
                 .count();
 
         return new AdminViews.Room(
                 match.code(),
-                (int) match.players().stream().filter(p -> !p.hasLeft()).count(),
+                activeSnapshots.size(),
                 humanCount,
                 match.phase().name(),
                 match.roundIndex() + 1,
