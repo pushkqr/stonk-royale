@@ -1,77 +1,76 @@
 const STORAGE_KEY = "stonk:avatar";
 
+/**
+ * Nine player marks. `accent` draws the silhouette; `print` draws the same silhouette
+ * offset behind it, the trick the $ in favicon.svg uses — it is what ties these to the
+ * logo rather than to a generic avatar pack. Both values are game tokens from index.css.
+ * The previous set was stock Tailwind (#1e293b, #f59e0b, #38bdf8 …); exactly one colour
+ * in it belonged to this game, which is why the avatars never looked like they were part
+ * of it.
+ */
 export const ARCHETYPES = [
   {
     id: "banker",
     name: "The Suit",
     role: "Institutional Titan",
-    bg: "#1e293b",
-    accent: "#f59e0b",
-    accessory: "tophat",
+    accent: "#ffe81a",
+    print: "#ff3b54",
   },
   {
     id: "ape",
     name: "Diamond Ape",
     role: "HODL Heavyweight",
-    bg: "#451a03",
-    accent: "#00e699",
-    accessory: "headband",
+    accent: "#21e07a",
+    print: "#ffe81a",
   },
   {
     id: "moon",
     name: "Moon Cadet",
     role: "Orbit Explorer",
-    bg: "#0369a1",
-    accent: "#ffde59",
-    accessory: "helmet",
+    accent: "#fff4e0",
+    print: "#9e7ebb",
   },
   {
     id: "insider",
     name: "Shadow Fed",
     role: "Whisper Network",
-    bg: "#090d16",
     accent: "#ff3b54",
-    accessory: "fedora",
+    print: "#56287a",
   },
   {
     id: "quant",
     name: "Quant Wizard",
     role: "High-Freq Algo",
-    bg: "#064e3b",
-    accent: "#34d399",
-    accessory: "glasses",
+    accent: "#9e7ebb",
+    print: "#21e07a",
   },
   {
     id: "bull",
     name: "Giga Bull",
     role: "Perma-Long Beast",
-    bg: "#065f46",
-    accent: "#10b981",
-    accessory: "horns",
+    accent: "#21e07a",
+    print: "#fff4e0",
   },
   {
     id: "bear",
     name: "Doom Bear",
     role: "Puts Harvester",
-    bg: "#7f1d1d",
-    accent: "#ef4444",
-    accessory: "ears",
+    accent: "#ff3b54",
+    print: "#ffe81a",
   },
   {
     id: "degen",
     name: "Turbo Degen",
     role: "Leverage Fiend",
-    bg: "#581c87",
-    accent: "#f43f5e",
-    accessory: "beanie",
+    accent: "#ffe81a",
+    print: "#21e07a",
   },
   {
     id: "whale",
     name: "Apex Whale",
     role: "Liquidity Mover",
-    bg: "#0c4a6e",
-    accent: "#38bdf8",
-    accessory: "crown",
+    accent: "#9e7ebb",
+    print: "#fff4e0",
   },
 ];
 
@@ -87,20 +86,15 @@ export function setMyAvatar(id) {
   }
 }
 
-export function hashString(str = "") {
-  let hash = 0;
-  for (let i = 0; i < str.length; i += 1) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-export function getAvatarForPlayer(playerId, nickname = "", isMe = false) {
-  if (isMe) return getMyAvatar();
-  const seed = playerId || nickname || "anon";
-  const index = hashString(seed) % ARCHETYPES.length;
-  return ARCHETYPES[index].id;
+/**
+ * The mark to draw for a player, taken from the row the server sent. Avatars used to be
+ * hashed from the playerId on each client, which is why two people looking at the same
+ * player saw different marks. The server now owns this; the fallback is only for a row
+ * that arrived before the field existed, e.g. mid-deploy.
+ */
+export function avatarOf(row) {
+  const id = row?.avatar;
+  return ARCHETYPES.some((a) => a.id === id) ? id : "banker";
 }
 
 export function getMood({ pnl, wasLie, isWinner, isRekt } = {}) {

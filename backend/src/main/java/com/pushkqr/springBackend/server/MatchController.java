@@ -1,6 +1,7 @@
 package com.pushkqr.springBackend.server;
 
 import com.pushkqr.springBackend.admin.Stats;
+import com.pushkqr.springBackend.game.Avatars;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
 import com.pushkqr.springBackend.game.MatchPlayer;
@@ -37,7 +38,7 @@ public class MatchController {
         Match match = matches.create(configFor(request));
         match.setVisibility(Boolean.TRUE.equals(request.isPublic()));
         stats.matchCreated();
-        return seat(match, request.nickname(), authorization, request.deviceId());
+        return seat(match, request.nickname(), authorization, request.deviceId(), request.avatar());
     }
 
     /**
@@ -58,7 +59,7 @@ public class MatchController {
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         Match match = matches.create(new MatchConfig(3, 60, 20, 10_000, MatchConfig.MAX_PLAYERS));
         stats.matchCreated();
-        Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId());
+        Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId(), request.avatar());
         Bots.fill(match, Bots.BOT_COUNT);
         long now = System.currentTimeMillis();
         match.start(now);
@@ -87,7 +88,7 @@ public class MatchController {
         if (waiting != null) {
             try {
                 Views.JoinResult seat = seat(waiting, request.nickname(), authorization,
-                        request.deviceId());
+                        request.deviceId(), request.avatar());
                 broadcaster.lobby(waiting);
                 return seat;
             } catch (IllegalStateException full) {
@@ -99,7 +100,7 @@ public class MatchController {
         Match match = matches.create(MatchConfig.standard());
         match.setVisibility(true);
         stats.matchCreated();
-        Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId());
+        Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId(), request.avatar());
         Bots.fill(match, Bots.BOT_COUNT);
         return seat;
     }
@@ -130,7 +131,7 @@ public class MatchController {
     public Views.JoinResult join(@PathVariable String code, @RequestBody Requests.Join request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         Match match = require(code);
-        Views.JoinResult result = seat(match, request.nickname(), authorization, request.deviceId());
+        Views.JoinResult result = seat(match, request.nickname(), authorization, request.deviceId(), request.avatar());
         broadcaster.lobby(match);
         return result;
     }
@@ -141,9 +142,10 @@ public class MatchController {
     }
 
     private Views.JoinResult seat(Match match, String requestedNickname, String authorization,
-            String deviceId) {
+            String deviceId, String avatar) {
         String nickname = Text.nickname(requestedNickname);
-        MatchPlayer player = match.join(identity.resolve(authorization, deviceId), nickname);
+        MatchPlayer player = match.join(identity.resolve(authorization, deviceId), nickname,
+                Avatars.sanitise(avatar));
         PlayerSession session = sessions.create(match.code(), player.id(), nickname);
         stats.seatTaken(deviceId);
 

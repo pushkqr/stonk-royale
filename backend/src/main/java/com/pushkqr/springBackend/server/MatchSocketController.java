@@ -1,6 +1,7 @@
 package com.pushkqr.springBackend.server;
 
 import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
+import com.pushkqr.springBackend.game.Avatars;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
 import com.pushkqr.springBackend.game.MatchPlayer;
@@ -226,6 +227,23 @@ public class MatchSocketController {
         if (!text.isEmpty()) {
             match.recordTipClaim(session.playerId(), parseClaim(request.claim()));
             broadcaster.feed(match, "CHAT", text, session.playerId(), session.nickname());
+        }
+    }
+
+    /**
+     * The avatar picker lives in the lobby, so a player can change their mark after they are
+     * already seated. Without this the change would only reach the room on a rejoin.
+     */
+    @MessageMapping("/match/{code}/avatar")
+    public void avatar(@DestinationVariable String code, @Payload Requests.Avatar request,
+            Principal principal) {
+        Match match = require(code, principal);
+        PlayerSession session = session(principal);
+        MatchPlayer player = match.player(session.playerId());
+        if (player != null) {
+            player.setAvatar(Avatars.sanitise(request.avatar()));
+            broadcaster.lobby(match);
+            broadcaster.board(match, System.currentTimeMillis());
         }
     }
 

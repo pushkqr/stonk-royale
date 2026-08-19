@@ -1,6 +1,122 @@
 import { memo } from "react";
 import { ARCHETYPES } from "../lib/avatars";
 
+const VOID_DEEP = "#1b0a28";
+
+/**
+ * Mood is carried by the ring, not by the face.
+ *
+ * The old overlays drew eyes at fixed coordinates, which only worked because every
+ * archetype was a face — and at the 36px these actually render at, those eyes were about
+ * three pixels tall. A ring is one signal that reads identically on all nine marks and
+ * survives the size. Non-neutral moods thicken it as well as recolour it, so the state
+ * still registers on the archetypes whose own colour happens to match the mood colour.
+ */
+const RINGS = {
+  neutral: ["#56287a", 2.5],
+  laser: ["#21e07a", 4],
+  rekt: ["#ff3b54", 4],
+  liar: ["#ffe81a", 4],
+};
+
+/**
+ * Geometry on a 64x64 grid: "p" polygon, "r" rect, "e" ellipse. `s` is the silhouette,
+ * `c` is cut back out of it in the ground colour.
+ *
+ * Every shape, offset print included, sits inside r=29.5 of the r=30 ring, which is why
+ * none of this needs a clip path. Do not nudge the numbers.
+ */
+const MARKS = {
+  banker: {
+    s: [
+         ["r", 25, 17, 4, 10], ["r", 35, 17, 4, 10], ["r", 25, 17, 14, 4],
+         ["r", 12, 27, 40, 23],
+    ],
+    c: [
+         ["r", 29, 33, 6, 6],
+    ],
+  },
+  ape: {
+    s: [
+         ["p", [[22, 19], [42, 19], [47, 28], [32, 55], [17, 28]]],
+    ],
+    c: [
+         ["p", [[25, 19], [28, 19], [31, 28], [28, 28]]],
+         ["p", [[39, 19], [36, 19], [33, 28], [36, 28]]],
+    ],
+  },
+  moon: {
+    s: [
+         ["p", [[32, 8], [41, 28], [41, 45], [23, 45], [23, 28]]],
+         ["p", [[23, 35], [14, 50], [23, 46]]], ["p", [[41, 35], [50, 50], [41, 46]]],
+         ["p", [[27, 45], [37, 45], [32, 58]]],
+    ],
+    c: [],
+  },
+  insider: {
+    s: [
+         ["p", [[20, 31], [20, 21], [26, 14], [38, 14], [44, 21], [44, 31]]],
+         ["e", 32, 31, 21, 4.5], ["r", 22, 38, 8, 4], ["r", 34, 38, 8, 4],
+    ],
+    c: [],
+  },
+  quant: {
+    s: [
+         ["r", 15, 35, 8.5, 17], ["r", 27.75, 25, 8.5, 27], ["r", 40.5, 15, 8.5, 37],
+    ],
+    c: [],
+  },
+  bull: {
+    s: [
+         ["p", [[24, 33], [40, 33], [37, 51], [27, 51]]],
+         ["p", [[25, 35], [15, 31], [8, 20], [15, 21], [23, 29], [27, 33]]],
+         ["p", [[39, 35], [49, 31], [56, 20], [49, 21], [41, 29], [37, 33]]],
+    ],
+    c: [],
+  },
+  bear: {
+    s: [
+         ["e", 17, 27, 5, 6], ["e", 26, 21, 5.5, 6.5], ["e", 38, 21, 5.5, 6.5],
+         ["e", 47, 27, 5, 6], ["e", 32, 42, 13.5, 10.5],
+    ],
+    c: [],
+  },
+  degen: {
+    s: [
+         ["p", [[32, 7], [39, 20], [36, 26], [43, 23], [41, 34], [46, 41], [41, 51], [32, 57], [23, 51], [18, 41], [23, 34], [21, 23], [28, 26], [25, 20]]],
+    ],
+    c: [],
+  },
+  whale: {
+    s: [
+         ["p", [[8, 36], [14, 27], [26, 24], [38, 28], [45, 34], [50, 30], [49, 15], [56, 20], [55, 43], [49, 40], [44, 39], [36, 44], [22, 45], [11, 41]]],
+         ["p", [[26, 24], [31, 15], [35, 25]]],
+    ],
+    c: [
+         ["e", 15, 32, 2.1, 2.1],
+    ],
+  },
+};
+
+function shape(op, i, fill, dx, dy) {
+  if (op[0] === "p") {
+    return (
+      <polygon key={i} fill={fill}
+        points={op[1].map(([x, y]) => `${x + dx},${y + dy}`).join(" ")} />
+    );
+  }
+  if (op[0] === "r") {
+    return (
+      <rect key={i} fill={fill}
+        x={op[1] + dx} y={op[2] + dy} width={op[3]} height={op[4]} />
+    );
+  }
+  return (
+    <ellipse key={i} fill={fill}
+      cx={op[1] + dx} cy={op[2] + dy} rx={op[3]} ry={op[4]} />
+  );
+}
+
 function Avatar({
   archetypeId = "banker",
   mood = "neutral",
@@ -8,6 +124,8 @@ function Avatar({
   className = "",
 }) {
   const archetype = ARCHETYPES.find((a) => a.id === archetypeId) || ARCHETYPES[0];
+  const mark = MARKS[archetype.id];
+  const [ring, weight] = RINGS[mood] || RINGS.neutral;
 
   return (
     <svg
@@ -18,258 +136,12 @@ function Avatar({
       aria-hidden="true"
       style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}
     >
-      <defs>
-        <radialGradient id={`glow-${archetype.id}`} cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stopColor="#251a38" />
-          <stop offset="100%" stopColor="#0d0814" />
-        </radialGradient>
-        <linearGradient id="gold-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#fde047" />
-          <stop offset="100%" stopColor="#d97706" />
-        </linearGradient>
-        <linearGradient id="visor-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#38bdf8" />
-          <stop offset="100%" stopColor="#0284c7" />
-        </linearGradient>
-      </defs>
-
-      {/* Outer Ring & Crisp Dark Backdrop */}
-      <circle
-        cx="32"
-        cy="32"
-        r="30"
-        fill={`url(#glow-${archetype.id})`}
-        stroke={archetype.accent}
-        strokeWidth="2.5"
-      />
-
-      {/* --- ARCHETYPE SPECIFIC ARTWORK (High Contrast on Dark Void) --- */}
-
-      {/* 1. THE SUIT (Banker) */}
-      {archetype.id === "banker" && (
-        <g>
-          {/* Collar & Tie */}
-          <polygon points="26,50 32,58 38,50 32,46" fill="#ffffff" />
-          <polygon points="30,52 34,52 33,62 31,62" fill="#d97706" />
-          {/* Angular Face */}
-          <polygon points="22,30 42,30 38,48 26,48" fill="#fde68a" stroke="#d97706" strokeWidth="0.8" />
-          {/* Top Hat */}
-          <rect x="22" y="10" width="20" height="17" rx="1" fill="#0f172a" stroke="#f59e0b" strokeWidth="0.8" />
-          <rect x="14" y="24" width="36" height="4" rx="2" fill="#0f172a" />
-          <rect x="22" y="22" width="20" height="2.5" fill="#f59e0b" />
-          {/* Gold Monocle (Right Eye) */}
-          <circle cx="36" cy="36" r="5" fill="none" stroke="#f59e0b" strokeWidth="1.8" />
-          <line x1="36" y1="41" x2="40" y2="48" stroke="#f59e0b" strokeWidth="1" />
-          <ellipse cx="37" cy="35" rx="2" ry="1" fill="#ffffff" opacity="0.6" />
-          {/* Left Eye */}
-          <circle cx="27" cy="36" r="2" fill="#0f172a" />
-          {/* Mustache */}
-          <path d="M26 43 Q32 41 38 43 Q35 46 32 44 Q29 46 26 43 Z" fill="#0f172a" />
-        </g>
-      )}
-
-      {/* 2. DIAMOND APE */}
-      {archetype.id === "ape" && (
-        <g>
-          {/* Ape Head & Jaw */}
-          <ellipse cx="32" cy="34" rx="17" ry="15" fill="#92400e" stroke="#78350f" strokeWidth="1" />
-          <ellipse cx="32" cy="42" rx="13" ry="9" fill="#d97706" />
-          {/* Ears */}
-          <circle cx="15" cy="34" r="5" fill="#92400e" />
-          <circle cx="15" cy="34" r="3" fill="#f59e0b" />
-          <circle cx="49" cy="34" r="5" fill="#92400e" />
-          <circle cx="49" cy="34" r="3" fill="#f59e0b" />
-          {/* Nostrils */}
-          <circle cx="30" cy="41" r="1.5" fill="#451a03" />
-          <circle cx="34" cy="41" r="1.5" fill="#451a03" />
-          {/* Red Karate Headband */}
-          <rect x="14" y="23" width="36" height="5" rx="1.5" fill="#ef4444" />
-          <polygon points="12,25 4,31 11,34" fill="#ef4444" />
-          <polygon points="12,26 6,36 12,38" fill="#dc2626" />
-          {/* Diamond Cyan Sunglasses */}
-          <polygon points="20,30 29,30 27,37 22,37" fill="#00e699" stroke="#0f172a" strokeWidth="1.2" />
-          <polygon points="35,30 44,30 42,37 37,37" fill="#00e699" stroke="#0f172a" strokeWidth="1.2" />
-          <line x1="29" y1="32" x2="35" y2="32" stroke="#0f172a" strokeWidth="1.5" />
-          {/* Smirk */}
-          <path d="M27 46 Q32 50 37 46" fill="none" stroke="#451a03" strokeWidth="2" strokeLinecap="round" />
-        </g>
-      )}
-
-      {/* 3. MOON CADET (Astronaut) */}
-      {archetype.id === "moon" && (
-        <g>
-          {/* Suit Collar */}
-          <rect x="20" y="48" width="24" height="10" rx="3" fill="#e2e8f0" stroke="#0284c7" strokeWidth="1.5" />
-          {/* Helmet Ring */}
-          <circle cx="32" cy="32" r="19" fill="#f8fafc" stroke="#64748b" strokeWidth="2" />
-          {/* Curved Cosmic Visor */}
-          <ellipse cx="32" cy="33" rx="14" ry="11" fill="url(#visor-grad)" stroke="#0284c7" strokeWidth="1.5" />
-          {/* Reflection Glint */}
-          <path d="M23 27 Q32 23 41 27" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" opacity="0.85" />
-          <circle cx="26" cy="33" r="1.5" fill="#ffffff" opacity="0.9" />
-          {/* Antenna */}
-          <line x1="44" y1="18" x2="50" y2="10" stroke="#94a3b8" strokeWidth="2" />
-          <circle cx="50" cy="10" r="2.5" fill="#ffde59" />
-        </g>
-      )}
-
-      {/* 4. SHADOW FED (Insider) */}
-      {archetype.id === "insider" && (
-        <g>
-          {/* Trenchcoat Lapels with crisp white collar */}
-          <polygon points="26,50 32,58 38,50 32,46" fill="#ffffff" />
-          <polygon points="18,60 28,46 32,56" fill="#1e293b" />
-          <polygon points="46,60 36,46 32,56" fill="#1e293b" />
-          {/* Noir Shadow Face */}
-          <ellipse cx="32" cy="36" rx="13" ry="14" fill="#0f172a" stroke="#334155" strokeWidth="1" />
-          {/* Slanted Fedora Hat */}
-          <path d="M16 26 Q32 14 48 26 Z" fill="#1e293b" />
-          <ellipse cx="32" cy="26" rx="22" ry="4" fill="#0f172a" />
-          <rect x="18" y="24" width="28" height="2.5" fill="#ff3b54" />
-          {/* Glowing Crimson Slit Eyes */}
-          <rect x="23" y="33" width="7" height="3" rx="1" fill="#ff3b54" stroke="#ffffff" strokeWidth="0.5" />
-          <rect x="34" y="33" width="7" height="3" rx="1" fill="#ff3b54" stroke="#ffffff" strokeWidth="0.5" />
-          {/* Glowing Cigar */}
-          <line x1="33" y1="44" x2="42" y2="46" stroke="#d97706" strokeWidth="2" />
-          <circle cx="43" cy="46" r="1.5" fill="#ff3b54" />
-          <path d="M43 45 Q45 41 43 38" fill="none" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
-        </g>
-      )}
-
-      {/* 5. QUANT WIZARD (Cyber Android) */}
-      {archetype.id === "quant" && (
-        <g>
-          {/* High-Contrast Luminous Metallic Skull */}
-          <polygon points="20,24 44,24 46,42 38,50 26,50 18,42" fill="#047857" stroke="#34d399" strokeWidth="1.5" />
-          {/* Circuit Traces */}
-          <line x1="22" y1="44" x2="26" y2="48" stroke="#34d399" strokeWidth="1.5" />
-          <line x1="42" y1="44" x2="38" y2="48" stroke="#34d399" strokeWidth="1.5" />
-          {/* Antenna Nodes */}
-          <rect x="15" y="30" width="3" height="8" rx="1" fill="#00e699" />
-          <rect x="46" y="30" width="3" height="8" rx="1" fill="#00e699" />
-          {/* Glowing HUD Visor */}
-          <rect x="19" y="30" width="26" height="8" rx="2" fill="#00e699" stroke="#ffffff" strokeWidth="0.8" />
-          <line x1="20" y1="34" x2="44" y2="34" stroke="#ffffff" strokeWidth="1" strokeDasharray="2,2" />
-          {/* Grid Mouth */}
-          <line x1="28" y1="44" x2="36" y2="44" stroke="#34d399" strokeWidth="2" />
-        </g>
-      )}
-
-      {/* 6. GIGA BULL */}
-      {archetype.id === "bull" && (
-        <g>
-          {/* Large Golden Horns */}
-          <path d="M18 30 Q8 16 4 10 Q14 16 22 24 Z" fill="url(#gold-grad)" stroke="#b45309" strokeWidth="1" />
-          <path d="M46 30 Q56 16 60 10 Q50 16 42 24 Z" fill="url(#gold-grad)" stroke="#b45309" strokeWidth="1" />
-          {/* High-Contrast Emerald Bull Head */}
-          <polygon points="20,24 44,24 46,40 38,50 26,50 18,40" fill="#059669" stroke="#34d399" strokeWidth="1" />
-          <ellipse cx="32" cy="42" rx="10" ry="7" fill="#047857" />
-          {/* Septum Gold Ring */}
-          <circle cx="32" cy="46" r="4.5" fill="none" stroke="#fbbf24" strokeWidth="2" />
-          {/* Nostrils */}
-          <circle cx="29" cy="42" r="1.5" fill="#064e3b" />
-          <circle cx="35" cy="42" r="1.5" fill="#064e3b" />
-          {/* Fierce Yellow Eyes */}
-          <polygon points="22,30 28,33 24,35" fill="#fbbf24" stroke="#000" strokeWidth="0.5" />
-          <polygon points="42,30 36,33 40,35" fill="#fbbf24" stroke="#000" strokeWidth="0.5" />
-        </g>
-      )}
-
-      {/* 7. DOOM BEAR */}
-      {archetype.id === "bear" && (
-        <g>
-          {/* Bear Ears with bright pink pads */}
-          <circle cx="19" cy="22" r="7" fill="#dc2626" />
-          <circle cx="19" cy="22" r="4" fill="#fca5a5" />
-          <circle cx="45" cy="22" r="7" fill="#dc2626" />
-          <circle cx="45" cy="22" r="4" fill="#fca5a5" />
-          {/* High-Contrast Terracotta/Crimson Head */}
-          <circle cx="32" cy="36" r="16" fill="#b91c1c" stroke="#ef4444" strokeWidth="1" />
-          {/* Snout */}
-          <ellipse cx="32" cy="42" rx="9" ry="6" fill="#f87171" />
-          <polygon points="30,39 34,39 32,42" fill="#0f172a" />
-          {/* Angry Brow & Eyes */}
-          <line x1="20" y1="30" x2="28" y2="33" stroke="#450a0a" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="44" y1="30" x2="36" y2="33" stroke="#450a0a" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="25" cy="35" r="2.2" fill="#ef4444" stroke="#000" strokeWidth="0.5" />
-          <circle cx="39" cy="35" r="2.2" fill="#ef4444" stroke="#000" strokeWidth="0.5" />
-          {/* Grimace */}
-          <path d="M27 45 Q32 42 37 45" fill="none" stroke="#450a0a" strokeWidth="2" strokeLinecap="round" />
-        </g>
-      )}
-
-      {/* 8. TURBO DEGEN */}
-      {archetype.id === "degen" && (
-        <g>
-          {/* Bright Electric Violet Punk Head */}
-          <circle cx="32" cy="36" r="16" fill="#d946ef" stroke="#c084fc" strokeWidth="1" />
-          {/* Spiked Neon Mohawk */}
-          <polygon points="26,24 32,8 38,24" fill="#f43f5e" />
-          <polygon points="20,26 24,14 28,24" fill="#fb7185" />
-          <polygon points="44,26 40,14 36,24" fill="#fb7185" />
-          {/* Cyberpunk Ski Goggles */}
-          <rect x="18" y="30" width="28" height="9" rx="3" fill="#f43f5e" stroke="#00e699" strokeWidth="1.5" />
-          <line x1="20" y1="34" x2="44" y2="34" stroke="#fde047" strokeWidth="1.5" />
-          {/* Wide Grin */}
-          <path d="M25 45 Q32 52 39 45" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-        </g>
-      )}
-
-      {/* 9. APEX WHALE (New 9th Archetype) */}
-      {archetype.id === "whale" && (
-        <g>
-          {/* Royal Sapphire Whale Body */}
-          <ellipse cx="32" cy="38" rx="18" ry="14" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
-          {/* White Belly */}
-          <ellipse cx="32" cy="45" rx="12" ry="6" fill="#e0f2fe" />
-          {/* Golden Whale Crown */}
-          <polygon points="24,24 24,14 28,20 32,12 36,20 40,14 40,24" fill="url(#gold-grad)" stroke="#b45309" strokeWidth="1" />
-          <circle cx="24" cy="14" r="1.5" fill="#fde047" />
-          <circle cx="32" cy="12" r="1.5" fill="#fde047" />
-          <circle cx="40" cy="14" r="1.5" fill="#fde047" />
-          {/* Cool Whale Sunglasses */}
-          <rect x="22" y="33" width="9" height="6" rx="1.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="1" />
-          <rect x="33" y="33" width="9" height="6" rx="1.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="1" />
-          <line x1="31" y1="35" x2="33" y2="35" stroke="#0f172a" strokeWidth="1.5" />
-          {/* Whale Smile */}
-          <path d="M26 44 Q32 48 38 44" fill="none" stroke="#0369a1" strokeWidth="2" strokeLinecap="round" />
-        </g>
-      )}
-
-      {/* --- MOOD OVERLAYS (Dynamically react across all archetypes) --- */}
-      {mood === "laser" && (
-        <g>
-          {/* Twin High-Intensity Laser Beams */}
-          <polygon points="26,34 0,10 0,18" fill="#00e699" opacity="0.85" />
-          <polygon points="38,34 64,10 64,18" fill="#00e699" opacity="0.85" />
-          <circle cx="26" cy="34" r="3.5" fill="#ffffff" />
-          <circle cx="38" cy="34" r="3.5" fill="#ffffff" />
-          <circle cx="26" cy="34" r="2" fill="#00e699" />
-          <circle cx="38" cy="34" r="2" fill="#00e699" />
-        </g>
-      )}
-
-      {mood === "rekt" && (
-        <g>
-          {/* Red X_X Eyes */}
-          <line x1="22" y1="31" x2="28" y2="37" stroke="#ff3b54" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="28" y1="31" x2="22" y2="37" stroke="#ff3b54" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="36" y1="31" x2="42" y2="37" stroke="#ff3b54" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="42" y1="31" x2="36" y2="37" stroke="#ff3b54" strokeWidth="2.5" strokeLinecap="round" />
-          {/* Teardrop */}
-          <ellipse cx="21" cy="42" rx="2" ry="3" fill="#38bdf8" />
-        </g>
-      )}
-
-      {mood === "liar" && (
-        <g>
-          {/* Shifty Eyes */}
-          <ellipse cx="25" cy="34" rx="4" ry="2" fill="#ffffff" stroke="#ff3b54" strokeWidth="1" />
-          <ellipse cx="39" cy="34" rx="4" ry="2" fill="#ffffff" stroke="#ff3b54" strokeWidth="1" />
-          <circle cx="27" cy="34" r="1.5" fill="#ff3b54" />
-          <circle cx="41" cy="34" r="1.5" fill="#ff3b54" />
-        </g>
-      )}
+      <circle cx="32" cy="32" r="30" fill={VOID_DEEP} stroke={ring} strokeWidth={weight} />
+      <g opacity="0.9">
+        {mark.s.map((op, i) => shape(op, i, archetype.print, 1.7, 1.5))}
+      </g>
+      {mark.s.map((op, i) => shape(op, i, archetype.accent, 0, 0))}
+      {mark.c.map((op, i) => shape(op, i, VOID_DEEP, 0, 0))}
     </svg>
   );
 }

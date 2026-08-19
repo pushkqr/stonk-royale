@@ -5,14 +5,14 @@ import MatchSettings from "./MatchSettings";
 import { DEFAULTS } from "../lib/matchSettings";
 import Avatar from "./Avatar";
 import AvatarPicker from "./AvatarPicker";
-import { getAvatarForPlayer, getMyAvatar } from "../lib/avatars";
+import { avatarOf, getMyAvatar } from "../lib/avatars";
 
 export default function Lobby() {
-  const { lobby, session, start, kick, addBot, configure } = useMatch();
+  const { lobby, session, start, kick, addBot, configure, setAvatar } = useMatch();
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const [myAvatar, setMyAvatarState] = useState(() => getMyAvatar());
+  const [, setMyAvatarState] = useState(() => getMyAvatar());
   const [advanced, setAdvanced] = useState(false);
   const [draft, setDraft] = useState(DEFAULTS);
 
@@ -108,7 +108,7 @@ export default function Lobby() {
             const isMe = player.playerId === session.playerId;
             // Bots have no socket to lose, so "away" is not a state they can be in.
             const away = !player.connected && !player.bot;
-            const archetypeId = isMe ? myAvatar : getAvatarForPlayer(player.playerId, player.nickname, false);
+            const archetypeId = avatarOf(player);
             return (
               <li key={player.playerId} className={`lobby-player ${away ? "is-away" : ""}`}>
                 <div className="lobby-player-info">
@@ -201,6 +201,7 @@ export default function Lobby() {
         <AvatarPicker
           onSelect={(id) => {
             setMyAvatarState(id);
+            setAvatar(id);
             setShowPicker(false);
           }}
           onClose={() => setShowPicker(false)}

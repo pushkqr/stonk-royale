@@ -47,7 +47,7 @@ public final class Views {
      */
     public record BoardRow(String playerId, String nickname, double equity, double roundScore,
             double totalScore, Position position, boolean bot, boolean inRound, double cash,
-            boolean left) {
+            boolean left, String avatar) {
     }
 
     /** kind is one of NEWS, LIQUIDATION, TRADE, CHAT, FLOW. */
@@ -86,7 +86,7 @@ public final class Views {
      *                  otherwise a player who reopened in a new tab looks like a duplicate.
      */
     public record LobbyPlayer(String playerId, String nickname, boolean host, boolean bot,
-            boolean connected) {
+            boolean connected, String avatar) {
     }
 
     /**

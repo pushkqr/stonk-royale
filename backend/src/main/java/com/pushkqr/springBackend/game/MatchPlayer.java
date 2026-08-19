@@ -9,6 +9,27 @@ public final class MatchPlayer {
 
     private final String id;
     private final String nickname;
+
+    /**
+     * Which of the nine marks this player picked.
+     *
+     * Not final, and not derived: the picker sits in the lobby, so a player can change it
+     * after they are already seated. It used to live only in that player's own browser,
+     * which meant every client rendered a different avatar for the same person — confirmed
+     * on real devices. The server owning it is what makes the room agree.
+     */
+    private String avatar = "banker";
+
+    public String avatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        if (avatar != null && !avatar.isBlank()) {
+            this.avatar = avatar;
+        }
+    }
+
     private final List<Double> roundScores = new ArrayList<>();
 
     /** Not final: the badge moves if the host leaves, so the room stays startable. */

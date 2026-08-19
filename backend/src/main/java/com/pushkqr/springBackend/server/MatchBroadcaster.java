@@ -142,7 +142,7 @@ public class MatchBroadcaster {
                 match.config().startingCash(),
                 match.config().maxPlayers(),
                 match.players().stream()
-                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot(), p.isConnected()))
+                        .map(p -> new Views.LobbyPlayer(p.id(), p.nickname(), p.isHost(), p.isBot(), p.isConnected(), p.avatar()))
                         .toList(),
                 match.isPublic(),
                 new Views.Impact(
@@ -178,12 +178,12 @@ public class MatchBroadcaster {
                 truthfulTips);
     }
 
-    private Views.BoardRow boardRow(MatchPlayer player, double price) {
+    Views.BoardRow boardRow(MatchPlayer player, double price) {
         PlayerRound round = player.round();
         if (round == null) {
             return new Views.BoardRow(player.id(), player.nickname(), 0, 0,
                     round2(player.totalScore()), null, player.isBot(), false, 0,
-                    player.hasLeft());
+                    player.hasLeft(), player.avatar());
         }
         return new Views.BoardRow(
                 player.id(),
@@ -195,7 +195,8 @@ public class MatchBroadcaster {
                 player.isBot(),
                 true,
                 round2(round.cash()),
-                player.hasLeft());
+                player.hasLeft(),
+                player.avatar());
     }
 
     private Views.Position positionView(PlayerRound round, double price) {

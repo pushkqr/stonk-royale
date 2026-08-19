@@ -9,8 +9,9 @@ import {
   Gem,
   Drama,
 } from "lucide-react";
+import { useMatch } from "../state/MatchProvider";
 import Avatar from "./Avatar";
-import { getAvatarForPlayer, getMood } from "../lib/avatars";
+import { avatarOf, getMood } from "../lib/avatars";
 
 /**
  * The speech acts that matter: claim a tip, state a position, accuse.
@@ -50,6 +51,7 @@ const QUICK_ICONS = [
  * show a feed that has not changed, is pure cost.
  */
 function Wire({ feed, onSay, disabled, suspects = {}, className = "" }) {
+  const { board = [] } = useMatch() || {};
   const [draft, setDraft] = useState("");
   const listRef = useRef(null);
 
@@ -85,7 +87,7 @@ function Wire({ feed, onSay, disabled, suspects = {}, className = "" }) {
               <>
                 <span className="wire-name">
                   <Avatar
-                    archetypeId={getAvatarForPlayer(item.playerId, item.nickname, false)}
+                    archetypeId={avatarOf(board.find((p) => p.playerId === item.playerId))}
                     mood={getMood({ wasLie: suspects[item.playerId] === "SUS" })}
                     size={18}
                   />

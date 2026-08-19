@@ -19,24 +19,39 @@ public final class Requests {
     public record Create(String nickname, Integer rounds, Integer roundSeconds,
             Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
             String deviceId, Boolean isPublic, Double volatilityMultiplier,
-            Double marketImpactMultiplier) {
+            Double marketImpactMultiplier, String avatar) {
+        public Create(String nickname, Integer rounds, Integer roundSeconds,
+                Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
+                String deviceId, Boolean isPublic, Double volatilityMultiplier,
+                Double marketImpactMultiplier) {
+            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, volatilityMultiplier, marketImpactMultiplier, null);
+        }
+
         public Create(String nickname, Integer rounds, Integer roundSeconds,
                 Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
                 String deviceId, Boolean isPublic, Double volatilityMultiplier) {
-            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, volatilityMultiplier, 1.0);
+            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, volatilityMultiplier, 1.0, null);
         }
 
         public Create(String nickname, Integer rounds, Integer roundSeconds,
                 Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
                 String deviceId, Boolean isPublic) {
-            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, 1.0, 1.0);
+            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash, deviceId, isPublic, 1.0, 1.0, null);
         }
     }
 
-    public record Join(String nickname, String deviceId, Boolean skipBriefing) {
-        public Join(String nickname, String deviceId) {
-            this(nickname, deviceId, false);
+    public record Join(String nickname, String deviceId, Boolean skipBriefing, String avatar) {
+        public Join(String nickname, String deviceId, Boolean skipBriefing) {
+            this(nickname, deviceId, skipBriefing, null);
         }
+
+        public Join(String nickname, String deviceId) {
+            this(nickname, deviceId, false, null);
+        }
+    }
+
+    /** Lobby-only. The client sends the id it has stored; unknown values fall back. */
+    public record Avatar(String avatar) {
     }
 
     public record Open(String side, double sizeFraction, int leverage) {

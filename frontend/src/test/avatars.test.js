@@ -3,7 +3,7 @@ import {
   ARCHETYPES,
   getMyAvatar,
   setMyAvatar,
-  getAvatarForPlayer,
+  avatarOf,
   getMood,
 } from "../lib/avatars";
 
@@ -18,7 +18,7 @@ describe("avatars.js", () => {
       expect(a.id).toBeDefined();
       expect(a.name).toBeDefined();
       expect(a.role).toBeDefined();
-      expect(a.bg).toBeDefined();
+      expect(a.print).toBeDefined();
       expect(a.accent).toBeDefined();
     });
   });
@@ -35,15 +35,14 @@ describe("avatars.js", () => {
     expect(getMyAvatar()).toBe("moon");
   });
 
-  it("deterministically hashes rivals and returns consistent avatars", () => {
-    const avatar1 = getAvatarForPlayer("player-123", "TraderBob", false);
-    const avatar2 = getAvatarForPlayer("player-123", "TraderBob", false);
-    expect(avatar1).toBe(avatar2);
-    expect(ARCHETYPES.some((a) => a.id === avatar1)).toBe(true);
+  it("takes the avatar from the row the server sent", () => {
+    expect(avatarOf({ playerId: "p1", avatar: "degen" })).toBe("degen");
+  });
 
-    // If isMe is true, returns local custom avatar
-    setMyAvatar("degen");
-    expect(getAvatarForPlayer("player-123", "TraderBob", true)).toBe("degen");
+  it("falls back rather than rendering nothing for a row with no avatar", () => {
+    expect(avatarOf({ playerId: "p1" })).toBe("banker");
+    expect(avatarOf({ playerId: "p1", avatar: "not-an-archetype" })).toBe("banker");
+    expect(avatarOf(undefined)).toBe("banker");
   });
 
   it("calculates avatar moods correctly based on game context", () => {

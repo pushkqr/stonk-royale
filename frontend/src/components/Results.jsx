@@ -6,7 +6,7 @@ import Ledger from "./Ledger";
 import Accolades from "./Accolades";
 import Confetti from "./Confetti";
 import Avatar from "./Avatar";
-import { getAvatarForPlayer, getMood } from "../lib/avatars";
+import { avatarOf, getMood } from "../lib/avatars";
 
 export default function Results() {
   const { standings, session, rematch, lobby, settled, quit, feed, suspects, matchLiquidations } = useMatch();
@@ -45,7 +45,7 @@ export default function Results() {
             <span className="podium-name">
               <span className="podium-player-wrap">
                 <Avatar
-                  archetypeId={getAvatarForPlayer(row.playerId, row.nickname, row.playerId === session.playerId)}
+                  archetypeId={avatarOf(row)}
                   mood={getMood({ isWinner: row.rank === 1, pnl: row.totalScore })}
                   size={32}
                 />

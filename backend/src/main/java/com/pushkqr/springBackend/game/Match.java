@@ -130,8 +130,13 @@ public final class Match {
      * sits it out and starts scoring from the next one — see {@link #beginTrading}.
      */
     public synchronized MatchPlayer join(String playerId, String nickname) {
+        return join(playerId, nickname, null);
+    }
+
+    public synchronized MatchPlayer join(String playerId, String nickname, String avatar) {
         MatchPlayer existing = players.get(playerId);
         if (existing != null && !existing.hasLeft()) {
+            existing.setAvatar(avatar);
             return existing;
         }
         if (activePlayerIds().size() >= config.maxPlayers()) {
@@ -162,6 +167,7 @@ public final class Match {
         boolean hasActiveHost = players.values().stream()
                 .anyMatch(p -> p.isHost() && !p.hasLeft());
         MatchPlayer player = new MatchPlayer(seatId, nickname, !hasActiveHost);
+        player.setAvatar(avatar);
         players.put(seatId, player);
         return player;
     }
@@ -181,6 +187,7 @@ public final class Match {
             throw new IllegalStateException("Match has already started");
         }
         MatchPlayer bot = new MatchPlayer(id, nickname, false, true);
+        bot.setAvatar(Avatars.forSeed(id));
         players.put(id, bot);
         return bot;
     }

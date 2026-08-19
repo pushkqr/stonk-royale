@@ -337,6 +337,7 @@ export function MatchProvider({ session, children }) {
   const kick = useCallback((playerId) => publish("kick", { playerId }), [publish]);
   const addBot = useCallback(() => publish("bot"), [publish]);
   const configure = useCallback((settings) => publish("config", settings), [publish]);
+  const setAvatar = useCallback((id) => publish("avatar", { avatar: id }), [publish]);
   const say = useCallback((text, claim) => publish("chat", { text, claim }), [publish]);
 
   // Cued here rather than off the returning feed message, so your own trade answers under
@@ -393,13 +394,14 @@ export function MatchProvider({ session, children }) {
       kick,
       addBot,
       configure,
+      setAvatar,
       quit,
       suspects,
       toggleSuspect,
     }),
     [session, connected, phase, board, feed, rumor, lastRumor, settled, standings, matchLiquidations, lobby,
       error, me, serverNow, dismissError, quit, readyState, ready, start, rematch, open,
-      close, say, kick, addBot, configure, suspects, toggleSuspect],
+      close, say, kick, addBot, configure, setAvatar, suspects, toggleSuspect],
   );
 
   const priceValue = useMemo(() => ({ tick, series }), [tick, series]);
