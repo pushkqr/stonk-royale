@@ -118,4 +118,21 @@ describe("Trading.jsx Mobile Navigation", () => {
     expect(screen.getByText(/WHALE IMPACT \(3.5x\)/i)).toBeInTheDocument();
     mockMatch.lobby.marketImpactMultiplier = 1.0;
   });
+
+  it("renders the full breaking-news headline without truncating it", () => {
+    const headline = "$SOLARIS VOLUME DRIES UP, TRADERS SIDELINED";
+    const originalFeed = mockMatch.feed;
+    mockMatch.feed = [
+      ...originalFeed,
+      { id: 99, kind: "NEWS", text: headline, round: 0 },
+    ];
+
+    const { container } = render(<Trading />);
+
+    const banner = container.querySelector(".in-chart-news-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner.querySelector(".news-text")).toHaveTextContent(headline);
+
+    mockMatch.feed = originalFeed;
+  });
 });

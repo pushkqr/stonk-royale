@@ -2636,6 +2636,15 @@
     gap: 0.4rem;
   }
 
+  /* The font-size above only ever applied to the badge. .news-text sets its own size on
+     the element, and a direct declaration beats an inherited one no matter which media
+     query the inherited value came from — so the headline stayed at 0.82rem and this
+     query's whole reason for existing (claw back vertical space in a short window) missed
+     the one element taking up the most of it. */
+  .news-text {
+    font-size: 0.72rem;
+  }
+
   .deck-presets {
     gap: 0.3rem;
   }
@@ -2786,6 +2795,38 @@
   .chart-wrap {
     flex: 1 1 auto;
     min-height: 190px;
+  }
+
+  /* The headline is one of the few things a play-tester reliably reads, and on a phone it
+     was being cut off mid-sentence. The badge is flex-shrink: 0 and eats ~110px of a
+     ~360px row, leaving ~250px for a headline that needs ~330px at the base size — so
+     nearly every headline in NewsCopy.java clipped, not just the one that got reported.
+
+     Wrapping to two lines is the fix, but a banner that changes height would shove the
+     chart below it every time news lands mid-round, which is the same free-space fight
+     that starved the chart before. So the height is pinned rather than fluid: min-height
+     reserves two lines whether the headline needs them or not, and line-clamp caps it at
+     two so a long one can never take a third. Short headlines sit centred in the reserved
+     box. The chart pays a fixed ~13px once instead of an unpredictable jolt on every news
+     beat. flex: 0 0 auto keeps the banner from being squeezed back under that reserved
+     height when the column is tight, which would re-introduce the clipping it fixes. */
+  .in-chart-news-banner {
+    flex: 0 0 auto;
+    padding: 0.35rem 0.6rem;
+    /* two 0.74rem lines at 1.3, plus vertical padding, plus both borders (border-box) */
+    min-height: calc(2 * 0.74rem * 1.3 + 0.7rem + 2px);
+  }
+
+  .news-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.74rem;
+    line-height: 1.3;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   /* The deck was 29% of the phone screen for controls most players set once and then only
