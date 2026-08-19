@@ -337,10 +337,18 @@ export default function Trading() {
 
       <Wire feed={feed} onSay={say} disabled={false} suspects={suspects} avatars={avatars} />
 
-      {/* Mobile Dock Navigation */}
-      <nav className="mobile-dock" aria-label="Mobile Navigation">
+      {/* A tab list rather than a nav landmark: these four switch which panel of this one
+          screen is showing, they do not navigate anywhere. Marked up only this far on
+          purpose — the panels they switch between are the same elements the desktop layout
+          renders all three of at once, with no dock in sight, so calling them tabpanels
+          would assert a relationship that is false at every width above 900px. The tabs
+          themselves are safe: the dock is display:none on desktop, so the whole widget
+          drops out of the accessibility tree there rather than lying about itself. */}
+      <div className="mobile-dock" role="tablist" aria-label="Mobile Navigation">
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileTab === "trade"}
           className={`mobile-dock-btn ${mobileTab === "trade" ? "is-active" : ""}`}
           onClick={() => {
             setMobileTab("trade");
@@ -352,6 +360,8 @@ export default function Trading() {
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileTab === "dossier"}
           className={`mobile-dock-btn ${mobileTab === "dossier" ? "is-active" : ""}`}
           onClick={() => {
             setMobileTab("dossier");
@@ -363,6 +373,8 @@ export default function Trading() {
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileTab === "standings"}
           className={`mobile-dock-btn ${mobileTab === "standings" ? "is-active" : ""}`}
           onClick={() => {
             setMobileTab("standings");
@@ -374,6 +386,8 @@ export default function Trading() {
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileTab === "wire"}
           className={`mobile-dock-btn ${mobileTab === "wire" ? "is-active" : ""}`}
           onClick={() => {
             setMobileTab("wire");
@@ -384,10 +398,11 @@ export default function Trading() {
           <span className="dock-icon" style={{ position: "relative" }}>
             <MessageSquare size={18} strokeWidth={2.4} />
             {hasUnreadWire && <span className="dock-badge-dot" />}
+            {hasUnreadWire && <span className="sr-only">unread messages</span>}
           </span>
           <span>Wire</span>
         </button>
-      </nav>
+      </div>
 
       {/* A full-viewport red frame that snaps in on liquidation and fades out with screen shake. */}
       {jolt > 0 && (

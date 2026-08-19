@@ -62,7 +62,7 @@ vi.mock("../lib/haptic", () => ({
   },
 }));
 
-describe("Trading.jsx Mobile Navigation", () => {
+describe("Trading.jsx Mobile Dock", () => {
   beforeEach(() => {
     window.ResizeObserver = class {
       observe() {}
@@ -71,21 +71,24 @@ describe("Trading.jsx Mobile Navigation", () => {
     };
   });
 
-  it("renders mobile dock with 4 navigation buttons and default trade tab", () => {
+  it("renders the mobile dock as a tab list with trade selected by default", () => {
     const { container } = render(<Trading />);
 
-    const dock = screen.getByRole("navigation", { name: /Mobile Navigation/i });
+    const dock = screen.getByRole("tablist", { name: /Mobile Navigation/i });
     expect(dock).toBeInTheDocument();
 
-    const tradeBtn = screen.getByRole("button", { name: /Trade/i });
-    const intelBtn = screen.getByRole("button", { name: /Intel/i });
-    const ranksBtn = screen.getByRole("button", { name: /Ranks/i });
-    const wireBtn = screen.getByRole("button", { name: /Wire/i });
+    const tradeBtn = screen.getByRole("tab", { name: /Trade/i });
+    const intelBtn = screen.getByRole("tab", { name: /Intel/i });
+    const ranksBtn = screen.getByRole("tab", { name: /Ranks/i });
+    const wireBtn = screen.getByRole("tab", { name: /Wire/i });
 
     expect(tradeBtn).toHaveClass("is-active");
     expect(intelBtn).not.toHaveClass("is-active");
     expect(ranksBtn).not.toHaveClass("is-active");
     expect(wireBtn).not.toHaveClass("is-active");
+
+    expect(tradeBtn).toHaveAttribute("aria-selected", "true");
+    expect(intelBtn).toHaveAttribute("aria-selected", "false");
 
     const table = container.querySelector(".table");
     expect(table).toHaveClass("tab-trade");
@@ -94,22 +97,50 @@ describe("Trading.jsx Mobile Navigation", () => {
   it("switches tabs when dock buttons are clicked", () => {
     const { container } = render(<Trading />);
 
-    const intelBtn = screen.getByRole("button", { name: /Intel/i });
+    const intelBtn = screen.getByRole("tab", { name: /Intel/i });
     fireEvent.click(intelBtn);
 
     expect(intelBtn).toHaveClass("is-active");
+    expect(intelBtn).toHaveAttribute("aria-selected", "true");
     const table = container.querySelector(".table");
     expect(table).toHaveClass("tab-dossier");
 
-    const ranksBtn = screen.getByRole("button", { name: /Ranks/i });
+    const ranksBtn = screen.getByRole("tab", { name: /Ranks/i });
     fireEvent.click(ranksBtn);
     expect(ranksBtn).toHaveClass("is-active");
     expect(table).toHaveClass("tab-standings");
 
-    const wireBtn = screen.getByRole("button", { name: /Wire/i });
+    const wireBtn = screen.getByRole("tab", { name: /Wire/i });
     fireEvent.click(wireBtn);
     expect(wireBtn).toHaveClass("is-active");
     expect(table).toHaveClass("tab-wire");
+  });
+
+  // The badge is a bare dot, which announces nothing at all. What a screen reader actually
+  // gets is the tab name, so that is what has to change when the wire moves behind your
+  // back -- asserting the span exists would pass just as well with it hidden off in a
+  // corner of the DOM that nothing reads.
+  it("names the wire tab as unread when the feed grows behind your back", () => {
+    const originalFeed = mockMatch.feed;
+    const { rerender } = render(<Trading />);
+
+    // Mounted on the trade tab with the feed already seen: nothing to announce yet.
+    expect(screen.queryByRole("tab", { name: /unread messages/i })).not.toBeInTheDocument();
+
+    mockMatch.feed = [
+      ...originalFeed,
+      { id: 100, kind: "CHAT", playerId: "p2", nickname: "Bob", text: "sell now" },
+    ];
+    rerender(<Trading />);
+
+    const unread = screen.getByRole("tab", { name: /unread messages/i });
+    expect(unread).toBe(screen.getByRole("tab", { name: /Wire/i }));
+
+    // Opening the wire is what marks it read, so the name has to drop back.
+    fireEvent.click(unread);
+    expect(screen.queryByRole("tab", { name: /unread messages/i })).not.toBeInTheDocument();
+
+    mockMatch.feed = originalFeed;
   });
 
   it("renders Whale Impact badge when marketImpactMultiplier is >= 2.0", () => {
