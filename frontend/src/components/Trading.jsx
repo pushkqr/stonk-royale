@@ -4,7 +4,6 @@ import {
   FileText,
   Trophy,
   MessageSquare,
-  Flame,
   Zap,
   CheckCircle,
   AlertTriangle,
@@ -18,7 +17,7 @@ import { haptic } from "../lib/haptic";
 import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, money } from "../lib/format";
-import { REGIME_BIAS, evaluateCrossCheck } from "../lib/regime";
+import { evaluateCrossCheck } from "../lib/regime";
 import { unrealisedPnl } from "../lib/pnl";
 import { getLivePrice } from "../state/livePrice";
 import PriceChart from "./PriceChart";
@@ -260,6 +259,7 @@ export default function Trading() {
           truthfulTips={phase?.truthfulTips}
           feed={feed}
           roundIndex={phase?.roundIndex}
+          impactMultiplier={lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1}
         />
       </div>
 
@@ -268,26 +268,16 @@ export default function Trading() {
 
         <div className="floor-intel-hud">
           <div className="intel-hud-top">
-            {(lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1.0) >= 2.0 && (
-              <span className="intel-whale-badge" title="High PvP Market Impact Active">
-                <Flame size={12} strokeWidth={2.4} /> WHALE IMPACT ({(lobby?.marketImpactMultiplier ?? lobby?.impact?.multiplier ?? 1.0).toFixed(1)}x)
-              </span>
-            )}
-            {rumor?.claimedRegime && REGIME_BIAS[rumor.claimedRegime] ? (
-              <span className={`intel-bias-badge tone-${REGIME_BIAS[rumor.claimedRegime].tone}`}>
-                {REGIME_BIAS[rumor.claimedRegime].label}
-              </span>
-            ) : (
-              <span className="intel-bias-badge">INTEL</span>
-            )}
+            {/* Only the tip stays. The bias badge and the truthful count that used to flank
+                it are both on the Intel tab already, and rendered better there — the rumour
+                card prints the same bias label with a primer explaining what the regime
+                means. On desktop, where the rail and the floor are both on screen, they
+                were being shown twice at once. The whale badge moved to the same place; it
+                is a lobby setting that cannot change mid-round, so it was never live
+                information. */}
             <span className="intel-pill">
               {rumor?.text || "No active intel"}
             </span>
-            {phase?.truthfulTips != null && (
-              <span className="intel-count mono">
-                {phase.truthfulTips}/{phase.totalPlayers ?? (board?.length || 2)} Truthful
-              </span>
-            )}
           </div>
           {crossCheckStatus && (
             <div className={`intel-cross-check tone-${crossCheckStatus.tone}`}>

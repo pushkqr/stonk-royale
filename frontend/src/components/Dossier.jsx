@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Flame } from "lucide-react";
 import RumorCard from "./RumorCard";
 import { tipCountLine } from "../lib/regime";
 
@@ -29,6 +30,7 @@ function Dossier({
   truthfulTips,
   feed,
   roundIndex,
+  impactMultiplier = 1,
 }) {
   const news = feed.filter((item) => item.kind === "NEWS" && item.round === roundIndex);
 
@@ -37,6 +39,15 @@ function Dossier({
       <header className="panel-head">
         <h2 className="display pane-title">What you know</h2>
       </header>
+
+      {/* Set in the lobby and fixed for the whole match, so it belongs with the rest of the
+          briefing rather than on the trade screen, where it was holding a permanent row
+          above the chart to say something that never changed. */}
+      {impactMultiplier >= 2.0 && (
+        <p className="intel-whale-badge" title="High PvP Market Impact Active">
+          <Flame size={12} strokeWidth={2.4} /> WHALE IMPACT ({impactMultiplier.toFixed(1)}x)
+        </p>
+      )}
 
       <RumorCard text={rumor?.text} claimedRegime={rumor?.claimedRegime} compact />
 

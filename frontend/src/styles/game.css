@@ -1093,9 +1093,9 @@
   position: relative;
   z-index: 1;
   height: 100%;
-  /* Extra at the top clears the mute tab clipped to the corner, so the masthead starts
-     below it instead of underneath it. */
-  padding: calc(var(--gap) + 1.4rem) var(--gap) var(--gap);
+  /* No allowance for the corner tabs: they are hidden for the whole TRADING phase, which
+     is the only phase this element exists in. */
+  padding: var(--gap);
   display: grid;
   gap: var(--gap);
   grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr) minmax(17rem, 21rem);
@@ -2593,7 +2593,7 @@
 
 @media (min-width: 901px) and (max-height: 820px) {
   .table {
-    padding: calc(var(--gap) + 0.8rem) var(--gap) var(--gap);
+    padding: var(--gap);
     gap: 0.5rem;
   }
 
@@ -2689,7 +2689,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding: calc(var(--gap) + 1.8rem) var(--gap) 0;
+    padding: var(--gap) var(--gap) 0;
     gap: 0.45rem;
   }
 
@@ -2774,16 +2774,44 @@
     overflow: hidden;
   }
 
+  /* The height that used to be here never applied: the base rule sets flex-basis: 0, which
+     wins over height in a column flex container, so the chart collapsed to its 4.5rem
+     min-height and the price — the thing the whole game is about — ran on 7% of a phone
+     screen, smaller than the controls and smaller than the static text above it. Resetting
+     the basis to auto is what makes a real height possible at all. The 240px floor is what
+     keeps the liquidation markers and their nicknames legible; below that they go back to
+     reading as noise. */
   .chart-wrap {
-    height: clamp(140px, 22vh, 210px);
-    flex-shrink: 0;
+    flex: 1 1 auto;
+    min-height: 240px;
   }
 
-  /* The tip is the one thing on this screen nobody else can see, and in the base layout it
-     is the only child of this row that is allowed to shrink — the bias badge and the
-     truthful count either side of it are both flex-shrink: 0. On a phone that left it
-     about fifteen characters and an ellipsis. Give it the full width of its own line
-     instead; one extra line of text is a cheaper trade than the tip being unreadable. */
+  /* The deck was 29% of the phone screen for controls most players set once and then only
+     read. Everything here is spacing: presets, both dials, the risk line, the hint and both
+     buttons all stay on screen, because play-testing found players do not understand
+     leverage yet and hiding the dial would make that worse rather than better. */
+  .deck {
+    gap: 0.3rem;
+  }
+
+  .deck-dials {
+    gap: 0.35rem;
+  }
+
+  .preset-btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.68rem;
+  }
+
+  /* Still the biggest tap targets on the screen and still the primary action — just no
+     longer 155px tall apiece. */
+  .deck-sides .btn {
+    padding: 0.6rem 0.5rem;
+  }
+
+  /* The tip is now the only thing in this row — the badges that used to squeeze it onto
+     about fifteen characters and an ellipsis moved to the Intel tab. The wrap stays because
+     a long tip still needs to run onto a second line rather than be clipped. */
   .intel-hud-top {
     flex-wrap: wrap;
     gap: 0.25rem 0.45rem;
@@ -2931,17 +2959,13 @@
     left: calc(var(--leave-tab) + 0.35rem);
   }
 
-  .table {
-    padding-top: calc(var(--gap) + 2.1rem);
-  }
-
   .center-page {
     padding-top: calc(var(--gap) + 3rem);
     padding-bottom: 2rem;
   }
 
   input[type="range"] {
-    height: 2.25rem;
+    height: 1.9rem;
   }
 }
 

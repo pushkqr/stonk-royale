@@ -54,9 +54,18 @@ function Screen() {
         </button>
       )}
 
-      <LeaveTab />
-      <RulesTab />
-      <MuteToggle />
+      {/* Not while a round is live. On a phone these three cost about 70px of a screen
+          where the chart was down to 7% of the viewport, and none of them is something
+          anyone does with eleven seconds left on the clock. They come back the moment the
+          round settles, which is when leaving, reading the rules or muting are actually
+          things a player wants. */}
+      {current !== "TRADING" && (
+        <>
+          <LeaveTab />
+          <RulesTab />
+          <MuteToggle />
+        </>
+      )}
 
       {/* Keyed on the phase so each change replays the entrance instead of hard-cutting. */}
       <div key={current} className="phase-swap">
