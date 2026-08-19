@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Rocket,
   TrendingDown,
@@ -45,6 +45,17 @@ const QUICK_ICONS = [
 ];
 
 /**
+ * The client's half of the Wire's rate limit. Deliberately one token tighter than the
+ * server's, so an honest player runs out here — where the button simply stops lighting up —
+ * rather than there, where the message would vanish with nothing to explain it.
+ *
+ * Only the tap rows are gated. Typing is limited by how fast anybody can type, and freezing
+ * the field mid-sentence to solve a problem the field does not cause would be its own bug.
+ */
+const TAP_CAPACITY = 5;
+const TAP_REFILL_MS = 1200;
+
+/**
  * News, chat and carnage share one stream on purpose. A headline and a player's lie
  * arrive looking equally credible, which is exactly the position the game wants you in.
  *
@@ -60,7 +71,19 @@ const QUICK_ICONS = [
  */
 function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, className = "" }) {
   const [draft, setDraft] = useState("");
+  const [cooling, setCooling] = useState(false);
   const listRef = useRef(null);
+  const bucketRef = useRef({ tokens: TAP_CAPACITY, lastRefill: 0, timer: null });
+
+  useEffect(() => {
+    const bucket = bucketRef.current;
+    bucket.lastRefill = Date.now();
+    return () => {
+      if (bucket.timer) {
+        clearTimeout(bucket.timer);
+      }
+    };
+  }, []);
 
   // Scroll the list's own box, never scrollIntoView. scrollIntoView walks up and scrolls
   // every ancestor container too — on mobile, where the page itself scrolls, that dragged
@@ -70,6 +93,45 @@ function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, clas
     const list = listRef.current;
     if (list) list.scrollTop = list.scrollHeight;
   }, [feed]);
+
+  const spend = useCallback(() => {
+    const bucket = bucketRef.current;
+    const now = Date.now();
+    if (bucket.lastRefill === 0) {
+      bucket.lastRefill = now;
+    }
+    if (now > bucket.lastRefill) {
+      const elapsed = now - bucket.lastRefill;
+      const replenished = Math.floor(elapsed / TAP_REFILL_MS);
+      if (replenished > 0) {
+        bucket.tokens = Math.min(TAP_CAPACITY, bucket.tokens + replenished);
+        if (bucket.tokens === TAP_CAPACITY) {
+          bucket.lastRefill = now;
+        } else {
+          bucket.lastRefill += replenished * TAP_REFILL_MS;
+        }
+      }
+    }
+    if (bucket.tokens > 0) {
+      bucket.tokens -= 1;
+      if (bucket.tokens === 0) {
+        setCooling(true);
+        if (bucket.timer) clearTimeout(bucket.timer);
+        const waitMs = Math.max(0, TAP_REFILL_MS - (now - bucket.lastRefill));
+        bucket.timer = setTimeout(() => {
+          setCooling(false);
+          bucket.timer = null;
+        }, waitMs);
+      }
+      return true;
+    }
+    return false;
+  }, []);
+
+  const handleQuick = (text, claim) => {
+    if (!spend()) return;
+    onSay(text, claim);
+  };
 
   const submit = (event) => {
     event.preventDefault();
@@ -133,8 +195,8 @@ function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, clas
             key={text}
             type="button"
             className="quick"
-            onClick={() => onSay(text, claim)}
-            disabled={disabled}
+            onClick={() => handleQuick(text, claim)}
+            disabled={disabled || cooling}
           >
             {text}
           </button>
@@ -147,8 +209,8 @@ function Wire({ feed, onSay, disabled, suspects = {}, avatars = NO_AVATARS, clas
             key={label}
             type="button"
             className="quick quick-icon-btn"
-            onClick={() => onSay(label)}
-            disabled={disabled}
+            onClick={() => handleQuick(label)}
+            disabled={disabled || cooling}
             title={title}
             aria-label={title}
           >

@@ -25,12 +25,14 @@ public class MatchSocketController {
     private final MatchRegistry matches;
     private final MatchBroadcaster broadcaster;
     private final SessionRegistry sessions;
+    private final ChatLimiter chatLimiter;
 
     public MatchSocketController(MatchRegistry matches, MatchBroadcaster broadcaster,
-            SessionRegistry sessions) {
+            SessionRegistry sessions, ChatLimiter chatLimiter) {
         this.matches = matches;
         this.broadcaster = broadcaster;
         this.sessions = sessions;
+        this.chatLimiter = chatLimiter;
     }
 
     @MessageMapping("/match/{code}/start")
@@ -223,10 +225,17 @@ public class MatchSocketController {
         PlayerSession session = session(principal);
 
         String text = Text.chat(request.text());
-        if (!text.isEmpty()) {
-            match.recordTipClaim(session.playerId(), parseClaim(request.claim()));
-            broadcaster.feed(match, "CHAT", text, session.playerId(), session.nickname());
+        if (text.isEmpty()) {
+            return;
         }
+        // Silently, and before the claim is recorded: a dropped line must not move the
+        // player's claimed tip either, or the limiter becomes a way to change what you told
+        // the room without the room seeing you say it.
+        if (!chatLimiter.allow(code, session.playerId(), System.currentTimeMillis())) {
+            return;
+        }
+        match.recordTipClaim(session.playerId(), parseClaim(request.claim()));
+        broadcaster.feed(match, "CHAT", text, session.playerId(), session.nickname());
     }
 
     /**

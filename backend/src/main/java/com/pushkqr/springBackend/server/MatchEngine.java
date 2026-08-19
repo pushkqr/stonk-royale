@@ -43,16 +43,18 @@ public class MatchEngine {
     private final MatchBroadcaster broadcaster;
     private final Stats stats;
     private final TickMeter tickMeter;
+    private final ChatLimiter chatLimiter;
 
     private long ticks;
 
     public MatchEngine(MatchRegistry matches, SessionRegistry sessions, MatchBroadcaster broadcaster,
-            Stats stats, TickMeter tickMeter) {
+            Stats stats, TickMeter tickMeter, ChatLimiter chatLimiter) {
         this.matches = matches;
         this.sessions = sessions;
         this.broadcaster = broadcaster;
         this.stats = stats;
         this.tickMeter = tickMeter;
+        this.chatLimiter = chatLimiter;
     }
 
     @Scheduled(fixedRate = MatchConfig.STEP_MILLIS)
@@ -87,6 +89,7 @@ public class MatchEngine {
         if (reapable(match, now)) {
             matches.remove(match.code());
             sessions.removeForMatch(match.code());
+            chatLimiter.forgetMatch(match.code());
             logger.info("Reaped match {} in {}", match.code(), match.phase());
         }
     }

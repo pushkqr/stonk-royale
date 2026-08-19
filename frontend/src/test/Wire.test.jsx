@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import Wire from "../components/Wire";
 
 describe("Wire", () => {
@@ -84,5 +84,68 @@ describe("Wire", () => {
     const svgs = container.querySelectorAll("svg.avatar-svg");
     expect(svgs[0]).toHaveClass("avatar-degen");
     expect(svgs[1]).toHaveClass("avatar-banker");
+  });
+
+  it("fires quick lines up to TAP_CAPACITY in a burst and then disables them", () => {
+    vi.useFakeTimers();
+    try {
+      const onSay = vi.fn();
+      render(<Wire feed={[]} onSay={onSay} />);
+
+      const btn = screen.getByRole("button", { name: /^my tip says PUMP$/i });
+
+      // Click 5 times (TAP_CAPACITY)
+      for (let i = 0; i < 5; i++) {
+        fireEvent.click(btn);
+      }
+      expect(onSay).toHaveBeenCalledTimes(5);
+
+      // Button should now be disabled (cooling)
+      expect(btn).toBeDisabled();
+
+      // 6th click should not fire onSay
+      fireEvent.click(btn);
+      expect(onSay).toHaveBeenCalledTimes(5);
+
+      // Advance time by TAP_REFILL_MS wrapped in act
+      act(() => {
+        vi.advanceTimersByTime(1200);
+      });
+
+      // Button should no longer be cooling/disabled
+      expect(btn).not.toBeDisabled();
+      fireEvent.click(btn);
+      expect(onSay).toHaveBeenCalledTimes(6);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("still submits the text form while the quick-tap buttons are cooling", () => {
+    vi.useFakeTimers();
+    try {
+      const onSay = vi.fn();
+      render(<Wire feed={[]} onSay={onSay} />);
+
+      const quickBtn = screen.getByRole("button", { name: /^my tip says PUMP$/i });
+      for (let i = 0; i < 5; i++) {
+        fireEvent.click(quickBtn);
+      }
+      expect(quickBtn).toBeDisabled();
+
+      // Text form must still be enabled and submit successfully
+      const input = screen.getByLabelText("Message the room");
+      expect(input).not.toBeDisabled();
+      fireEvent.change(input, { target: { value: "I can still type freely" } });
+
+      const submitBtn = screen.getByRole("button", { name: "Say" });
+      expect(submitBtn).not.toBeDisabled();
+      fireEvent.click(submitBtn);
+
+      expect(onSay).toHaveBeenCalledWith("I can still type freely");
+      expect(onSay).toHaveBeenCalledTimes(6);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
