@@ -28,26 +28,9 @@
     padding: 0.55rem 0.75rem;
   }
 
-  .floor-intel-hud {
-    padding: 0.25rem 0.5rem;
-    gap: 0.2rem;
-    font-size: 0.7rem;
-  }
-
-  .in-chart-news-banner {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.72rem;
-    gap: 0.4rem;
-  }
-
-  /* The font-size above only ever applied to the badge. .news-text sets its own size on
-     the element, and a direct declaration beats an inherited one no matter which media
-     query the inherited value came from — so the headline stayed at 0.82rem and this
-     query's whole reason for existing (claw back vertical space in a short window) missed
-     the one element taking up the most of it. */
-  .news-text {
-    font-size: 0.72rem;
-  }
+  /* The tip row and the breaking-news banner used to be squeezed here to claw back vertical
+     space on a short desktop window. Both are hidden above 900px now — they were duplicating
+     the rail and the wire — so there is nothing left to squeeze. */
 
   .deck-presets {
     gap: 0.3rem;
@@ -276,10 +259,30 @@
     padding: 0.6rem 0.5rem;
   }
 
+  /* Everything the desktop hides comes back here, because on a phone the rail is behind a
+     tab: this is the only copy of the tip and the only copy of the headline, not a third
+     shout of something already on screen. So the wrapper is a real card again. */
+  .floor-intel-hud {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--void-wash);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    font-size: 0.76rem;
+  }
+
+  .in-chart-news-banner {
+    display: flex;
+  }
+
   /* The tip is now the only thing in this row — the badges that used to squeeze it onto
      about fifteen characters and an ellipsis moved to the Intel tab. The wrap stays because
      a long tip still needs to run onto a second line rather than be clipped. */
   .intel-hud-top {
+    display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 0.25rem 0.45rem;
   }

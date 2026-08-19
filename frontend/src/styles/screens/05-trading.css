@@ -337,22 +337,29 @@
 
 /* --- in-chart thesis hud ------------------------------------------------- */
 
+/*
+ * Not a card on desktop, and barely a wrapper.
+ *
+ * Its two other children — the tip and the breaking headline — are both already on screen
+ * in the left rail: the rumour card prints the same tip with a bias stamp and a primer, and
+ * the dossier prints the same headline as a yellow slab, as does the wire. Three copies of
+ * one headline was not a styling problem, it was the same sentence shouted from three
+ * places, and no amount of restyling fixes that. So on desktop they are hidden and only the
+ * cross-check verdict — the one thing here that exists nowhere else — remains, standing as
+ * a floor child in its own right rather than inside a box drawn around nothing.
+ *
+ * `display: contents` rather than unwrapping in JSX because the wrapper still is a card on
+ * a phone, where the rail sits behind a tab and none of this is a duplicate.
+ */
 .floor-intel-hud {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.4rem 0.6rem;
-  background: var(--void-wash);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius);
-  font-size: 0.76rem;
+  display: contents;
 }
 
+/* Hidden on desktop, shown on a phone. The same inversion the mobile dock uses. */
 .intel-hud-top {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  display: none;
 }
+
 
 .intel-pill {
   color: var(--paper);
@@ -368,45 +375,88 @@
 
 .intel-cross-check {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.4rem 0.1rem;
-  font-size: 0.72rem;
-  line-height: 1.2;
-  border-top: 1px solid rgba(86, 40, 122, 0.45);
+  align-items: baseline;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  background: var(--void-wash);
   border-left: 3px solid var(--edge);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+/* The verdict's own word, set like the bias stamp on the rumour card: solid ink, printed
+   rather than tinted. The tone lives here so the sentence beside it can stay paper white,
+   which reads at a glance instead of asking the eye to parse coloured prose. */
+.cross-check-stamp {
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  background: #343a40;
+  color: #ffffff;
+  border: 1px solid #212529;
+}
+
+.cross-check-text {
+  color: var(--paper);
+  font-weight: 600;
 }
 
 .intel-cross-check.tone-pump {
   border-left-color: var(--pump);
-  color: var(--pump);
+}
+
+.intel-cross-check.tone-pump .cross-check-stamp {
+  background: #007a4d;
+  border-color: #005a38;
 }
 
 .intel-cross-check.tone-dump {
   border-left-color: var(--dump);
-  color: var(--dump);
+}
+
+.intel-cross-check.tone-dump .cross-check-stamp {
+  background: #c92a2a;
+  border-color: #a61e1e;
 }
 
 .intel-cross-check.tone-scream {
   border-left-color: var(--scream);
-  color: var(--scream);
 }
 
-.cross-check-text {
-  font-weight: 600;
+.intel-cross-check.tone-scream .cross-check-stamp {
+  background: var(--scream);
+  color: var(--void-deep);
+  border-color: #b8a600;
 }
 
 /* --- in-chart breaking news banner ---------------------------------------- */
 
+/*
+ * A yellow slab, because that is what a headline is everywhere else in this game: the wire
+ * sets .wire-news on --scream and .wire-liquidation on --dump, and the dossier prints its
+ * headlines on --scream too. This banner was tinted --dump with a red glow, so the one
+ * headline a player is most meant to read was wearing the colour that everywhere else means
+ * somebody just got liquidated.
+ *
+ * Hidden on desktop, where the same headline is already on screen twice — once in the
+ * dossier and once in the wire. It survives on a phone because there the rail is behind a
+ * tab and this is the only copy.
+ */
 .in-chart-news-banner {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 0.5rem;
   padding: 0.3rem 0.6rem;
-  background: rgba(255, 59, 84, 0.15);
-  border: 1px solid var(--dump);
+  background: var(--scream);
+  color: var(--void-deep);
   border-radius: var(--radius);
-  box-shadow: 0 0 16px rgba(255, 59, 84, 0.2);
   animation: newsSlideIn 0.35s ease-out both;
 }
 
@@ -421,14 +471,16 @@
   }
 }
 
+/* Inverted out of the slab rather than sitting on it: dark ink on the yellow, the way a
+   masthead flash is printed. */
 .news-badge {
   flex-shrink: 0;
   font-family: var(--display);
   font-weight: 800;
   font-size: 0.68rem;
   letter-spacing: 0.05em;
-  color: #fff;
-  background: var(--dump);
+  color: var(--scream);
+  background: var(--void-deep);
   padding: 0.15rem 0.4rem;
   border-radius: 2px;
   animation: pulseGlow 1.5s infinite ease-in-out;
@@ -440,12 +492,10 @@
 }
 
 .news-text {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.82rem;
-  color: var(--paper);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--void-deep);
+  overflow-wrap: anywhere;
 }
 
 /* --- tip deduction breakdown --------------------------------------------- */

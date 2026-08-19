@@ -167,6 +167,25 @@ describe("Trading.jsx Mobile Dock", () => {
     mockMatch.feed = originalFeed;
   });
 
+  it("prints the cross-check verdict as a stamped word beside its sentence", () => {
+    // The verdict used to be one of five lucide glyphs, which said nothing a screen reader
+    // or a glance could use. Naming it is the point of the change, so the name is what this
+    // asserts — not the class it happens to wear.
+    const originalFeed = mockMatch.feed;
+    mockMatch.feed = [
+      ...originalFeed,
+      { id: 77, kind: "NEWS", text: "$STNK SHORT INTEREST HITS ALL-TIME HIGH", round: 0 },
+    ];
+
+    render(<Trading />);
+
+    // The tip claims PUMP; a squeeze headline points elsewhere, so the tip is contradicted.
+    expect(screen.getByText("CONFLICTING")).toBeInTheDocument();
+    expect(screen.getByText(/your tip says otherwise/i)).toBeInTheDocument();
+
+    mockMatch.feed = originalFeed;
+  });
+
   it("renders the player's private tip in full", () => {
     const tipText = "$VOID is done. Everyone's heading for the exit.";
     const originalRumor = mockMatch.rumor;

@@ -5,11 +5,6 @@ import {
   Trophy,
   MessageSquare,
   Zap,
-  CheckCircle,
-  AlertTriangle,
-  Scale,
-  Target,
-  ShieldAlert,
 } from "lucide-react";
 import { useMatch } from "../state/MatchProvider";
 import { sound } from "../lib/sound";
@@ -287,17 +282,16 @@ export default function Trading() {
               {rumor?.text || "No active intel"}
             </span>
           </div>
+          {/* A stamped word rather than an icon. Five lucide glyphs in five tones read as a
+              dashboard alert, which is the one thing this screen is not — and the verdict
+              already has a name, so printing it says more than a symbol did. The stamp
+              carries the tone and the sentence stays on paper white, which is both louder
+              and easier to read than a whole tinted line. */}
           {crossCheckStatus && (
-            <div className={`intel-cross-check tone-${crossCheckStatus.tone}`}>
-              <span className="cross-check-icon">
-                {crossCheckStatus.status === "MATCHING" && <CheckCircle size={13} strokeWidth={2.4} />}
-                {crossCheckStatus.status === "CONFLICTING" && <AlertTriangle size={13} strokeWidth={2.4} />}
-                {crossCheckStatus.status === "MIXED" && <Scale size={13} strokeWidth={2.4} />}
-                {crossCheckStatus.status === "ALIGNED" && <Target size={13} strokeWidth={2.4} />}
-                {crossCheckStatus.status === "EXPOSED" && <ShieldAlert size={13} strokeWidth={2.4} />}
-              </span>
+            <p className={`intel-cross-check tone-${crossCheckStatus.tone}`}>
+              <span className="cross-check-stamp">{crossCheckStatus.status}</span>
               <span className="cross-check-text">{crossCheckStatus.text}</span>
-            </div>
+            </p>
           )}
         </div>
 
