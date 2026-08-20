@@ -87,4 +87,110 @@ describe("accolades.js", () => {
     expect(mastermind.player).toBe("Alice");
     expect(mastermind.subtitle).toBe("Lied in 2 of 3 rounds");
   });
+
+  /**
+   * The closing screen exists to give everyone at the table a moment. These are the ways it
+   * stopped doing that: awards computed independently against one standings array collided
+   * on whoever was leading, and nothing ever read the `bot` flag its own doc comment
+   * promised. Both were invisible to the tests above, because none of them had more awards
+   * available than players to hand them to.
+   */
+  describe("who is allowed to win what", () => {
+    // Four humans, nobody liquidated, and the leader also had the best single round —
+    // the shape where every award used to converge on one person.
+    const table = [
+      { playerId: "p1", nickname: "Ana", totalScore: 40, bestRound: 25 },
+      { playerId: "p2", nickname: "Ben", totalScore: 18, bestRound: 11 },
+      { playerId: "p3", nickname: "Cal", totalScore: -3, bestRound: 6 },
+      { playerId: "p4", nickname: "Dee", totalScore: -9, bestRound: 4 },
+    ];
+    const anaLiedCalDidNot = [{
+      regime: "PUMP",
+      results: [
+        { playerId: "p1", nickname: "Ana", tipClaim: "PUMP", rumorClaimed: "DUMP" },
+        { playerId: "p3", nickname: "Cal", tipClaim: "DUMP", rumorClaimed: "DUMP" },
+      ],
+    }];
+
+    it("never hands the same player two awards", () => {
+      const awards = computeAccolades(table, null, [], {}, anaLiedCalDidNot);
+      const winners = awards.map((a) => a.player);
+
+      expect(awards.length).toBeGreaterThan(1);
+      expect(new Set(winners).size).toBe(winners.length);
+    });
+
+    it("keeps a bot away from the prizes for what a player chose to say", () => {
+      // Vega leads on every outcome and is the only one on record as having lied, so both
+      // claim-based awards would land on it if bots were eligible.
+      const withBots = [
+        { playerId: "bot:0", nickname: "Vega", totalScore: 30, bestRound: 30, bot: true },
+        { playerId: "p1", nickname: "You", totalScore: 12, bestRound: 12 },
+      ];
+      const botLied = [{
+        regime: "PUMP",
+        results: [
+          { playerId: "bot:0", nickname: "Vega", tipClaim: "PUMP", rumorClaimed: "DUMP" },
+          { playerId: "p1", nickname: "You", tipClaim: "PUMP", rumorClaimed: "PUMP" },
+        ],
+      }];
+
+      const awards = computeAccolades(withBots, null, [], {}, botLied);
+
+      expect(awards.find((a) => a.id === "mastermind")).toBeUndefined();
+      expect(awards.find((a) => a.id === "straight")?.player).toBe("You");
+    });
+
+    it("still lets a bot take an award it actually earned", () => {
+      // A bot really did take those liquidations, so THE REKT is honest where THE
+      // MASTERMIND would not be.
+      const awards = computeAccolades(
+        [{ playerId: "bot:0", nickname: "Vega", totalScore: -30, bestRound: 0, bot: true },
+          { playerId: "p1", nickname: "You", totalScore: 12, bestRound: 12 }],
+        null, [], { "bot:0": 3 }, [],
+      );
+
+      expect(awards.find((a) => a.id === "rekt")?.player).toBe("Vega");
+    });
+
+    it("does not count silence as honesty", () => {
+      // Ben and Dee never went on record at all. Never lying is only an achievement for
+      // someone who spoke.
+      const awards = computeAccolades(table, null, [], {}, anaLiedCalDidNot);
+      const straight = awards.find((a) => a.id === "straight");
+
+      expect(straight?.player).toBe("Cal");
+      expect(["Ben", "Dee"]).not.toContain(straight?.player);
+    });
+
+    it("does not count one truthful remark in a long match as a record of honesty", () => {
+      // Ben is the *only* truthful claimer in a four-round match, and he spoke exactly once.
+      // Ranking cannot carry this one — with nobody to outrank, the award either has a
+      // threshold or it goes to a player who made a single remark.
+      //
+      // Ben is given no best round and no profit on purpose. Leave him eligible for
+      // anything else and an earlier award takes him off the board, which would let this
+      // pass whether the threshold exists or not.
+      const twoSeats = [
+        { playerId: "p1", nickname: "Ana", totalScore: 40, bestRound: 25 },
+        { playerId: "p2", nickname: "Ben", totalScore: -5, bestRound: 0 },
+      ];
+      const fourRounds = [
+        { results: [{ playerId: "p2", nickname: "Ben", tipClaim: "PUMP", rumorClaimed: "PUMP" },
+          { playerId: "p1", nickname: "Ana", tipClaim: "PUMP", rumorClaimed: "DUMP" }] },
+        { results: [{ playerId: "p1", nickname: "Ana", tipClaim: "PUMP", rumorClaimed: "CHOP" }] },
+        { results: [] },
+        { results: [] },
+      ];
+
+      const awards = computeAccolades(twoSeats, null, [], {}, fourRounds);
+
+      expect(awards.find((a) => a.id === "straight")).toBeUndefined();
+    });
+
+    it("has retired second place dressed up as an accolade", () => {
+      const awards = computeAccolades(table, null, [], {}, anaLiedCalDidNot);
+      expect(awards.find((a) => a.id === "diamond")).toBeUndefined();
+    });
+  });
 });
