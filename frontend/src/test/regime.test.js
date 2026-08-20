@@ -94,26 +94,50 @@ describe("regime.js", () => {
 
   it("calculates deduction verdicts accurately across player outcomes", () => {
     // 1. Insider alpha (True tip + profit)
-    const alpha = deductionVerdict({ rumorWasTrue: true, roundScore: 0.15, rumorClaimed: "PUMP" }, "PUMP");
+    const alpha = deductionVerdict({ rumorWasTrue: true, roundScore: 0.15, rumorClaimed: "PUMP" });
     expect(alpha.tag).toBe("INSIDER ALPHA");
     expect(alpha.tone).toBe("pump");
 
     // 2. Bamboozled (Fake tip + loss)
-    const bamboozled = deductionVerdict({ rumorWasTrue: false, roundScore: -0.2, rumorClaimed: "PUMP" }, "DUMP");
+    const bamboozled = deductionVerdict({ rumorWasTrue: false, roundScore: -0.2, rumorClaimed: "PUMP" });
     expect(bamboozled.tag).toBe("BAMBOOZLED");
     expect(bamboozled.tone).toBe("dump");
 
     // 3. Big brain contrarian (Fake tip + profit)
-    const contrarian = deductionVerdict({ rumorWasTrue: false, roundScore: 0.35, rumorClaimed: "DUMP" }, "PUMP");
+    const contrarian = deductionVerdict({ rumorWasTrue: false, roundScore: 0.35, rumorClaimed: "DUMP" });
     expect(contrarian.tag).toBe("BIG BRAIN CONTRARIAN");
     expect(contrarian.tone).toBe("pump");
 
     // 4. Risk off (Flat / zero score)
-    const flat = deductionVerdict({ rumorWasTrue: true, roundScore: 0, rumorClaimed: "PUMP" }, "PUMP");
+    const flat = deductionVerdict({ rumorWasTrue: true, roundScore: 0, rumorClaimed: "PUMP" });
     expect(flat.tag).toBe("RISK-OFF");
     expect(flat.tone).toBe("muted");
 
-    // 5. Null result returns null
-    expect(deductionVerdict(null, "PUMP")).toBeNull();
+    // 5. Wrong-footed (True tip + loss) — the branch every other case falls through to,
+    // and the only one that had no test at all.
+    const wrongFooted = deductionVerdict({ rumorWasTrue: true, roundScore: -0.1, rumorClaimed: "PUMP" });
+    expect(wrongFooted.tag).toBe("WRONG-FOOTED");
+    expect(wrongFooted.tone).toBe("dump");
+
+    // 6. Null result returns null
+    expect(deductionVerdict(null)).toBeNull();
+  });
+
+  it("never spends its one sentence on something already on the screen", () => {
+    // The regime is the headline above this card and the tip's truth is stamped across the
+    // card beside it. A summary naming either was the third printing of the same fact.
+    const results = [
+      { rumorWasTrue: true, roundScore: 0.15, rumorClaimed: "PUMP" },
+      { rumorWasTrue: false, roundScore: -0.2, rumorClaimed: "PUMP" },
+      { rumorWasTrue: false, roundScore: 0.35, rumorClaimed: "DUMP" },
+      { rumorWasTrue: true, roundScore: 0, rumorClaimed: "PUMP" },
+      { rumorWasTrue: true, roundScore: -0.1, rumorClaimed: "PUMP" },
+    ];
+
+    for (const result of results) {
+      const { summary } = deductionVerdict(result);
+      expect(summary, `summary for ${result.rumorWasTrue} / ${result.roundScore}`)
+        .not.toMatch(/\bmarket was\b|\btip was (true|fake)\b/i);
+    }
   });
 });

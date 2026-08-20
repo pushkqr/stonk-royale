@@ -127,8 +127,14 @@ export function evaluateCrossCheck(claimedRegime, headlines = []) {
 
 /**
  * Categorizes a player's round performance relative to the truthfulness of their rumor.
+ *
+ * The summaries say what the screen around them does not. What the market did is the
+ * headline above this card and whether the tip was real is stamped across the card beside
+ * it, so a summary that named either was spending its one sentence repeating something the
+ * player had already read twice. It takes no regime argument for that reason: every branch
+ * is about what the player did with the tip, which the result alone determines.
  */
-export function deductionVerdict(myResult, settledRegime) {
+export function deductionVerdict(myResult) {
   if (!myResult) return null;
   const { rumorWasTrue, roundScore, rumorClaimed } = myResult;
   const isPositive = (roundScore || 0) > 0;
@@ -138,7 +144,7 @@ export function deductionVerdict(myResult, settledRegime) {
     return {
       tag: "RISK-OFF",
       tone: "muted",
-      summary: `You stayed flat with zero exposure. The market was ${settledRegime || "unknown"}.`,
+      summary: "You never opened a position. Nothing won, nothing lost, nothing learned.",
     };
   }
   if (rumorWasTrue && isPositive) {
@@ -162,9 +168,12 @@ export function deductionVerdict(myResult, settledRegime) {
       summary: "You sniffed out the fake tip and traded against the herd!",
     };
   }
+  // Everything above has returned by now, so this is the one remaining case: a real tip that
+  // still lost money. Worth naming as its own thing rather than as a fallback — it is the
+  // outcome that teaches the most, and the one players are quickest to blame the tip for.
   return {
     tag: "WRONG-FOOTED",
     tone: "dump",
-    summary: `Market was ${settledRegime || "volatile"}. Tip was ${rumorWasTrue ? "True" : "Fake"}.`,
+    summary: "Your tip was real and you finished down anyway. Knowing the shape is not the same as timing it.",
   };
 }

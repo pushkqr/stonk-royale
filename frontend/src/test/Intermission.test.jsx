@@ -116,4 +116,42 @@ describe("Intermission", () => {
     expect(screen.getByRole("button", { name: /Round 2 Results/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Round 3 Intel/i })).toBeInTheDocument();
   });
+
+  /**
+   * Document order is the one part of a layout jsdom can actually hold to account, and here
+   * it is the whole change: which block a player lands on when the round breaks.
+   */
+  describe("the order of the reveal", () => {
+    beforeEach(() => {
+      // Two seats and a liar, because the Ledger renders nothing for a room of one and
+      // nothing when no one went on record — the single-player default would pass the
+      // assertions below by never drawing the table at all.
+      mockMatch.settled.results = [
+        { playerId: "p1", nickname: "Alice", roundScore: 50, totalScore: 50,
+          rumorClaimed: "PUMP", tipClaim: "PUMP", rumorWasTrue: true },
+        { playerId: "p2", nickname: "Bob", roundScore: -20, totalScore: -20,
+          rumorClaimed: "DUMP", tipClaim: "PUMP", rumorWasTrue: false },
+      ];
+    });
+
+    it("puts the room's reckoning ahead of the player's own post-mortem", () => {
+      const { container } = render(<Intermission />);
+
+      const ledger = container.querySelector(".ledger");
+      const deduction = container.querySelector(".tip-deduction-card");
+      expect(ledger, "the ledger must render for this fixture").toBeTruthy();
+      expect(deduction, "the deduction card must render for this fixture").toBeTruthy();
+
+      expect(ledger.compareDocumentPosition(deduction) & Node.DOCUMENT_POSITION_FOLLOWING)
+        .toBeTruthy();
+    });
+
+    it("prints the round score once, where it is largest", () => {
+      render(<Intermission />);
+
+      // Was twice: the header and again inside the deduction card, which made the card read
+      // as a second, quieter result rather than a reading of the first.
+      expect(screen.getAllByText("+50.0%")).toHaveLength(1);
+    });
+  });
 });

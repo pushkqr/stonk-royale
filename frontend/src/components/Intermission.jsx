@@ -81,29 +81,38 @@ export default function Intermission() {
             )}
           </header>
 
+          {/*
+            The count told the room how many tips were real. This is where it gets settled —
+            and it comes before the personal post-mortem below rather than after it.
+
+            It used to sit last, under four blocks that are each about one player alone: the
+            score, the stamp, the read. This is the only one the whole table reacts to at
+            once — it is where a SUS tag becomes "Caught!" and a TRUSTED one becomes
+            "Betrayed!" — and on a phone it was four blocks of your own P&L away from being
+            seen at all. Everyone finds out what the market did together, so who lied about it
+            belongs in the same breath; what it cost you personally keeps.
+          */}
+          <Ledger results={settled.results} meId={session.playerId} suspects={suspects} />
+
           <RumorCard text={lastRumor.text} stamp={lastRumor.wasTrue ? "TRUE" : "LIE"} />
 
-          {/* The three facts above are already on screen — the verdict, the score, the
-              stamp — but as unrelated elements. Stated as one sentence they become the
-              answer to "was my tip worth listening to", which is the thing that has to
-              accumulate over five rounds for anyone to start using it. */}
+          {/* The facts above are already on screen — the verdict, the score, the stamp — but
+              as unrelated elements. Stated as one sentence they become the answer to "was my
+              tip worth listening to", which is the thing that has to accumulate over five
+              rounds for anyone to start using it. The score is not repeated here: it is the
+              largest thing in the header and printing it twice made the card look like a
+              second, quieter result rather than a reading of the first. */}
           {myResult && (() => {
-            const verdict = deductionVerdict(myResult, settled.regime);
+            const verdict = deductionVerdict(myResult);
             return (
               <div className={`tip-deduction-card tone-${verdict?.tone || "muted"}`}>
                 <div className="deduction-head">
                   <span className="deduction-tag">{verdict?.tag || "OUTCOME"}</span>
-                  <span className={`mono deduction-score ${toneOf(myResult.roundScore)}`}>
-                    {pct(myResult.roundScore)}
-                  </span>
                 </div>
                 <p className="deduction-summary">{verdict?.summary}</p>
               </div>
             );
           })()}
-
-          {/* The count told the room how many tips were real. This is where it gets settled. */}
-          <Ledger results={settled.results} meId={session.playerId} suspects={suspects} />
         </>
       ) : (
         <>

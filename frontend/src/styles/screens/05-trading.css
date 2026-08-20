@@ -568,11 +568,6 @@
   color: var(--scream);
 }
 
-.deduction-score {
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
 .deduction-summary {
   margin: 0;
   font-size: 0.85rem;

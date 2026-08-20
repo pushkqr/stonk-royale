@@ -70,8 +70,14 @@ export default function Results() {
         matchLiquidations={matchLiquidations} roundHistory={roundHistory} />
 
       {/* The last round has no intermission behind it, so this is the only place its lies
-          ever surface — and it is the round people lie hardest in. Same reason this is also
-          the only place that round's tip-lesson sentence runs: Intermission never gets a
+          ever surface — and it is the round people lie hardest in.
+
+          Above the tip-lesson below it, for the same reason it leads the round reveal: the
+          podium, the accolades and this table are what the room reads out to each other, and
+          a sentence about one player's own tip in the middle of them breaks that run. */}
+      <Ledger results={settled?.results} meId={session.playerId} suspects={suspects} />
+
+      {/* The only place this round's tip-lesson sentence runs: Intermission never gets a
           turn to show it. */}
       {settled && myResult && (
         <p className="tip-lesson mono" role="status">
@@ -80,8 +86,6 @@ export default function Results() {
           {myResult.rumorWasTrue ? "Trusting it was the right call." : "Trusting it cost you."}
         </p>
       )}
-
-      <Ledger results={settled?.results} meId={session.playerId} suspects={suspects} />
 
       {/* The room stays open, so the group never has to regroup from the home page. */}
       {isHost ? (
