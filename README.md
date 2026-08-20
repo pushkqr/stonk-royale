@@ -4,7 +4,7 @@
 
 # Stonk Royale
 
-Stonk Royale is a **nine-minute multiplayer trading game built around deception rather than finance**. Five rounds, one fictional asset per round, and every player is privately dealt a rumour about it — roughly 40% of which are true. You are never told which kind you got. The room is told how many true ones are out there.
+Stonk Royale is a **ten-minute multiplayer trading game built around deception rather than finance**. Five rounds, one fictional asset per round, and every player is privately dealt a rumour about it — roughly 40% of which are true. You are never told which kind you got. The room is told how many true ones are out there.
 
 Think skribbl.io, but instead of drawing you're going 10x long on `$BAGZ` while someone in chat swears their tip says it's about to rug.
 
@@ -107,21 +107,22 @@ flowchart LR
 For comprehensive technical, mathematical, and architectural documentation, explore the dedicated learning guides:
 
 - **[01. Gameplay Loop & Deception Mechanics](learning/01-gameplay-and-deception.md)**  
-  *Match configuration, briefing gate, rumour deals, headline shock lead times, structured wire claims, and zero-point social scoring philosophy.*
+  _Match configuration, briefing gate, rumour deals, headline shock lead times, structured wire claims, and zero-point social scoring philosophy._
 - **[02. Market Simulation & Order Flow Impact](learning/02-market-and-order-flow.md)**  
-  *Seeded GBM mathematics, 5 empirical regime tables, decaying order flow impact formulas ($\tau = 4.0\text{s}$), liquidation cascades, and margin survival statistics.*
+  _Seeded GBM mathematics, 5 empirical regime tables, decaying order flow impact formulas ($\tau = 4.0\text{s}$), liquidation cascades, and margin survival statistics._
 - **[03. Backend Architecture & The 100ms Tick Engine](learning/03-backend-architecture.md)**  
-  *Spring-free domain model, deterministic timestamp injection, unified 100ms scheduler, `TickMeter` telemetry, STOMP wire isolation (`Views.java`), and broker defenses.*
+  _Spring-free domain model, deterministic timestamp injection, unified 100ms scheduler, `TickMeter` telemetry, STOMP wire isolation (`Views.java`), and broker defenses._
 - **[04. Practice Bots & Deterministic Scripting](learning/04-bots-and-simulation.md)**  
-  *Solo mode design rationale, deterministic authoring in `BotScripter.java`, `SHARP`/`MARK`/`CHOPPER` personas, persona rotation, liar bots, and reactive chatter.*
+  _Solo mode design rationale, deterministic authoring in `BotScripter.java`, `SHARP`/`MARK`/`CHOPPER` personas, persona rotation, liar bots, and reactive chatter._
 - **[05. Frontend Architecture, 60fps Chart Rendering & Seat Lifecycle](learning/05-frontend-and-lifecycle.md)**  
-  *React 19 state model, in-place `{ points, count }` buffer eliminating GC frame drops, 45s disconnect grace windows, seat retirement, and Web Audio API synthesis.*
+  _React 19 state model, in-place `{ points, count }` buffer eliminating GC frame drops, 45s disconnect grace windows, seat retirement, and Web Audio API synthesis._
 
 ---
 
 ## Quickstart & Local Setup
 
 ### Prerequisites
+
 - **Java 26** (specified by `<java.version>` in `backend/pom.xml`)
 - **Node.js 18+** & **npm**
 
@@ -138,6 +139,7 @@ cd frontend && npm install && npm run dev
 Open <http://localhost:5173> in your browser, enter a nickname, and start a game. Open an incognito tab to play both sides locally.
 
 ### Fast Playtesting Overrides
+
 Create a short 2-round, 20-second test match instantly via curl:
 
 ```bash
@@ -158,6 +160,7 @@ java -jar target/backend-0.0.1-SNAPSHOT.jar # Serves full app on :8080
 ```
 
 Deploying with Docker and automatic TLS via Caddy:
+
 ```bash
 docker compose up -d --build
 ```
@@ -168,17 +171,17 @@ docker compose up -d --build
 
 All configuration is optional and defaults to the standalone in-memory experience:
 
-| Variable | Environment | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `PORT` | Backend | `8080` | Port for HTTP and WebSocket server |
-| `ALLOWED_ORIGINS` | Backend | `*` | Allowed CORS and WebSocket origin patterns |
-| `ADMIN_PASSWORD` | Backend | unset | Password unlocking `/admin` telemetry panel |
-| `STATS_FILE` | Backend | unset | File path for persistent lifetime counter statistics |
-| `VITE_API_URL` | Frontend | `/api` | Base API URL if frontend is hosted separately |
-| `VITE_FIREBASE_API_KEY` | Frontend | unset | Enables optional Firebase authentication |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Frontend | unset | Firebase authentication domain |
-| `VITE_FIREBASE_PROJECT_ID` | Frontend | unset | Firebase project ID |
-| `VITE_FIREBASE_APP_ID` | Frontend | unset | Firebase application ID |
+| Variable                    | Environment | Default | Description                                          |
+| :-------------------------- | :---------- | :------ | :--------------------------------------------------- |
+| `PORT`                      | Backend     | `8080`  | Port for HTTP and WebSocket server                   |
+| `ALLOWED_ORIGINS`           | Backend     | `*`     | Allowed CORS and WebSocket origin patterns           |
+| `ADMIN_PASSWORD`            | Backend     | unset   | Password unlocking `/admin` telemetry panel          |
+| `STATS_FILE`                | Backend     | unset   | File path for persistent lifetime counter statistics |
+| `VITE_API_URL`              | Frontend    | `/api`  | Base API URL if frontend is hosted separately        |
+| `VITE_FIREBASE_API_KEY`     | Frontend    | unset   | Enables optional Firebase authentication             |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Frontend    | unset   | Firebase authentication domain                       |
+| `VITE_FIREBASE_PROJECT_ID`  | Frontend    | unset   | Firebase project ID                                  |
+| `VITE_FIREBASE_APP_ID`      | Frontend    | unset   | Firebase application ID                              |
 
 ---
 
@@ -225,6 +228,7 @@ cd backend && ./mvnw test
 ```
 
 **190 unit tests, all passing.** Tests validate mathematical and behavioral targets rather than incidental implementation details:
+
 - `RUG` plunges and `SQUEEZE` spikes reliably across 400 random seeds.
 - `CHOP` displays zero directional bias over 400 seeds.
 - Rumour phrasing is identical between truths and lies to prevent syntactic leakage.
