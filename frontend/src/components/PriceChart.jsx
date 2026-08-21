@@ -23,7 +23,6 @@ function colors() {
       dump: read("--dump"),
       haze: read("--haze"),
       paper: read("--paper"),
-      voidDeep: read("--void-deep"),
     };
   }
   return palette;
@@ -208,44 +207,6 @@ function draw(canvas, size, state) {
     ctx.arc(headX, headY, 1.8, 0, Math.PI * 2);
     ctx.fill();
 
-    /*
-     * 4. The newest sample — the price an order actually fills at.
-     *
-     * Everything above is deliberately RENDER_DELAY_MS behind it, and that lag is exactly
-     * what buys the interpolation its smoothness: the playhead always has two real samples
-     * to sit between, so the line never snaps. The cost is that the head dot is, by
-     * construction, never the price you get. At standard volatility a hundred and fifty
-     * milliseconds is around half a percent of the price, which at ten times leverage is
-     * five percent of the margin — so players aimed at the dot and missed, every time.
-     *
-     * Drawing the newest sample as its own reference settles that without giving the
-     * smoothness back. The head visibly chases this line, which is the honest picture: the
-     * curve is a little behind, and this is now. Nothing here changes what the chart shows
-     * — it stops the chart implying something it never showed.
-     */
-    const livePrice = points[count - 1].p;
-    const liveY = y(livePrice);
-
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.setLineDash([1, 3]);
-    ctx.strokeStyle = lineColor;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, liveY);
-    ctx.lineTo(plotW, liveY);
-    ctx.stroke();
-    ctx.restore();
-
-    // A filled tag where the other rules use plain text. Three of those labels already
-    // share this gutter, and the one naming the fill price has to be findable among them
-    // at a glance rather than read.
-    ctx.fillStyle = lineColor;
-    ctx.fillRect(plotW + 2, liveY - 7, 28, 14);
-    ctx.fillStyle = paint.voidDeep;
-    ctx.font = "700 9px 'Space Mono', monospace";
-    ctx.textBaseline = "middle";
-    ctx.fillText("NOW", plotW + 5, liveY);
   }
 
   if (position) {

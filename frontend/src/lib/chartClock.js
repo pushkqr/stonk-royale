@@ -15,8 +15,19 @@
  * correction inside a hard clamp cannot vary on-screen speed by more than the clamp.
  */
 
-/** One sample behind, plus half of one for arrival jitter. Below ~100ms there is nothing to interpolate toward. */
-export const RENDER_DELAY_MS = 150;
+/**
+ * One sample behind, plus half of one for arrival jitter — so this tracks the server's tick
+ * rate and is not a free parameter. At 30 ticks a second a sample lands every 33ms, which
+ * puts this at 50.
+ *
+ * It is also what a player feels when an entry does not fill where they aimed: the drawn head
+ * is this far behind the price an order actually gets, which measures 0.21% of price at this
+ * setting and was 0.44% when ticks arrived ten times a second. Lowering it further without
+ * raising the tick rate does not help — below one sample interval there is nothing ahead to
+ * interpolate toward, the playhead pins to the newest sample, and the head stalls between
+ * arrivals instead of moving.
+ */
+export const RENDER_DELAY_MS = 50;
 
 /** Playback stays within +-5% of real time, which is the bound on how uneven motion can get. */
 const RATE_CLAMP = 0.05;

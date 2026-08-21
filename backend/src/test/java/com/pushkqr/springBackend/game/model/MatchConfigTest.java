@@ -111,4 +111,26 @@ class MatchConfigTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new MatchConfig(5, 90, 15, 10_000, 12, 1.0, MatchConfig.MAX_MARKET_IMPACT + 0.1));
     }
+
+    /**
+     * The generated path has to cover the whole round, at every legal round length.
+     *
+     * PricePath indexes by {@code elapsed / stepMillis} and clamps past its end, so a path
+     * that runs short does not fail — it silently holds the last price for the remainder of
+     * the round. This was one nominal-rate-versus-real-step mistake away from being real:
+     * {@code roundSeconds * 30 + 1} points at a 33ms step covers 89.1s of a 90s round, which
+     * would have flatlined the last nine hundred milliseconds of every round, the stretch
+     * players are most often trying to close in.
+     */
+    @Test
+    void thePricePathAlwaysReachesTheEndOfTheRound() {
+        for (int seconds = MatchConfig.MIN_ROUND_SECONDS; seconds <= MatchConfig.MAX_ROUND_SECONDS; seconds++) {
+            MatchConfig config = new MatchConfig(1, seconds, 15, 10_000, 12);
+            long covered = (long) (config.priceSteps() - 1) * MatchConfig.STEP_MILLIS;
+
+            assertTrue(covered >= config.roundMillis(),
+                    "roundSeconds=" + seconds + " path covers " + covered
+                            + "ms of a " + config.roundMillis() + "ms round");
+        }
+    }
 }

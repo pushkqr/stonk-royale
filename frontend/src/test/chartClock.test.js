@@ -7,6 +7,17 @@ import {
   strideFor,
 } from "../lib/chartClock";
 
+/**
+ * One server tick, in milliseconds — MatchConfig.STEP_MILLIS, which is integer 1000/30.
+ *
+ * Not a detail of the fixtures. RENDER_DELAY_MS is chosen relative to this interval, and a
+ * test that feeds samples at some other spacing is exercising a configuration that does not
+ * exist: give a 50ms delay 100ms samples and the playhead pins to the newest sample and
+ * stalls, which fails the smoothness assertions for a reason the code is not responsible for.
+ * If the tick rate moves, this moves with it.
+ */
+const SAMPLE_MS = 33;
+
 describe("chartClock", () => {
   it("keeps the head at a near-constant speed on any refresh rate", () => {
     const refreshRates = [60, 120, 165];
@@ -15,10 +26,10 @@ describe("chartClock", () => {
       const frameMs = 1000 / hz;
       const clock = createClock();
 
-      // Build points where p === t over 10 seconds (100 samples at 100ms interval)
+      // Build points where p === t, one sample every SAMPLE_MS
       const totalTimeMs = 10000;
       const points = [];
-      for (let t = 0; t <= totalTimeMs; t += 100) {
+      for (let t = 0; t <= totalTimeMs; t += SAMPLE_MS) {
         points.push({ t, p: t });
       }
 
@@ -28,7 +39,7 @@ describe("chartClock", () => {
 
       for (let simTime = 0; simTime <= totalTimeMs; simTime += frameMs) {
         // How many samples have arrived by simTime
-        const availableCount = Math.min(points.length, Math.floor(simTime / 100) + 1);
+        const availableCount = Math.min(points.length, Math.floor(simTime / SAMPLE_MS) + 1);
         const newestT = points[availableCount - 1].t;
 
         const playhead = advance(clock, newestT, frameMs);
@@ -61,8 +72,8 @@ describe("chartClock", () => {
     let lastPlayhead = null;
 
     for (let t = 0; t <= 5000; t += frameMs) {
-      if (t % 100 < frameMs) {
-        newestT += 100;
+      if (t % SAMPLE_MS < frameMs) {
+        newestT += SAMPLE_MS;
       }
       const playhead = advance(clock, newestT, frameMs);
       if (lastPlayhead !== null && playhead > 0) {
@@ -91,7 +102,7 @@ describe("chartClock", () => {
 
     // Normal stream up to 2000ms
     for (let simTime = 0; simTime <= 2000; simTime += frameMs) {
-      const newestT = Math.floor(simTime / 100) * 100;
+      const newestT = Math.floor(simTime / SAMPLE_MS) * SAMPLE_MS;
       advance(clock, newestT, frameMs);
     }
 
@@ -103,7 +114,7 @@ describe("chartClock", () => {
 
     // Stream resumes up to 10000ms (8 seconds of playback)
     for (let simTime = 2000; simTime <= 10000; simTime += frameMs) {
-      const newestT = Math.floor(simTime / 100) * 100;
+      const newestT = Math.floor(simTime / SAMPLE_MS) * SAMPLE_MS;
       advance(clock, newestT, frameMs);
     }
 
@@ -111,7 +122,7 @@ describe("chartClock", () => {
     const finalNewestT = 10000;
     const lag = finalNewestT - clock.playhead;
     expect(lag).toBeGreaterThanOrEqual(RENDER_DELAY_MS);
-    expect(lag).toBeLessThanOrEqual(RENDER_DELAY_MS + 100);
+    expect(lag).toBeLessThanOrEqual(RENDER_DELAY_MS + SAMPLE_MS);
   });
 
   it("strideFor only ever removes vertices across doubling boundaries", () => {
@@ -161,23 +172,25 @@ describe("chartClock", () => {
   /**
    * The lag is the whole trade this module makes: the playhead sits behind the newest sample
    * so it always has two real samples to interpolate between, which is what stops the line
-   * snapping. It is also why the chart draws the newest sample as its own "NOW" rule — the
-   * head is never the price an order fills at, and players were aiming at the head.
+   * snapping. It is also the distance between the head a player aims at and the price their
+   * order actually fills at, so it is felt directly and not only seen.
    *
-   * So the size of the gap is load-bearing in both directions. Shrink it and the NOW rule is
-   * clutter sitting on top of the head; grow it and the chart quietly lies harder. Pin it.
+   * Load-bearing in both directions, which is why it is pinned. Grow it and entries land
+   * further from where they were aimed; shrink it below one sample interval and there is
+   * nothing ahead to interpolate toward, so the head stalls between arrivals instead of
+   * moving — the exact stutter this module was written to remove.
    */
   it("settles a steady RENDER_DELAY_MS behind the newest sample", () => {
     const frameMs = 1000 / 60;
     const clock = createClock();
     const points = [];
-    for (let t = 0; t <= 10000; t += 100) {
+    for (let t = 0; t <= 10000; t += SAMPLE_MS) {
       points.push({ t, p: t });
     }
 
     const lags = [];
     for (let simTime = 0; simTime <= 10000; simTime += frameMs) {
-      const availableCount = Math.min(points.length, Math.floor(simTime / 100) + 1);
+      const availableCount = Math.min(points.length, Math.floor(simTime / SAMPLE_MS) + 1);
       const newestT = points[availableCount - 1].t;
       const playhead = advance(clock, newestT, frameMs);
 
@@ -190,9 +203,9 @@ describe("chartClock", () => {
     const mean = lags.reduce((a, b) => a + b, 0) / lags.length;
 
     // One sample interval of slack either way: the playhead runs continuously while samples
-    // land in 100ms steps, so the instantaneous gap saws between roughly the delay and the
-    // delay plus an interval. It is the centre of that saw this pins.
-    expect(mean).toBeGreaterThan(RENDER_DELAY_MS - 100);
-    expect(mean).toBeLessThan(RENDER_DELAY_MS + 100);
+    // land in SAMPLE_MS steps, so the instantaneous gap saws between roughly the delay and
+    // the delay plus an interval. It is the centre of that saw this pins.
+    expect(mean).toBeGreaterThan(RENDER_DELAY_MS - SAMPLE_MS);
+    expect(mean).toBeLessThan(RENDER_DELAY_MS + SAMPLE_MS);
   });
 });
