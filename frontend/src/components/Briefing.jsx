@@ -14,7 +14,7 @@ import RulesContent from "./RulesContent";
  * through in under a second.
  */
 export default function Briefing() {
-  const { phase, readyState, ready, connected, serverNow } = useMatch();
+  const { phase, readyState, ready, connected, serverNow, lobby } = useMatch();
   const left = useCountdown(phase?.endsAtMillis, serverNow);
 
   // Lazy initializers rather than a ref: both need the one-time localStorage read, and
@@ -89,7 +89,11 @@ export default function Briefing() {
       {open ? (
         <div className="panel sheet stack">
           <div className="rules-scroll">
-            <RulesContent />
+            <RulesContent
+                modifier={lobby?.modifier}
+                modifierLabel={lobby?.modifierLabel}
+                modifierBlurb={lobby?.modifierBlurb}
+              />
             <div ref={endRef} className="rules-end" />
           </div>
 

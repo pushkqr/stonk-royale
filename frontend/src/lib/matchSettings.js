@@ -13,7 +13,35 @@ export const DEFAULTS = {
   isPublic: false,
   volatilityMultiplier: 1.0,
   marketImpactMultiplier: 1.0,
+  modifier: "NONE",
 };
+
+/**
+ * The rule variants a host can pick, for the picker only.
+ *
+ * Modifier.java is the source of truth and sends its own label and blurb down with the lobby,
+ * which is what the lobby, the briefing and the trading floor render. This list exists because
+ * the picker has to describe variants that are not active yet, and nothing has been sent for
+ * those. Keep the wording here in step with the enum; if the two drift, the picker is wrong
+ * and the game is still right.
+ */
+export const MODIFIER_OPTIONS = [
+  { value: "NONE", label: "Standard", blurb: "The normal game." },
+  {
+    value: "ALL_LIES",
+    label: "All Lies",
+    blurb: "Every tip in the room is false. The truth is what is left over.",
+  },
+  {
+    value: "HIGH_ROLLER",
+    label: "High Roller",
+    blurb: "Nothing under 5x. Somebody is getting liquidated.",
+  },
+];
+
+/** The floor a variant puts under every position, which the deck has to respect. */
+export const MIN_LEVERAGE_FOR = { HIGH_ROLLER: 5 };
+export const minLeverageFor = (modifier) => MIN_LEVERAGE_FOR[modifier] ?? 1;
 
 export const LIMITS = {
   rounds: { min: 1, max: 8, step: 1 },

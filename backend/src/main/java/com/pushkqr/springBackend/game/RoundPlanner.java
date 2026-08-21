@@ -43,7 +43,7 @@ public final class RoundPlanner {
                 asset.basePrice(), regime, config.priceSteps(), MatchConfig.STEP_MILLIS, random.nextLong(),
                 config.volatilityMultiplier());
 
-        Map<String, Rumor> rumors = rumors(regime, asset, playerIds, random);
+        Map<String, Rumor> rumors = rumors(regime, asset, playerIds, random, config);
 
         // Sorted for the same reason the rumors are: the bot script must not depend on the
         // order seats happen to sit in a map.
@@ -61,7 +61,8 @@ public final class RoundPlanner {
     }
 
     /** Sorted iteration keeps rumor assignment deterministic whatever order players arrive in. */
-    private Map<String, Rumor> rumors(Regime regime, Asset asset, Collection<String> playerIds, Random random) {
+    private Map<String, Rumor> rumors(Regime regime, Asset asset, Collection<String> playerIds,
+            Random random, MatchConfig config) {
         List<String> ordered = playerIds.stream().sorted().toList();
         if (ordered.isEmpty()) {
             return Map.of();
@@ -72,7 +73,13 @@ public final class RoundPlanner {
         // the seed, which the whole "rematch on the same market" promise rests on.
         List<String> shuffled = new ArrayList<>(ordered);
         Collections.shuffle(shuffled, random);
-        Set<String> holdsTruth = Set.copyOf(shuffled.subList(0, truthfulTipCount(ordered.size(), random)));
+
+        // Unconditional, including when the count below is zero and the result goes unused.
+        // Not for determinism — the price path is already drawn by the time this runs, so a
+        // draw taken here cannot move the market — but because a branch whose only effect is
+        // on the shape of the random stream is a thing nobody can reason about later.
+        int truthful = config.modifier().allTipsLie() ? 0 : truthfulTipCount(ordered.size(), random);
+        Set<String> holdsTruth = Set.copyOf(shuffled.subList(0, truthful));
 
         Map<String, Rumor> rumors = new LinkedHashMap<>();
         for (String id : ordered) {

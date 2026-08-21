@@ -139,7 +139,10 @@ public class MatchBroadcaster {
                         match.referenceNotional(),
                         match.config().marketImpactMultiplier()),
                 match.config().volatilityMultiplier(),
-                match.config().marketImpactMultiplier());
+                match.config().marketImpactMultiplier(),
+                match.config().modifier().name(),
+                match.config().modifier().label(),
+                match.config().modifier().blurb());
     }
 
     /**

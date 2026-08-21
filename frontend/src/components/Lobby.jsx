@@ -100,6 +100,13 @@ export default function Lobby() {
             In the room ({players.length}/{lobby?.maxPlayers ?? 12})
           </h2>
           {lobby?.isPublic && <span className="tag">Public</span>}
+          {/* Shown to the room, not just to the host who picked it. A player who does not
+              know the rules changed is not playing a variant, they are playing badly. */}
+          {lobby?.modifier && lobby.modifier !== "NONE" && (
+            <span className="tag tag-scream" title={lobby.modifierBlurb}>
+              {lobby.modifierLabel}
+            </span>
+          )}
         </div>
 
         <ul className="lobby-list">

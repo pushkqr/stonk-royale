@@ -525,8 +525,13 @@ public final class Match {
                 if (playerRound.hasPosition() || playerRound.cash() <= 0) {
                     return;
                 }
+                // Clamped here rather than in BotScripter, whose script is seeded and has
+                // to stay reproducible. Under a leverage floor an unclamped bot scripted at
+                // 2x throws, MatchEngine's per-match catch swallows it, and that bot simply
+                // stops trading for the round with nothing on screen to say why.
+                int botLeverage = Math.max(open.leverage(), config.modifier().minLeverage());
                 Position position = openPosition(
-                        bot.id(), open.side(), open.sizeFraction(), open.leverage(), now);
+                        bot.id(), open.side(), open.sizeFraction(), botLeverage, now);
                 events.add(new GameEvent.BotOpened(bot.id(), bot.nickname(),
                         position.side(), position.leverage(), position.entryPrice()));
             }
@@ -800,8 +805,12 @@ public final class Match {
         if (sizeFraction <= 0 || sizeFraction > 1) {
             throw new IllegalArgumentException("sizeFraction must be in (0, 1]");
         }
-        if (leverage < 1 || leverage > Position.MAX_LEVERAGE) {
-            throw new IllegalArgumentException("leverage must be between 1 and " + Position.MAX_LEVERAGE);
+        // The floor is the match's, not the record's: Position keeps its own 1..MAX check
+        // because that guards an invariant of the type, while this is a rule of this room.
+        int floor = config.modifier().minLeverage();
+        if (leverage < floor || leverage > Position.MAX_LEVERAGE) {
+            throw new IllegalArgumentException(
+                    "leverage must be between " + floor + " and " + Position.MAX_LEVERAGE);
         }
         if (playerRound.cash() <= 0) {
             throw new IllegalStateException("No cash left to trade");

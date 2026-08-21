@@ -105,10 +105,25 @@ public final class Views {
         }
     }
 
+    /**
+     * @param modifier      the active variant's wire constant, or null for the standard game
+     * @param modifierLabel what to call it on screen, and modifierBlurb what it does. Sent
+     *                      rather than looked up client-side so the lobby, the briefing and
+     *                      the trading floor cannot disagree about what a variant is called.
+     */
     public record Lobby(String code, String phase, int totalRounds, int roundSeconds,
             int intermissionSeconds, double startingCash, int maxPlayers,
             List<LobbyPlayer> players, boolean isPublic, Impact impact, double volatilityMultiplier,
-            double marketImpactMultiplier) {
+            double marketImpactMultiplier, String modifier, String modifierLabel,
+            String modifierBlurb) {
+        public Lobby(String code, String phase, int totalRounds, int roundSeconds,
+                int intermissionSeconds, double startingCash, int maxPlayers,
+                List<LobbyPlayer> players, boolean isPublic, Impact impact, double volatilityMultiplier,
+                double marketImpactMultiplier) {
+            this(code, phase, totalRounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers,
+                    players, isPublic, impact, volatilityMultiplier, marketImpactMultiplier, null, null, null);
+        }
+
         public Lobby(String code, String phase, int totalRounds, int roundSeconds,
                 int intermissionSeconds, double startingCash, int maxPlayers,
                 List<LobbyPlayer> players, boolean isPublic, Impact impact, double volatilityMultiplier) {

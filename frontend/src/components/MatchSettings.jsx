@@ -2,6 +2,7 @@ import {
   CASH_STEPS,
   LIMITS,
   PRESETS,
+  MODIFIER_OPTIONS,
   VOLATILITY_OPTIONS,
   MARKET_IMPACT_OPTIONS,
   estimateMinutes,
@@ -82,6 +83,32 @@ export default function MatchSettings({ settings, onChange, open, onToggle }) {
             </span>
           </button>
         ))}
+      </div>
+
+      {/* Its own row above the estimate, not buried in Advanced. A variant changes the rules
+          of the whole match, so it is not the same kind of thing as a dial — and a host who
+          has to go looking for it will never find out these exist. */}
+      <div className="modifier-row">
+        <span className="eyebrow setting-label">Rule variant</span>
+        <div className="modifier-options">
+          {MODIFIER_OPTIONS.map((option) => {
+            const chosen = (settings.modifier ?? "NONE") === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={`btn preset ${chosen ? "btn-scream" : ""}`}
+                onClick={() => set({ modifier: option.value })}
+                aria-pressed={chosen}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <span className="setting-note muted">
+          {MODIFIER_OPTIONS.find((o) => o.value === (settings.modifier ?? "NONE"))?.blurb}
+        </span>
       </div>
 
       <p className="estimate mono">

@@ -155,3 +155,44 @@ describe("TradeDeck.jsx", () => {
   });
 });
 
+
+/**
+ * A leverage floor is the one variant rule the deck itself has to enforce. The server refuses
+ * anything under it, so a dial that can still be dragged below is a control that produces
+ * rejected trades — and the rejection surfaces mid-round as an error banner.
+ */
+describe("TradeDeck under a leverage floor", () => {
+  const defaultMe = { cash: 10000, equity: 10000, position: null };
+
+  it("will not let the dial go under the floor", () => {
+    const { container } = render(
+      <TradeDeck me={defaultMe} onOpen={vi.fn()} onClose={vi.fn()} minLeverage={5} />,
+    );
+
+    const dial = container.querySelector('input[type="range"]');
+    expect(dial).toHaveAttribute("min", "5");
+    expect(Number(dial.value)).toBeGreaterThanOrEqual(5);
+  });
+
+  it("clamps the presets up instead of removing them", () => {
+    // The keyboard shortcuts 1/2/3 address presets by index, so dropping the ones below the
+    // floor would quietly rebind them to different trades.
+    const onOpen = vi.fn();
+    render(<TradeDeck me={defaultMe} onOpen={onOpen} onClose={vi.fn()} minLeverage={5} />);
+
+    const presets = screen.getAllByRole("button", { name: /x ·/i });
+    expect(presets.length).toBeGreaterThan(0);
+    fireEvent.click(presets[0]);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Long/i }));
+    expect(onOpen).toHaveBeenCalled();
+    expect(onOpen.mock.calls[0][2]).toBeGreaterThanOrEqual(5);
+  });
+
+  it("leaves the standard game able to open at 1x", () => {
+    const { container } = render(
+      <TradeDeck me={defaultMe} onOpen={vi.fn()} onClose={vi.fn()} />,
+    );
+    expect(container.querySelector('input[type="range"]')).toHaveAttribute("min", "1");
+  });
+});

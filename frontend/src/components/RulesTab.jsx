@@ -41,7 +41,11 @@ export default function RulesTab() {
         <div className="overlay" role="dialog" aria-modal="true" onClick={() => setOpen(false)}>
           <div className="panel sheet overlay-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="rules-scroll">
-              <RulesContent />
+              <RulesContent
+                modifier={match.lobby?.modifier}
+                modifierLabel={match.lobby?.modifierLabel}
+                modifierBlurb={match.lobby?.modifierBlurb}
+              />
             </div>
             <button className="btn" onClick={() => setOpen(false)}>
               Back to the game

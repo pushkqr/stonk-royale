@@ -27,8 +27,8 @@ const ACTION_LOCK_MS = 150;
  * Memoised because it hangs off the trading screen, which re-renders on every price tick,
  * while everything shown here moves with the board instead — five times slower.
  */
-function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
-  const [leverage, setLeverage] = useState(3);
+function TradeDeck({ me, onOpen, onClose, disabled, impact, minLeverage = 1 }) {
+  const [leverage, setLeverage] = useState(() => Math.max(3, minLeverage));
   const [size, setSize] = useState(50);
   const [closing, setClosing] = useState(false);
   const [optimisticPos, setOptimisticPos] = useState(null);
@@ -64,11 +64,23 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
 
   const position = closing ? null : (optimisticPos || me?.position);
 
+  // Clamped up rather than hidden. The keyboard shortcuts 1/2/3 address presets by index,
+  // so dropping the ones below the floor would silently rebind them to different trades.
   const applyPreset = useCallback((p) => {
-    setLeverage(p.lev);
+    setLeverage(Math.max(p.lev, minLeverage));
     setSize(p.sz);
     haptic.tap();
-  }, []);
+  }, [minLeverage]);
+
+  // A host can change the variant while this is mounted, so the dial has to be pulled up to
+  // a new floor and not merely started above it. Derived during render rather than from an
+  // effect, matching how Standings and Wire track a changing prop: an effect here would
+  // render one frame showing a leverage the server would now refuse.
+  const [floorSeen, setFloorSeen] = useState(minLeverage);
+  if (floorSeen !== minLeverage) {
+    setFloorSeen(minLeverage);
+    setLeverage((current) => Math.max(current, minLeverage));
+  }
 
   const handleOpen = useCallback(
     (side) => {
@@ -198,7 +210,7 @@ function TradeDeck({ me, onOpen, onClose, disabled, impact }) {
           </span>
           <input
             type="range"
-            min="1"
+            min={minLeverage}
             max="10"
             value={leverage}
             onChange={(e) => setLeverage(Number(e.target.value))}

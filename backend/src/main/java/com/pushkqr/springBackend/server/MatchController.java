@@ -6,7 +6,10 @@ import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
 import com.pushkqr.springBackend.game.PlayerSnapshot;
 import com.pushkqr.springBackend.game.model.MatchConfig;
+import com.pushkqr.springBackend.game.model.Modifier;
 import com.pushkqr.springBackend.exceptions.MatchNotFoundException;
+import com.pushkqr.springBackend.exceptions.TooManyRequestsException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,19 +25,49 @@ public class MatchController {
     private final PlayerIdentity identity;
     private final MatchBroadcaster broadcaster;
     private final Stats stats;
+    private final CreateLimiter createLimiter;
 
     public MatchController(MatchRegistry matches, SessionRegistry sessions,
-            PlayerIdentity identity, MatchBroadcaster broadcaster, Stats stats) {
+            PlayerIdentity identity, MatchBroadcaster broadcaster, Stats stats,
+            CreateLimiter createLimiter) {
         this.matches = matches;
         this.sessions = sessions;
         this.identity = identity;
         this.broadcaster = broadcaster;
         this.stats = stats;
+        this.createLimiter = createLimiter;
+    }
+
+    /**
+     * Who to hold responsible for a create, as far as anyone unauthenticated can be.
+     *
+     * The first hop of X-Forwarded-For before the socket address, because this runs behind a
+     * proxy in every deployment that matters and the socket address there is the proxy — one
+     * bucket shared by every visitor, which would make the limiter itself the outage it is
+     * meant to prevent. A client can forge that header, so this stops a loop and not an
+     * attacker; the 150-room cap is what stops an attacker, and it already did.
+     */
+    private static String clientKey(HttpServletRequest http) {
+        String forwarded = http.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        String remote = http.getRemoteAddr();
+        return remote == null ? "unknown" : remote;
+    }
+
+    private void requireCreateAllowance(HttpServletRequest http) {
+        if (!createLimiter.allow(clientKey(http), System.currentTimeMillis())) {
+            throw new TooManyRequestsException(
+                    "You're making rooms faster than we can clear them. Give it a minute.");
+        }
     }
 
     @PostMapping
     public Views.JoinResult create(@RequestBody Requests.Create request,
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            HttpServletRequest http) {
+        requireCreateAllowance(http);
         Match match = matches.create(configFor(request));
         match.setVisibility(Boolean.TRUE.equals(request.isPublic()));
         stats.matchCreated();
@@ -56,7 +89,9 @@ public class MatchController {
      */
     @PostMapping("/practice")
     public Views.JoinResult practice(@RequestBody Requests.Join request,
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            HttpServletRequest http) {
+        requireCreateAllowance(http);
         Match match = matches.create(new MatchConfig(3, 60, 20, 10_000, MatchConfig.MAX_PLAYERS));
         stats.matchCreated();
         Views.JoinResult seat = seat(match, request.nickname(), authorization, request.deviceId(), request.avatar());
@@ -83,7 +118,8 @@ public class MatchController {
      */
     @PostMapping("/quick")
     public Views.JoinResult quick(@RequestBody Requests.Join request,
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            HttpServletRequest http) {
         Match waiting = openPublicRoom();
         if (waiting != null) {
             try {
@@ -97,6 +133,10 @@ public class MatchController {
             }
         }
 
+        // Only this branch. Joining an open public room builds nothing, and refusing a
+        // visitor a seat somebody else already paid for would be the limiter working
+        // against the exact traffic it exists to protect.
+        requireCreateAllowance(http);
         Match match = matches.create(MatchConfig.standard());
         match.setVisibility(true);
         stats.matchCreated();
@@ -170,7 +210,8 @@ public class MatchController {
                 request.startingCash() == null ? standard.startingCash() : request.startingCash(),
                 orDefault(request.maxPlayers(), standard.maxPlayers()),
                 request.volatilityMultiplier() == null ? standard.volatilityMultiplier() : request.volatilityMultiplier(),
-                request.marketImpactMultiplier() == null ? standard.marketImpactMultiplier() : request.marketImpactMultiplier());
+                request.marketImpactMultiplier() == null ? standard.marketImpactMultiplier() : request.marketImpactMultiplier(),
+                Modifier.parse(request.modifier()));
     }
 
     private static int orDefault(Integer value, int fallback) {

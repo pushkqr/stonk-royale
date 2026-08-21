@@ -14,7 +14,8 @@ public record MatchConfig(
         double startingCash,
         int maxPlayers,
         double volatilityMultiplier,
-        double marketImpactMultiplier) {
+        double marketImpactMultiplier,
+        Modifier modifier) {
 
     /**
      * Price ticks per second, which is also the rate prices go out on the wire.
@@ -72,16 +73,24 @@ public record MatchConfig(
                 "volatilityMultiplier must be between " + MIN_VOLATILITY + " and " + MAX_VOLATILITY);
         require(marketImpactMultiplier >= MIN_MARKET_IMPACT && marketImpactMultiplier <= MAX_MARKET_IMPACT,
                 "marketImpactMultiplier must be between " + MIN_MARKET_IMPACT + " and " + MAX_MARKET_IMPACT);
+        require(modifier != null, "modifier is required");
+    }
+
+    /** Backward-compatible 7-argument constructor defaulting the modifier to none. */
+    public MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash,
+            int maxPlayers, double volatilityMultiplier, double marketImpactMultiplier) {
+        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers,
+                volatilityMultiplier, marketImpactMultiplier, Modifier.NONE);
     }
 
     /** Backward-compatible 6-argument constructor defaulting marketImpactMultiplier to 1.0. */
     public MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers, double volatilityMultiplier) {
-        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, volatilityMultiplier, 1.0);
+        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, volatilityMultiplier, 1.0, Modifier.NONE);
     }
 
     /** Backward-compatible 5-argument constructor defaulting volatilityMultiplier & marketImpactMultiplier to 1.0. */
     public MatchConfig(int rounds, int roundSeconds, int intermissionSeconds, double startingCash, int maxPlayers) {
-        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, 1.0, 1.0);
+        this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, 1.0, 1.0, Modifier.NONE);
     }
 
     private static void require(boolean condition, String message) {
@@ -91,7 +100,7 @@ public record MatchConfig(
     }
 
     public static MatchConfig standard() {
-        return new MatchConfig(5, 90, 25, 10_000, MAX_PLAYERS, 1.0, 1.0);
+        return new MatchConfig(5, 90, 25, 10_000, MAX_PLAYERS, 1.0, 1.0, Modifier.NONE);
     }
 
     public long roundMillis() {

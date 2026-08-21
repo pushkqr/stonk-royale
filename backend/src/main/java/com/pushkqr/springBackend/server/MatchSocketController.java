@@ -5,6 +5,7 @@ import com.pushkqr.springBackend.game.Avatars;
 import com.pushkqr.springBackend.game.Match;
 import com.pushkqr.springBackend.game.MatchPhase;
 import com.pushkqr.springBackend.game.model.MatchConfig;
+import com.pushkqr.springBackend.game.model.Modifier;
 import com.pushkqr.springBackend.game.model.Position;
 import com.pushkqr.springBackend.game.model.Side;
 import com.pushkqr.springBackend.game.sim.Regime;
@@ -159,7 +160,8 @@ public class MatchSocketController {
         double marketImpact = request.marketImpactMultiplier() == null ? 1.0 : request.marketImpactMultiplier();
         match.updateConfig(new MatchConfig(
                 request.rounds(), request.roundSeconds(), request.intermissionSeconds(),
-                request.startingCash(), request.maxPlayers(), volatility, marketImpact));
+                request.startingCash(), request.maxPlayers(), volatility, marketImpact,
+                Modifier.parse(request.modifier())));
         match.setVisibility(request.isPublic());
         broadcaster.lobby(match);
     }

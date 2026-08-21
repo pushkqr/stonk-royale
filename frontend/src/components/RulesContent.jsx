@@ -13,9 +13,21 @@ const REGIMES = [
   { name: "SQUEEZE", shape: "0,8 12,11 24,14 30,15 33,4 48,3", note: "Bleeds quietly, then rips upward." },
 ];
 
-export default function RulesContent() {
+export default function RulesContent({ modifier, modifierLabel, modifierBlurb }) {
+  const variant = modifier && modifier !== "NONE" ? { modifierLabel, modifierBlurb } : null;
+
   return (
     <div className="rules stack">
+      {/* First, and only when one is on. A variant rewrites a rule the rest of this page
+          states plainly, so a player who reads past it has been told something false. */}
+      {variant && (
+        <section className="rules-block rules-variant">
+          <h3 className="display rules-head">
+            Variant: {variant.modifierLabel}
+          </h3>
+          <p>{variant.modifierBlurb}</p>
+        </section>
+      )}
       <section className="rules-block">
         <h3 className="display rules-head">How a round goes</h3>
         <ol className="rules-list">

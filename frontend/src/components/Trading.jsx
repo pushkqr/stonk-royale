@@ -13,6 +13,7 @@ import { telemetry } from "../lib/telemetry";
 import { useCountdown } from "../lib/useCountdown";
 import { clock, money } from "../lib/format";
 import { evaluateCrossCheck } from "../lib/regime";
+import { minLeverageFor } from "../lib/matchSettings";
 import { unrealisedPnl } from "../lib/pnl";
 import { getLivePrice } from "../state/livePrice";
 import PriceChart from "./PriceChart";
@@ -292,6 +293,14 @@ export default function Trading() {
                 were being shown twice at once. The whale badge moved to the same place; it
                 is a lobby setting that cannot change mid-round, so it was never live
                 information. */}
+            {/* A tag, not a card. This screen has had four passes to get its vertical
+                budget under control and has none to spare — but a rule that is on for the
+                whole round has to be visible during it. */}
+            {lobby?.modifier && lobby.modifier !== "NONE" && (
+              <span className="tag tag-scream" title={lobby.modifierBlurb}>
+                {lobby.modifierLabel}
+              </span>
+            )}
             <span className="intel-pill">
               {rumor?.text || "No active intel"}
             </span>
@@ -335,6 +344,7 @@ export default function Trading() {
         )}
 
         <TradeDeck
+          minLeverage={minLeverageFor(lobby?.modifier)}
           me={me}
           onOpen={open}
           onClose={handleClosePosition}

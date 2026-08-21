@@ -19,7 +19,14 @@ public final class Requests {
     public record Create(String nickname, Integer rounds, Integer roundSeconds,
             Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
             String deviceId, Boolean isPublic, Double volatilityMultiplier,
-            Double marketImpactMultiplier, String avatar) {
+            Double marketImpactMultiplier, String avatar, String modifier) {
+        public Create(String nickname, Integer rounds, Integer roundSeconds,
+                Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
+                String deviceId, Boolean isPublic, Double volatilityMultiplier,
+                Double marketImpactMultiplier, String avatar) {
+            this(nickname, rounds, roundSeconds, intermissionSeconds, maxPlayers, startingCash,
+                    deviceId, isPublic, volatilityMultiplier, marketImpactMultiplier, avatar, null);
+        }
         public Create(String nickname, Integer rounds, Integer roundSeconds,
                 Integer intermissionSeconds, Integer maxPlayers, Double startingCash,
                 String deviceId, Boolean isPublic, Double volatilityMultiplier,
@@ -75,15 +82,22 @@ public final class Requests {
     /** Host-only, lobby-only retune. All values are required — the client sends the full set. */
     public record Config(int rounds, int roundSeconds, int intermissionSeconds,
             double startingCash, int maxPlayers, boolean isPublic, Double volatilityMultiplier,
-            Double marketImpactMultiplier) {
+            Double marketImpactMultiplier, String modifier) {
+        public Config(int rounds, int roundSeconds, int intermissionSeconds,
+                double startingCash, int maxPlayers, boolean isPublic, Double volatilityMultiplier,
+                Double marketImpactMultiplier) {
+            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic,
+                    volatilityMultiplier, marketImpactMultiplier, null);
+        }
+
         public Config(int rounds, int roundSeconds, int intermissionSeconds,
                 double startingCash, int maxPlayers, boolean isPublic, Double volatilityMultiplier) {
-            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, volatilityMultiplier, 1.0);
+            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, volatilityMultiplier, 1.0, null);
         }
 
         public Config(int rounds, int roundSeconds, int intermissionSeconds,
                 double startingCash, int maxPlayers, boolean isPublic) {
-            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, 1.0, 1.0);
+            this(rounds, roundSeconds, intermissionSeconds, startingCash, maxPlayers, isPublic, 1.0, 1.0, null);
         }
     }
 }
