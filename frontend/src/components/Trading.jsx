@@ -413,11 +413,13 @@ export default function Trading() {
         </button>
       </div>
 
-      {/* A full-viewport red frame that snaps in on liquidation and fades out with screen shake. */}
+      {/* A full-viewport red vignette that snaps in on liquidation and shakes out. One class:
+          the shake used to live on a second one, where it was the same animation property at
+          the same specificity and simply overwrote the first. */}
       {jolt > 0 && (
         <div
           key={jolt}
-          className="liquidation-flash liquidation-flash-shake"
+          className="liquidation-flash"
           aria-hidden="true"
         />
       )}

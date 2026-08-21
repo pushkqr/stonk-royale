@@ -11,8 +11,60 @@
 
 /* --- liquidation shockwaves --------------------------------------------- */
 
-.liquidation-flash-shake {
-  animation: liqScreenShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+/*
+  The frame that lands when your own margin goes.
+
+  This element has been in the markup, keyed to remount on every blowup, for as long as the
+  jolt has existed — and `.liquidation-flash` has never had a single rule to its name. What
+  players actually saw was the REKT floater on the chart; the "full-viewport red frame" the
+  component's comment promises was an unstyled, unpositioned div sitting in the trading grid
+  as a stray item.
+
+  A vignette rather than a full red wash. The wash would black out the chart at the exact
+  moment a player wants to see what just happened to them, and the edges carry the hit
+  perfectly well on their own. Oversized by 12px so the shake never drags a clean edge into
+  view.
+
+  Both animations ride one declaration because they are one event. Split across two classes
+  they were the same `animation` property written twice at the same specificity, so only the
+  later rule could ever apply — which is the other half of why nothing rendered.
+*/
+.liquidation-flash {
+  position: fixed;
+  inset: -12px;
+  pointer-events: none;
+  /* Over the room's liquidation ping at 998, under the confetti canvas at 9999. */
+  z-index: 999;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 59, 84, 0) 38%,
+    rgba(255, 59, 84, 0.3) 76%,
+    rgba(255, 59, 84, 0.66) 100%
+  );
+  animation:
+    liqFlash 0.5s ease-out both,
+    liqScreenShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/*
+  In over about sixty milliseconds, out over the rest. Fast in and slow out is what reads as
+  a hit; the reverse is a fade.
+
+  It ends at zero deliberately. The reduced-motion rule in 09-responsive collapses every
+  animation to 0.01ms, and `both` fills forwards — so that lands this on its final keyframe
+  and a player who asked for less motion gets no red at all, while the haptic and the wire
+  line still tell them they were liquidated.
+*/
+@keyframes liqFlash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes liqScreenShake {
