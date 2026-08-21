@@ -6,7 +6,7 @@ Stonk Royale generates synthetic price action using precomputed, deterministic G
 
 ## 1. Seeded Geometric Brownian Motion (GBM)
 
-Prices are not streamed from external live markets. Instead, each round generates a 900-point price trajectory (90 seconds sampled at 10Hz) during the intermission prior to market open.
+Prices are not streamed from external live markets. Instead, each round generates a 2,729-point price trajectory (90 seconds sampled at 30Hz) during the intermission prior to market open.
 
 ### Mathematical Formulation
 The price path evolves according to stochastic differential steps:
@@ -15,13 +15,13 @@ $$\Delta S_t = S_t \left( \mu \Delta t + \sigma \sqrt{\Delta t} \, Z_t \right)$$
 
 Where:
 - $S_t$ is the price at time step $t$.
-- $\Delta t = 0.1\,\text{seconds}$ (100ms per tick).
+- $\Delta t = 1/(\text{steps}-1)$ — a *fraction of the round*, not a wall-clock duration, so $\mu$ and $\sigma$ are calibrated per round rather than per second. One step is 33ms of wall clock.
 - $\mu$ is the drift parameter dictated by the chosen regime.
 - $\sigma$ is the volatility parameter.
 - $Z_t \sim \mathcal{N}(0, 1)$ is standard normal noise generated from a seeded `Random` instance.
 
 ### Precomputation & Information Integrity
-By generating the entire 900-point future path during the intermission:
+By generating the entire future path during the intermission:
 1. **Verifiable Truth:** A rumour asserting that a stock will crash is objectively truthful because the server has already calculated the crash in the baseline curve.
 2. **Synchronized News:** Breaking news shock headlines can be scheduled to trigger exactly 2–4 seconds before a sharp price movement occurs.
 

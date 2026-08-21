@@ -4,7 +4,7 @@
 
 # Stonk Royale
 
-Stonk Royale is a **ten-minute multiplayer trading game built around deception rather than finance**. Five rounds, one fictional asset per round, and every player is privately dealt a rumour about it — roughly 40% of which are true. You are never told which kind you got. The room is told how many true ones are out there.
+Stonk Royale is a **ten-minute multiplayer trading game built around deception rather than finance**. Five rounds, one fictional asset per round, and every player is privately dealt a rumour about it — about half of which are true. You are never told which kind you got. The room is told how many true ones there are, and that number is never zero and never everybody.
 
 Think skribbl.io, but instead of drawing you're going 10x long on `$BAGZ` while someone in chat swears their tip says it's about to rug.
 
@@ -19,6 +19,7 @@ The entire stack runs in-memory as a single JAR on **Spring Boot 4.1 / Java 26**
 - **Resilient Seat Lifecycle:** Disconnected sockets in the lobby or results screen receive a 45-second grace window before seat recycling. Mid-match leaves permanently retire the seat (preserving leaderboard scores while freeing capacity for latecomers).
 - **Precomputed Seeded Markets:** Prices evolve via seeded Geometric Brownian Motion (GBM) precalculated during intermissions, ensuring rumours are verifiably true and breaking news headlines appear 2–4s before price shocks.
 - **Transient Order Flow Impact:** Player orders and liquidation margin calls push prices dynamically with a 4.0s exponential decay ($\tau = 4.0\text{s}$), clamping at $\pm 4\%$ to create realistic market chop without altering baseline regime truths.
+- **Host-Picked Rule Variants:** `Modifier.java` carries named variants the host selects in the lobby, and the label and blurb travel with the lobby view so the lobby, the briefing and the trading floor cannot describe the same variant differently. `ALL_LIES` deals a room where every tip is false and says so, inverting deduction; `HIGH_ROLLER` puts a 5x floor under every position. Bots scripted below a floor are clamped up rather than rejected, since a rejected bot order is swallowed by the engine's per-match error boundary and would silently stop that bot trading.
 - **Autonomous Practice Bots:** Solo mode features deterministic scripted opponent bots (`SHARP`, `MARK`, `CHOPPER`) that trade, react to news in chat, and bluff on the end-of-round social ledger.
 - **Near-Zero-Asset Web Audio:** Game countdowns, victory fanfares and every other cue are procedurally synthesized at runtime via the Web Audio API. The one exception is the liquidation sting, a 33kB sample fetched once and cached; nothing else is downloaded.
 
@@ -43,17 +44,17 @@ sequenceDiagram
 
     Note over M,S: Intermission - the round is decided before it opens
     M->>S: generate from seed hash of code and round
-    S-->>M: 900-point price path
+    S-->>M: 2,729-point price path
     M->>M: derive 2 headlines and 1 rumour per player
     E-->>P: phase INTERMISSION, asset, count of true tips
     E-->>P: private rumour, one per player
     P->>M: chat and claims on the open wire
 
     Note over P,M: Trading - 90 seconds
-    loop every 100ms
+    loop every 33ms
         E->>M: tick
         M->>M: look up price, check liquidations
-        E-->>P: /price (10Hz)
+        E-->>P: /price (30Hz)
         E-->>P: /board standings (2Hz)
     end
     P->>M: open, close, quick-chat
@@ -75,7 +76,7 @@ flowchart LR
     SC["MatchSocketController<br/>open, close, chat, ready, rematch"]
     AUTH["StompAuthInterceptor<br/>session token validation"]
     BC["MatchBroadcaster<br/>owns topic shapes"]
-    ENG["MatchEngine<br/>scheduled 100ms clock"]
+    ENG["MatchEngine<br/>scheduled 33ms clock"]
     REG[("MatchRegistry<br/>in-memory, max 150")]
 
     UI -->|"REST /api"| API
@@ -110,8 +111,8 @@ For comprehensive technical, mathematical, and architectural documentation, expl
   _Match configuration, briefing gate, rumour deals, headline shock lead times, structured wire claims, and zero-point social scoring philosophy._
 - **[02. Market Simulation & Order Flow Impact](learning/02-market-and-order-flow.md)**  
   _Seeded GBM mathematics, 5 empirical regime tables, decaying order flow impact formulas ($\tau = 4.0\text{s}$), liquidation cascades, and margin survival statistics._
-- **[03. Backend Architecture & The 100ms Tick Engine](learning/03-backend-architecture.md)**  
-  _Spring-free domain model, deterministic timestamp injection, unified 100ms scheduler, `TickMeter` telemetry, STOMP wire isolation (`Views.java`), and broker defenses._
+- **[03. Backend Architecture & The 33ms Tick Engine](learning/03-backend-architecture.md)**  
+  _Spring-free domain model, deterministic timestamp injection, unified 33ms scheduler, `TickMeter` telemetry, STOMP wire isolation (`Views.java`), and broker defenses._
 - **[04. Practice Bots & Deterministic Scripting](learning/04-bots-and-simulation.md)**  
   _Solo mode design rationale, deterministic authoring in `BotScripter.java`, `SHARP`/`MARK`/`CHOPPER` personas, persona rotation, liar bots, and reactive chatter._
 - **[05. Frontend Architecture, 60fps Chart Rendering & Seat Lifecycle](learning/05-frontend-and-lifecycle.md)**  
@@ -199,7 +200,7 @@ stonk-royale/
 │       │   ├── info/              # Rumor, MarketEvent, NewsCopy, InformationScripter
 │       │   └── model/             # Position, PlayerRound, Asset, MatchConfig
 │       ├── server/                # STOMP + REST infrastructure
-│       │   ├── MatchEngine.java   # @Scheduled 100ms tick clock for live matches
+│       │   ├── MatchEngine.java   # @Scheduled 33ms tick clock for live matches
 │       │   ├── MatchBroadcaster.java # WebSocket topic definitions and serializers
 │       │   ├── Views.java         # Minimal client projection records
 │       │   ├── Bots.java          # Bot seating and collision-free names

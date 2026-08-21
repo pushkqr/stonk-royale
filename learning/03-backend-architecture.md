@@ -1,4 +1,4 @@
-# Module 03: Backend Architecture & The 100ms Tick Engine
+# Module 03: Backend Architecture & The 33ms Tick Engine
 
 Stonk Royale's backend is designed around extreme determinism, memory efficiency, and frame-budget safety. The application runs as a single JAR on Spring Boot 4.1 / Java 26, holding all match state in-memory without an external database.
 
@@ -30,7 +30,7 @@ No game logic calls `System.currentTimeMillis()` directly. Every state-advancing
 
 ### Thread Safety & Intrinsic Monitor Synchronization
 Each `Match` instance is an independent, in-memory state engine accessed concurrently by:
-1. **The Scheduled Tick Thread:** `MatchEngine.tick()` advancing the game loop every 100ms.
+1. **The Scheduled Tick Thread:** `MatchEngine.tick()` advancing the game loop every 33ms.
 2. **STOMP Inbound Worker Threads:** User order placements (`/open`, `/close`), quick-chats (`/chat`), ready states (`/ready`), and rematches (`/rematch`).
 3. **HTTP Controller Threads:** Room creation, joins (`/join`), and quick match queries (`/quick`).
 4. **WebSocket Lifecycle Threads:** `SocketLifecycleListener` handling disconnects and seat grace timers.
@@ -41,7 +41,7 @@ To guarantee zero race conditions and prevent `ConcurrentModificationException`:
 
 ---
 
-## 2. The 100ms Tick Loop (`MatchEngine.java`)
+## 2. The 33ms Tick Loop (`MatchEngine.java`)
 
 All active matches on the server advance on a single scheduled thread managed by `MatchEngine.java`:
 
@@ -56,14 +56,14 @@ public void tick() {
 ```
 
 ### Tick Cadence & Frame Budgets
-On every 100ms tick (`10Hz`), the engine:
+On every 33ms tick (`30Hz`), the engine:
 1. Steps the price simulator and evaluates order flow decay.
 2. Checks all open positions for maintenance margin breach and triggers liquidations.
 3. Broadcasts `/price` updates to connected players in active trading rounds.
 4. Broadcasts leaderboard updates (`/board`) every 5th tick (`2Hz`).
 
 ### Telemetry & The `TickMeter` Component
-To guarantee the single-threaded engine never overruns its 100ms frame budget, `TickMeter.java` records the elapsed runtime of each tick loop:
+To guarantee the single-threaded engine never overruns its 33ms frame budget, `TickMeter.java` records the elapsed runtime of each tick loop:
 - Maintains a 600-sample (60-second) rolling ring buffer.
 - Calculates `worstMillis()` and `medianMillis()` in real time.
 - Exposes cumulative lifetime overruns on the `/admin` telemetry panel.
@@ -83,7 +83,7 @@ Client communication occurs over a single WebSocket connection using the STOMP p
 flowchart TD
     subgraph TOPICS["Broadcast Topics (/topic/match/{code}/...)"]
         P["/phase"]
-        PR["/price (10Hz)"]
+        PR["/price (30Hz)"]
         B["/board (2Hz)"]
         F["/feed"]
         L["/lobby"]
@@ -105,7 +105,7 @@ flowchart TD
 | Destination | Cadence | Content |
 | :--- | :--- | :--- |
 | `/topic/match/{code}/phase` | On change | Phase transitions and phase expiration timestamps |
-| `/topic/match/{code}/price` | 10Hz (100ms) | Current price, timestamp, and net market impact |
+| `/topic/match/{code}/price` | 30Hz (33ms) | Current price, timestamp, and net market impact |
 | `/topic/match/{code}/board` | 2Hz (500ms) | Lightweight table ranking and position telemetry |
 | `/topic/match/{code}/feed` | Event-driven | Integrated stream of trades, news, and chat |
 | `/topic/match/{code}/lobby` | On join/leave | Player roster, readiness, and host assignments |
@@ -129,7 +129,7 @@ Internal domain records contain sensitive future data (such as `RoundPlan.future
    - Rather than all rooms flushing `/board` simultaneously on `ticks % 5 == 0`, flushes are staggered by room code hash:
      $$\text{Offset} = \text{floorMod}(\text{code.hashCode()},\, 5)$$
      $$\text{Board Due} \iff \text{floorMod}(\text{ticks} - \text{Offset},\, 5) = 0$$
-   - This distributes JSON serialization evenly across the 100ms window.
+   - This distributes JSON serialization evenly across the 33ms window.
 
 2. **Suppression in Empty Rooms:**
    - Rooms with no connected humans stop emitting outbound frames entirely until a player reconnects, conserving server CPU and network bandwidth.

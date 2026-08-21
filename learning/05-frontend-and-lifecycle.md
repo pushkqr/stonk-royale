@@ -33,7 +33,7 @@ To keep countdown timers perfectly synchronized across all client devices despit
 
 ## 2. Canvas Chart Performance & Eliminating GC Stutter
 
-The live price chart in `PriceChart.jsx` renders high-frequency 10Hz price updates alongside interactive crosshairs and liquidation lines.
+The live price chart in `PriceChart.jsx` renders high-frequency 30Hz price updates alongside interactive crosshairs and liquidation lines.
 
 ### The Memory Allocation Problem
 In early iterations, chart state was updated using standard immutable React array appending:
@@ -41,7 +41,7 @@ In early iterations, chart state was updated using standard immutable React arra
 // ANTIPATTERN: Triggered 800ms garbage collection pauses
 setPriceHistory(prev => [...prev, newPoint]);
 ```
-- Over a 90-second round at 10Hz price updates on high-refresh displays (144Hz / 180Hz), this created and discarded over **405,000 array and object instances**.
+- Copying a growing array on every sample allocates with the *square* of the sample count: $\sum_{n=1}^{N} n$. Over a 90-second round that was **~405,000 instances** at the original 10Hz, and would be **~3.6 million** at the 30Hz the server ticks at today.
 - The browser's garbage collector suffered periodic **800ms stop-the-world pauses**, causing noticeable chart freezing during critical trading moments.
 
 ### The In-Place Buffer Pattern

@@ -80,9 +80,12 @@ On the final standings screen:
 ```
 
 ### Private Rumours & Truth Distribution
-- **40% Base Truth Rate:** Approximately 40% of dealt rumours are truthful, while the rest point to unaligned market regimes.
-- **Guaranteed Signal ($\ge 1$ True Tip):** Every round is guaranteed to deal at least one true rumour across all seated players. A round with zero true tips would eliminate all deduction capability and decay into random guessing.
+- **Roughly Half, Never Either End:** The number of truthful tips is drawn from a narrow band centred on half the room (`RoundPlanner.truthfulTipCount`), and excludes both extremes by construction rather than by clamping afterwards.
+- **Why Not a Fixed Probability:** Tips were originally drawn independently at a 40% rate, which put the count on a binomial and let it land anywhere. That reads acceptably at twelve seats and collapses at four — it dealt a single true tip in 47% of rounds and made every tip true in a further 3%, so *half of all four-player rounds* arrived in a state where nobody had to deduce anything. Bots occupy seats too, so a solo practice match against three of them is a four-player room and was hitting that case constantly.
+- **Both Ends End The Round:** If one tip in four is real, everybody correctly assumes theirs is the lie. If every tip is real, nobody has to lie. Both are the same failure — the announced count answers the question the round exists to ask.
+- **Two Seats Collapse To One:** At two players the count is always 1, the only value that is neither nobody nor everybody.
 - **Public Count:** The server broadcasts the total count of true tips in the room (`truthfulTips`), but never reveals who holds them.
+- **The `ALL_LIES` Variant:** A host can deliberately re-enter the excluded end. Under it the count is zero and the room is *told* it is zero, which inverts the deduction: a tip stops naming what the market will do and starts naming one thing it will not.
 
 ### Headline Pairs
 - Exactly two headlines are scheduled per round by `InformationScripter.java`: one is **TRUE** and one is **FALSE**.

@@ -14,7 +14,7 @@ const PriceContext = createContext(null);
 export const useMatch = () => useContext(MatchContext);
 
 /**
- * The live price, kept apart from everything else because it moves ten times a second.
+ * The live price, kept apart from everything else because it moves thirty times a second.
  * Only the trading screen reads it; anything else subscribing would repaint at that rate
  * for a number it never shows.
  */
@@ -34,7 +34,7 @@ const FEED_LIMIT = 60;
  *   just played is copied into `lastRumor` before the new one lands. Without that the
  *   TRUE/LIE stamp would be overwritten before anyone saw it.
  * - Price sits in its own context. With it in the main one, every consumer re-rendered on
- *   every tick — the whole tree, ten times a second, including the corner tabs and the
+ *   every tick — the whole tree, thirty times a second, including the corner tabs and the
  *   wire, none of which show a price.
  */
 export function MatchProvider({ session, children }) {
@@ -151,10 +151,11 @@ export function MatchProvider({ session, children }) {
         setTick(next);
         // Mutate the array in place and bump the count so React notices.
         //
-        // Copying a growing array ten times a second allocates ~405,000 objects across a
-        // single 90s round. Nothing else reads the old array snapshot, so the copies were
-        // pure garbage churn — and on a 180Hz screen the GC pauses regularly swallowed
-        // three or four frames in a row.
+        // Copying a growing array on every sample allocates with the square of the sample
+        // count: ~405,000 objects across a 90s round back when the server ticked ten times a
+        // second, and ~3.6 million now that it ticks thirty. Nothing else reads the old array
+        // snapshot, so the copies were pure garbage churn — and on a 180Hz screen the GC
+        // pauses regularly swallowed three or four frames in a row.
         setSeries((prev) => {
           prev.points[prev.count] = { t: next.elapsedMillis, p: next.price };
           return { points: prev.points, count: prev.count + 1 };
