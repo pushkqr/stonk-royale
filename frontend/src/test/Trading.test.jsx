@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Trading from "../components/Trading";
+import { haptic } from "../lib/haptic";
 
 const mockMatch = {
   phase: {
@@ -198,5 +199,69 @@ describe("Trading.jsx Mobile Dock", () => {
     expect(pill).toBeInTheDocument();
     expect(pill).toHaveTextContent(tipText);
     mockMatch.rumor = originalRumor;
+  });
+});
+
+/**
+ * Room keys the phase wrapper on the phase name, so this screen is a fresh mount every time
+ * a round opens while `feed` carries the whole match. Anything here that remembers what it
+ * has already reacted to does so in a ref, and those refs start at zero again — so the
+ * effects have to ask which round an event belongs to, not just whether they have seen it.
+ */
+describe("Trading.jsx round boundaries", () => {
+  const originalFeed = mockMatch.feed;
+  const originalRound = mockMatch.phase.roundIndex;
+
+  beforeEach(() => {
+    window.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+    haptic.liquidate.mockClear();
+  });
+
+  afterEach(() => {
+    mockMatch.feed = originalFeed;
+    mockMatch.phase.roundIndex = originalRound;
+  });
+
+  it("does not replay last round's liquidation when the next round opens", () => {
+    // Round 0 blew this player up. Round 1 is now open, and this component has just
+    // mounted for the first time — exactly the state a real second round starts in.
+    mockMatch.feed = [
+      { id: 7, kind: "LIQUIDATION", round: 0, playerId: "p1", nickname: "Alice",
+        text: "Alice got LIQUIDATED for $4,000" },
+    ];
+    mockMatch.phase.roundIndex = 1;
+
+    const { container } = render(<Trading />);
+
+    expect(container.querySelector(".liquidation-flash")).toBeNull();
+    expect(haptic.liquidate).not.toHaveBeenCalled();
+  });
+
+  it("still reacts to a liquidation in the round being played", () => {
+    mockMatch.feed = [
+      { id: 7, kind: "LIQUIDATION", round: 1, playerId: "p1", nickname: "Alice",
+        text: "Alice got LIQUIDATED for $4,000" },
+    ];
+    mockMatch.phase.roundIndex = 1;
+
+    const { container } = render(<Trading />);
+
+    expect(container.querySelector(".liquidation-flash")).not.toBeNull();
+    expect(haptic.liquidate).toHaveBeenCalled();
+  });
+
+  it("does not replay last round's flow surge either", () => {
+    mockMatch.feed = [
+      { id: 8, kind: "FLOW", round: 0, text: "THE ROOM IS PILING IN" },
+    ];
+    mockMatch.phase.roundIndex = 1;
+
+    const { container } = render(<Trading />);
+
+    expect(container.querySelector(".floor.is-surging-pump")).toBeNull();
   });
 });

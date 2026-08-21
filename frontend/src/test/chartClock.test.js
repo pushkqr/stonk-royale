@@ -157,4 +157,42 @@ describe("chartClock", () => {
       }
     }
   });
+
+  /**
+   * The lag is the whole trade this module makes: the playhead sits behind the newest sample
+   * so it always has two real samples to interpolate between, which is what stops the line
+   * snapping. It is also why the chart draws the newest sample as its own "NOW" rule — the
+   * head is never the price an order fills at, and players were aiming at the head.
+   *
+   * So the size of the gap is load-bearing in both directions. Shrink it and the NOW rule is
+   * clutter sitting on top of the head; grow it and the chart quietly lies harder. Pin it.
+   */
+  it("settles a steady RENDER_DELAY_MS behind the newest sample", () => {
+    const frameMs = 1000 / 60;
+    const clock = createClock();
+    const points = [];
+    for (let t = 0; t <= 10000; t += 100) {
+      points.push({ t, p: t });
+    }
+
+    const lags = [];
+    for (let simTime = 0; simTime <= 10000; simTime += frameMs) {
+      const availableCount = Math.min(points.length, Math.floor(simTime / 100) + 1);
+      const newestT = points[availableCount - 1].t;
+      const playhead = advance(clock, newestT, frameMs);
+
+      // Skip the warm-up, and the tail where the stream stops and the playhead catches up.
+      if (simTime > 2000 && simTime < 9000) {
+        lags.push(newestT - playhead);
+      }
+    }
+
+    const mean = lags.reduce((a, b) => a + b, 0) / lags.length;
+
+    // One sample interval of slack either way: the playhead runs continuously while samples
+    // land in 100ms steps, so the instantaneous gap saws between roughly the delay and the
+    // delay plus an interval. It is the centre of that saw this pins.
+    expect(mean).toBeGreaterThan(RENDER_DELAY_MS - 100);
+    expect(mean).toBeLessThan(RENDER_DELAY_MS + 100);
+  });
 });

@@ -46,6 +46,18 @@ export default function Trading() {
   const startPrice = phase?.asset?.startPrice ?? 0;
   const urgent = left > 0 && left <= 10_000;
 
+  /*
+   * Declared up here because three effects below filter the feed by it.
+   *
+   * They have to. Room keys the phase wrapper on the phase name, so this whole screen
+   * remounts when a round opens and every `seen…` ref below resets to zero — while `feed`
+   * is match-wide and survives. Without the filter, the first pass of those effects finds
+   * the previous round's liquidation still sitting in the feed, reads its id as newer than
+   * zero, and replays the flash, the REKT floater and the haptic on a player who has not
+   * traded yet this round.
+   */
+  const roundIndex = phase?.roundIndex ?? 0;
+
   // A latecomer holds a seat but no stack: the round was dealt before they arrived.
   const waiting = !!me && !me.inRound;
 
@@ -85,7 +97,7 @@ export default function Trading() {
   const seenRoomLiq = useRef(0);
 
   useEffect(() => {
-    const liquidations = feed.filter((f) => f.kind === "LIQUIDATION");
+    const liquidations = feed.filter((f) => f.kind === "LIQUIDATION" && f.round === roundIndex);
     const latest = liquidations.at(-1);
     if (!latest) return;
 
@@ -96,7 +108,7 @@ export default function Trading() {
       seenRoomLiq.current = latest.id;
       setRoomLiq((n) => n + 1);
     }
-  }, [feed, session.playerId]);
+  }, [feed, session.playerId, roundIndex]);
 
   useEffect(() => {
     if (jolt > 0) {
@@ -107,7 +119,7 @@ export default function Trading() {
   const [surge, setSurge] = useState(null);
   const seenSurge = useRef(0);
   useEffect(() => {
-    const flows = feed.filter((f) => f.kind === "FLOW");
+    const flows = feed.filter((f) => f.kind === "FLOW" && f.round === roundIndex);
     const latest = flows.at(-1);
     if (latest && latest.id > seenSurge.current) {
       seenSurge.current = latest.id;
@@ -116,7 +128,7 @@ export default function Trading() {
       const timer = setTimeout(() => setSurge(null), 1800);
       return () => clearTimeout(timer);
     }
-  }, [feed]);
+  }, [feed, roundIndex]);
 
   // Built here rather than inside Wire so Wire can stay memoised — see the note on it.
   // Keyed off the lobby, not the board: both carry the avatar, but the board is rebroadcast
@@ -162,7 +174,6 @@ export default function Trading() {
     }, 1500);
   }, []);
 
-  const roundIndex = phase?.roundIndex ?? 0;
   const prevRoundRef = useRef(roundIndex);
   if (roundIndex !== prevRoundRef.current) {
     prevRoundRef.current = roundIndex;
