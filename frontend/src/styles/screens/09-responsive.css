@@ -578,6 +578,26 @@
   input[type="range"] {
     height: 1.9rem;
   }
+
+  /*
+    Sixteen pixels, because that is where iOS Safari stops zooming.
+
+    Focus a text input whose computed size is under 16px and mobile Safari zooms the whole
+    page to meet it — there is no opting out, `maximum-scale` in the viewport meta has been
+    ignored since iOS 10. Every field in this app inherits the 15px body size, and the wire's
+    composer sets 0.85rem on top of that, so every one of them tripped it: the first thing a
+    phone player did was type their name, and the page lurched.
+
+    Worst on the trading screen, where `.table` is `100dvh` with `overflow: hidden` — nothing
+    scrolls, so a player zoomed in by the chat box has no way back out but to pinch.
+
+    Not `.field-code`, which is 1.9rem and already well clear. The `:not()` matches its
+    specificity so this has to sit after it in the cascade, which it does — index.css and
+    01-home.css both load before this file.
+  */
+  .field:not(.field-code) {
+    font-size: 16px;
+  }
 }
 
 /* Wraps whichever screen the phase currently is, so a change fades in rather than cutting.
