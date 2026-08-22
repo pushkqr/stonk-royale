@@ -211,12 +211,30 @@ public class Stats {
      * Batched rather than written on every increment: a settling round can move four
      * counters at once, and none of them is worth a disk write on its own.
      */
+    /**
+     * Encodes under the lock, writes outside it.
+     *
+     * This used to be `synchronized` around the whole thing, which put four filesystem calls
+     * inside the monitor that MatchEngine takes every time it records a settled round or a
+     * liquidation — so a slow disk stopped the clock for every live match, not just this
+     * method. It cost a tick or two when the engine ran at 100ms and the chart carried a
+     * 150ms buffer; at a 33ms tick and a 50ms buffer the same stall empties the client's
+     * interpolation window and the chart visibly stops.
+     *
+     * Encoding is a few longs and a capped set, so holding the lock for that is free. The
+     * dirty flag goes back up if the encode fails, because the counters really are still
+     * unsaved and the next pass should try again.
+     */
     @Scheduled(fixedDelay = 30_000)
-    public synchronized void flush() {
-        if (!dirty) {
-            return;
+    public void flush() {
+        byte[] payload;
+        synchronized (this) {
+            if (!dirty) {
+                return;
+            }
+            payload = store.serialize(totals);
+            dirty = payload == null;
         }
-        store.save(totals);
-        dirty = false;
+        store.write(payload);
     }
 }

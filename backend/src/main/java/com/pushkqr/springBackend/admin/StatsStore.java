@@ -47,18 +47,42 @@ public class StatsStore {
         }
     }
 
-    public void save(Totals totals) {
+    /**
+     * Turns the counters into bytes and touches no disk.
+     *
+     * Split from {@link #write} so the caller can do this much under its lock and the four
+     * filesystem calls below without it — see the note on Stats.flush for why that matters
+     * to a game whose price clock shares a thread with this.
+     */
+    public byte[] serialize(Totals totals) {
+        try {
+            return json.writeValueAsBytes(totals);
+        } catch (IOException e) {
+            logger.warn("Could not encode stats: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /** Temp file then atomic move, so a crash mid-write leaves the old file intact. */
+    public void write(byte[] payload) {
+        if (payload == null) {
+            return;
+        }
         try {
             Path parent = file.toAbsolutePath().getParent();
             if (parent != null) {
                 Files.createDirectories(parent);
             }
             Path temp = Files.createTempFile(parent, "stats", ".tmp");
-            Files.write(temp, json.writeValueAsBytes(totals));
+            Files.write(temp, payload);
             Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
             // The game does not stop for a stats file it cannot write.
             logger.warn("Could not write {}: {}", file, e.getMessage());
         }
+    }
+
+    public void save(Totals totals) {
+        write(serialize(totals));
     }
 }
